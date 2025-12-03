@@ -1,21 +1,24 @@
 {
-  "name": "devtinder_backend",
-  "version": "1.0.0",
-  "description": "This is a clone of tinder but for devlopers",
-  "keywords": [
-    "nodejs",
-    "tinder",
-    "devTinder"
-  ],
-  "license": "ISC",
-  "author": "Ayush Shrivastava",
-  "type": "module",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^5.1.0"
-  }
+    "name": "devtinder_backend",
+    "version": "1.0.0",
+    "description": "This is a clone of tinder but for devlopers",
+    "keywords": [
+        "nodejs",
+        "tinder",
+        "devTinder"
+    ],
+    "license": "ISC",
+    "author": "Ayush Shrivastava",
+    "type": "module",
+    "main": "server.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "nodemon server.js",
+        "dev": "node server.js"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "express": "^5.1.0",
+        "mongoose": "^9.0.0"
+    }
 }
