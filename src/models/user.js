@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+export const userSchema = new mongoose.Schema({
     googleId: {
         type: String,
         default: null
@@ -11,12 +11,42 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        min: 
+        unquie: true,
         required: true
     },
+    username: {
+        type: String,
+        unquie: true,
+        required: true
+    },
+    password: {
+        type: String
+    },
+    role: {
+        type: String,
+        default: "user",
+        enum: ["user", "admin"]
+    },
+    age: {
+        type: Number,
+        default: 18,
+        min: 15
+    },
+
     gender: {
         type: String,
-        required: true,
+        default: "male",
         enum: ["female", "male", "transgender"]
+    },
+    picture: {
+        type: String,
+        default:
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRs1fzJizYJbxmeZhwoQdq9ocGyT1dGjAhLq_ZCsJ56g&s=10"
+    },
+    refreshToken: {
+        type: Array,
+        default: []
     }
 });
+
+export default new mongoose.model("User", userSchema);
