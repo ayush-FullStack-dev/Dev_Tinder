@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import epochify from "epochify";
+import geoip from "geoip-lite";
 
 import ApiError from "../../helpers/ApiError.js";
+import { sendResponse } from "../../helpers/helpers.js";
+
+import { getAccesToken, getRefreshToken } from "../../helpers/helpers.js";
 
 import {
     findUser,
@@ -12,6 +16,12 @@ import {
 } from "../services/auth.js";
 import { sendVerifyLink } from "../../helpers/mail.js";
 import { generateHash, verifyHash } from "../../helpers/hash.js";
+
+const cookieOption = {
+    httpOnly: true,
+    signed: true,
+    secure: true
+};
 
 export const signupHandler = async (req, res) => {
     let { name, email, username, password, gender, role } = req.body;
@@ -30,8 +40,7 @@ export const signupHandler = async (req, res) => {
         expireAt: Date.now()
     });
     const sendEvl = await sendVerifyLink(email, verificationToken);
-    res.status(200).json({
-        success: true,
+    return sendResponse(res, 200, {
         message: "Verification Link Send Succesfull",
         data: {
             name: userData.name,
@@ -65,8 +74,7 @@ export const verifyEvl = async (req, res) => {
         await deletePendingUser(findData._id, {
             id: true
         });
-        return res.status(410).json({
-            success: false,
+        return sendResponse(res, 410, {
             message: "Verify Token is expired!"
         });
     }
@@ -84,8 +92,7 @@ export const verifyEvl = async (req, res) => {
         id: true
     });
 
-    res.status(201).json({
-        success: true,
+    return sendResponse(res, 201, {
         message: "user created successfull",
         data: {
             name: userData.name,
@@ -96,6 +103,99 @@ export const verifyEvl = async (req, res) => {
     });
 };
 
+function cleanIP(ip) {
+    if (ip.startsWith("::ffff:")) {
+        return ip.replace("::ffff:", "");
+    }
+    return ip;
+}
+
+export const loginHandler = async (req, res) => {
+    const { login, fieldName, password } = res.locals;
+    const ip = cleanIP(req.ip);
+    const geo = geoip.lookup(ip);
+    const country = geo?.country || "UNKNOWN";
+    let refreshExpiry = "1d";
+    const message = "Invalid credentials!";
+    const user = await findUser({
+        [fieldName]: login
+    });
+
+    if (!user) {
+        return sendResponse(res, 401, {
+            message
+        });
+    }
+    const checkHash = await verifyHash(password, user.password);
+
+    if (!checkHash) {
+        return sendResponse(res, 401, {
+            message
+        });
+    }
+
+    if (user.refreshToken.length) {
+        const lastSession = user.refreshToken[user.refreshToken.length - 1];
+        const checkTime = epochify.diff(
+            Date.now(),
+            lastSession.createdAt,
+            "minute"
+        );
+        if (req.body.deviceId === lastSession.deviceId) {
+        } else if (req.body.ip === lastSession.ip) {
+        } else if (req.body.os === lastSession.os) {
+        } else if (country === lastSession.country && checkTime > 15) {
+        } else {
+            // 2fa logic
+        }
+    }
+
+    if (req.body.remember) {
+        refreshExpiry = "30d";
+    }
+    const accesToken = getAccesToken({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        role: user.role,
+        age: user.age,
+        gender: user.gender
+    });
+
+    const refreshToken = getRefreshToken(
+        {
+            _id: user._id
+        },
+        refreshExpiry
+    );
+
+    const userInfo = {
+        browser: req.body.browser,
+        os: req.body.os,
+        deviceId: req.body.deviceId,
+        ip,
+        token: refreshToken,
+        version: 1,
+        country,
+        createdAt: Date.now()
+    };
+
+    user.refreshToken.push(userInfo);
+
+    if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {
+        user.refreshToken.shift();
+    }
+    res.status(200)
+        .cookie("accesToken", accesToken, cookieOption)
+        .cookie("refreshToken", refreshToken, cookieOption)
+        .json({
+            success: true,
+            message: "User login successfully"
+        });
+};
+
+// cleanup function
 const cleanupDbId = setInterval(
     async () => {
         try {

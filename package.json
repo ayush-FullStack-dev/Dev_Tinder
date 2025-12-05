@@ -21,7 +21,9 @@
         "dotenv": "^17.2.3",
         "epochify": "^1.0.12",
         "express": "^5.1.0",
+        "geoip-lite": "^1.4.10",
         "joi": "^18.0.2",
+        "jsonwebtoken": "^9.0.3",
         "mongoose": "^9.0.0",
         "nodemailer": "^7.0.11"
     }
