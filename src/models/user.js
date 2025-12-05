@@ -11,12 +11,12 @@ export const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        unquie: true,
+        unique: true,
         required: true
     },
     username: {
         type: String,
-        unquie: true,
+        unique: true,
         required: true
     },
     password: {

@@ -95,3 +95,20 @@ export const verifyEvl = async (req, res) => {
         }
     });
 };
+
+const cleanupDbId = setInterval(
+    async () => {
+        try {
+            const future = new Date();
+            future.setMinutes(future.getMinutes() + 15);
+            const currentTimeStamp = future.getTime();
+            const user = await deletePendingUser({
+                expireAt: {
+                    $lt: currentTimeStamp
+                }
+            });
+            console.log("cleanup successfully");
+        } catch (error) {}
+    },
+    1000 * 60 * 30
+);
