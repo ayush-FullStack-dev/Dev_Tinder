@@ -32,6 +32,16 @@ export const createUser = async (data, option = { ...options }) => {
     return User.create(data);
 };
 
+export const updateUser = async (filter, data, option = { ...options }) => {
+    checkCondition(data, "Data && filter is required to update User!");
+    if (option.many) {
+        return User.updateMany(filter, data, { runValidators: true });
+    } else if (option.id) {
+        return User.findByIdAndUpdate(filter, data, { new: true });
+    }
+    return User.updateOne(filter, data, { runValidators: true });
+};
+
 // ----- Temp User Services ----
 
 export const findPendingUser = async (condition, option = { ...options }) => {

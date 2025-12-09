@@ -46,6 +46,36 @@ export const userSchema = new mongoose.Schema({
     refreshToken: {
         type: Array,
         default: []
+    },
+    twoFA: {
+        enabled: {
+            type: Boolean,
+            default: false
+        },
+        loginMethods: {
+            email: {
+                type: Object,
+                default: {
+                    type: "EMAIL",
+                    on: true
+                }
+            },
+            totp: {
+                type: Object,
+                default: {
+                    type: "TOTP",
+                    on: false,
+                    code: ""
+                }
+            },
+            backupcode: {
+                type: Object,
+                default: {
+                    type: "BACKUPCODE",
+                    code: []
+                }
+            }
+        }
     }
 });
 

@@ -1,4 +1,5 @@
 import connectDB from "./src/config/mongodb.js";
+import { connectRedis } from "./src/config/redis.js";
 import app from "./src/app.js";
 
 // configure server
@@ -14,6 +15,7 @@ async function init() {
     if (process.env.NODE_ENV === "production") {
         try {
             await connectDB();
+            connectRedis();
             startServer();
         } catch (error) {
             console.log("Database Connected failed! Error is:", error);
@@ -24,6 +26,7 @@ async function init() {
     }
 
     startServer();
+    connectRedis();
     connectDB().catch(err => {
         console.log("Database Connected failed! Error is:", err);
     });

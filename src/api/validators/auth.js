@@ -80,30 +80,17 @@ export const loginValidators = joi
             "any.required": "Password is required.",
             "string.empty": "Password cannot be empty."
         }),
-
         deviceId: joi.string().required().messages({
             "any.required": "deviceId is required.",
             "string.empty": "deviceId cannot be empty."
         }),
-
-        browser: joi
-            .string()
-            .valid(...browserLists)
-            .required()
-            .messages({
-                "any.only":
-                    "Invalid browser. Please send a valid browser name.",
-                "any.required": "Browser information is required."
-            }),
-
-        os: joi
-            .string()
-            .valid(...osLists)
-            .required()
-            .messages({
-                "any.only": "Invalid operating system.",
-                "any.required": "OS information is required."
-            }),
+        deviceSize: joi.number().required().messages({
+            "any.required": "deviceSize is required."
+        }),
+        timezone: joi.string().required().messages({
+            "any.required": " timezone is required.",
+            "string.empty": "timezone cannot be empty."
+        }),
         remember: joi.boolean().valid(true, false).required().messages({
             "any.only": "Invalid remember type only allowed true or false.",
             "any.required": "remember is required."
@@ -113,3 +100,75 @@ export const loginValidators = joi
     .messages({
         "object.missing": "Either username or email is required."
     });
+
+export const twoFAValidators = joi.object({
+    email: joi.string().email().required().messages({
+        "string.email": "Please enter a valid email."
+    }),
+
+    password: joi.string().min(1).messages({
+        "string.empty": "Password cannot be empty."
+    }),
+
+    deviceId: joi.string().required().messages({
+        "any.required": "deviceId is required.",
+        "string.empty": "deviceId cannot be empty."
+    }),
+    deviceSize: joi.number().required().messages({
+        "any.required": "deviceSize is required."
+    }),
+    timezone: joi.string().required().messages({
+        "any.required": " timezone is required.",
+        "string.empty": "timezone cannot be empty."
+    }),
+
+    method: joi
+        .string()
+        .required()
+        .valid("EMAIL", "TOTP", "BACKUPCODE")
+        .messages({
+            "any.only": "Invalid twoFA method.",
+            "any.required": "verify method is required."
+        }),
+    remember: joi.boolean().valid(true, false).required().messages({
+        "any.only": "Invalid remember type only allowed true or false.",
+        "any.required": "remember is required."
+    })
+});
+
+export const verifyTwoFAValidators = joi.object({
+    email: joi.string().email().required().messages({
+        "string.email": "Please enter a valid email."
+    }),
+
+    deviceId: joi.string().required().messages({
+        "any.required": "deviceId is required.",
+        "string.empty": "deviceId cannot be empty."
+    }),
+
+    method: joi
+        .string()
+        .valid("EMAIL", "TOTP", "BACKUPCODE")
+        .messages({
+            "any.only": "Invalid twoFA method.",
+            "any.required": "twoFa method is required."
+        })
+        .required(),
+    deviceId: joi.string().required().messages({
+        "any.required": "deviceId is required.",
+        "string.empty": "deviceId cannot be empty."
+    }),
+    code: joi
+        .string()
+        .pattern(/^\d{6,}$/)
+        .required()
+        .messages({
+            "string.pattern.base": "Code must be minimum 6 digits.",
+            "any.required": "Code is required."
+        }),
+    clientTime: joi.required(),
+    remember: joi.boolean().valid(true, false).required().messages({
+        "any.only": "Invalid remember type only allowed true or false.",
+        "any.required": "remember is required."
+    })
+});

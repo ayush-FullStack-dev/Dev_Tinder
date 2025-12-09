@@ -11,4 +11,18 @@ class ApiError extends Error {
   }
 }
 
+export function prettyErrorResponse(validate, msg) {
+    const jsonResponse = {
+        message: msg,
+        errors: []
+    };
+    for (let err of validate.error.details) {
+        jsonResponse.errors.push({
+            type: err.path[0],
+            message: err.message
+        });
+    }
+    return jsonResponse;
+}
+
 export default ApiError;

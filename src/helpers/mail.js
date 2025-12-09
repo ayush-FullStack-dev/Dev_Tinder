@@ -1,5 +1,9 @@
 import mailer from "nodemailer";
-import { verifyAccountTemplate } from "../templates/mail.js";
+import {
+    verifyAccountTemplate,
+    verifyOtpTemplete,
+    suspiciousAlertTemplete
+} from "../templates/mail.js";
 
 const transporter = mailer.createTransport({
     host: "smtp.gmail.com",
@@ -13,7 +17,7 @@ const transporter = mailer.createTransport({
 
 export const sendMail = async (mail, subject, html) => {
     const info = await transporter.sendMail({
-        from: `"DevTinder" <no-reply@${process.env.DOMAIN}>`,
+        from: `"DevTinder" <no-reply@${process.extra.DOMAIN}>`,
         to: mail,
         subject,
         html
@@ -26,11 +30,49 @@ export const sendMail = async (mail, subject, html) => {
 };
 
 export const sendVerifyLink = async (userMail, verificationToken) => {
-    const verifyLink = `${process.env.DOMAIN_LINK}/auth/verify?token=${verificationToken}`;
+    const verifyLink = `${process.extra.DOMAIN_LINK}/auth/verify?token=${verificationToken}`;
     const mailInfo = await sendMail(
         userMail,
         "Verify Your Email Address",
         verifyAccountTemplate(verifyLink)
+    );
+    return mailInfo;
+};
+
+export const sendOtp = async (userMail, otp, deviceInfo) => {
+    const mailInfo = await sendMail(
+        userMail,
+        "“DevTinder: Confirm Your Sign-In",
+        verifyOtpTemplete(
+            otp,
+            deviceInfo.browser,
+            deviceInfo.os,
+            deviceInfo.ip,
+            deviceInfo.country,
+            deviceInfo.time
+        )
+    );
+    return mailInfo;
+};
+
+export const sendSuspiciousAlert = async (userMail, deviceInfo) => {
+    const link = `${process.extra.DOMAIN_LINK}/account/activity/`;
+    for (const info in deviceInfo) {
+        deviceInfo[info] = deviceInfo[info] || "test";
+    }
+
+    const mailInfo = await sendMail(
+        userMail,
+        "“DevTinder: unusual activity Review you account!",
+        suspiciousAlertTemplete(
+        userMail,
+        deviceInfo.ip,
+        deviceInfo.browser,
+        deviceInfo.os,
+        deviceInfo.country,
+        link,
+        deviceInfo.time
+    )
     );
     return mailInfo;
 };
