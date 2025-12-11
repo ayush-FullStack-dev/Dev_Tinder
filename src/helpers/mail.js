@@ -2,7 +2,8 @@ import mailer from "nodemailer";
 import {
     verifyAccountTemplate,
     verifyOtpTemplete,
-    suspiciousAlertTemplete
+    suspiciousAlertTemplete,
+    newLoginAlertTemplete
 } from "../templates/mail.js";
 
 const transporter = mailer.createTransport({
@@ -65,14 +66,38 @@ export const sendSuspiciousAlert = async (userMail, deviceInfo) => {
         userMail,
         "“DevTinder: unusual activity Review you account!",
         suspiciousAlertTemplete(
+            userMail,
+            deviceInfo.ip,
+            deviceInfo.browser,
+            deviceInfo.os,
+            deviceInfo.country,
+            link,
+            deviceInfo.time
+        )
+    );
+    return mailInfo;
+};
+
+export const sendLoginAlert = async (userMail, userInfo) => {
+    const link = `${process.extra.DOMAIN_LINK}/account/resetPassword/`;
+
+    for (const info in userInfo) {
+        userInfo[info] = userInfo[info] || "test";
+    }
+
+    const mailInfo = await sendMail(
         userMail,
-        deviceInfo.ip,
-        deviceInfo.browser,
-        deviceInfo.os,
-        deviceInfo.country,
-        link,
-        deviceInfo.time
-    )
+        `New login to DevTinder from ${userInfo.deviceName}`,
+        suspiciousAlertTemplete(
+            userMail,
+            userInfo.name,
+            userInfo.ip,
+            userInfo.location,
+            userInfo.deviceModel,
+            userInfo.browser,
+            userInfo.time,
+            link
+        )
     );
     return mailInfo;
 };

@@ -1,6 +1,6 @@
 import redis from "../config/redis.js";
 
-export const checkDeviceSwap = async (currentInfo, link, ...skips) => {
+export const checkDeviceSwap = async (currentInfo, link, skips) => {
     let savedInfo = await redis.get(link);
     savedInfo = JSON.parse(savedInfo);
     for (const data in savedInfo) {
@@ -8,14 +8,20 @@ export const checkDeviceSwap = async (currentInfo, link, ...skips) => {
             continue;
         }
         if (savedInfo[data] !== currentInfo[data]) {
-            return "This request is blocked for securty reason";
+            return {
+                success: false,
+                message: "This request is blocked for securty reason"
+            };
         }
     }
 
-    return null;
+    return {
+        success: true,
+        info: savedInfo
+    };
 };
 
-export const checkTimeManipulation = async time => {
+export const checkTimeManipulation = time => {
     const diff = Math.abs(time.serverTime - time.clientTime);
     if (diff > 2 * 60 * 1000) {
         return "Time Manipulation Attack detcted";

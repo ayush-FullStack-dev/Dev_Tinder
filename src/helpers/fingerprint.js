@@ -1,16 +1,14 @@
 import { generateHash, verifyHash } from "./hash.js";
 
 export const fingerprintBuilder = userInfo => {
-    const data = Object.values(userInfo);
-    const fingerprint = [data].join("|");
+    const fingerprint = `${userInfo.browser}|${userInfo.os}|${userInfo.osVersion}|${userInfo.deviceModel}|${userInfo.deviceType}|${userInfo.deviceId}|${userInfo.userAgent}|${userInfo.deviceSize}|${userInfo.timezone}`;
     return generateHash(fingerprint);
 };
 
-export const compareFingerprint =  (org, hash) => {
+export const compareFingerprint = (org, hash) => {
     if (typeof org !== "string") {
-        let data = Object.values(org);
-        org = [data].join("|");
+        org = `${org.browser}|${org.os}|${org.osVersion}|${org.deviceModel}|${org.deviceType}|${org.deviceId}|${org.userAgent}|${org.deviceSize}|${org.timezone}`;
     }
-
-    return  verifyHash(org, hash);
+    console.log(hash);
+    return verifyHash(org, hash);
 };

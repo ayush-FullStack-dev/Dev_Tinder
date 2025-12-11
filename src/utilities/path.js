@@ -20,7 +20,6 @@ const publicDir = path.join(rootPath, "public");
 
 const logDir = path.join(rootPath, "log");
 
-const viewsDir = path.join(subFolder, "views");
 const envPath = path.join(rootPath, ".env");
 
 export default {
@@ -31,6 +30,5 @@ export default {
     __dirName,
     envPath,
     logDir,
-    viewsDir,
     publicDir
 };

@@ -9,7 +9,9 @@ export const getOtpSetOtp = async user => {
 };
 
 export const setSession = async (data, user, link = "2fa:session") => {
-    const jsonData = JSON.stringify(data);
-    await redis.set(`${link}:${user._id}`, jsonData);
+    if (typeof data !== "string") {
+        data = JSON.stringify(data);
+    }
+    await redis.set(`${link}:${user._id}`, data);
     return true;
 };

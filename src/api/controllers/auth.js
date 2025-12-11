@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import epochify from "epochify";
+import geoip from "geoip-lite";
 
 import ApiError from "../../helpers/ApiError.js";
 import redis from "../../config/redis.js";
@@ -29,7 +30,8 @@ import { tokenBuilder, cleanup2fa } from "../../utils/util.js";
 import {
     sendVerifyLink,
     sendOtp,
-    sendSuspiciousAlert
+    sendSuspiciousAlert,
+    sendLoginAlert
 } from "../../helpers/mail.js";
 import { generateHash, verifyHash } from "../../helpers/hash.js";
 import { getOtpSetOtp, setSession } from "../services/service.js";
@@ -179,9 +181,9 @@ export const loginHandler = async (req, res) => {
     userInfo.fingerprint = fingerprintBuilder(userInfo);
     userInfo.ip = ip;
     userInfo.token = refreshToken;
-    userinfo.country = country;
+    userInfo.country = country;
 
-    const tokenInfo = tokenBuilder(userinfo);
+    const tokenInfo = tokenBuilder(userInfo);
 
     if (suspicious) {
         const setUser = await setSession(
@@ -230,17 +232,13 @@ export const loginHandler = async (req, res) => {
 
 // suspicious route Handler
 export const startTwoFAHandler = async (req, res) => {
-    const { loginMethod, email, password, ip, country, time } = req.auth;
-    const { browser, os } = req.auth.deviceInfo;
+    const { loginMethod, email, password, ip } = req.auth;
     const deviceInfo = {
-        browser,
-        os,
-        ip,
-        country,
-        time
+        ...req.auth.deviceInfo,
+        ip
     };
 
-    const fingerprint = await fingerprintBuilder(...req.auth.deviceInfo);
+    const fingerprint = await fingerprintBuilder(req.auth.deviceInfo);
 
     if (!loginMethod) {
         throw new ApiError("BadRequest", "2Fa login method is undefined", 400);
@@ -270,7 +268,7 @@ export const startTwoFAHandler = async (req, res) => {
     const method = user.twoFA.loginMethods;
     if (loginMethod === "EMAIL" && method.email.on) {
         const otp = await getOtpSetOtp(user);
-        const otpInfo = await sendOtp(email, otp, deviceInfo);
+        const otpInfo = sendOtp(email, otp, deviceInfo);
         await setSession(
             {
                 start: true,
@@ -374,18 +372,16 @@ export const resendOtpHandler = async (req, res) => {
 };
 
 export const verifyTwoFAHandler = async (req, res) => {
-    const { user, verify, time, fingerprintHash, userInfo, refreshExpiry } =
-        req.auth;
-    let trustedId = null;
+    const { user, verify, userInfo, refreshExpiry } = req.auth;
     const deviceInfo = {
-        ...req.auth.deviceInfo,
-        time
+        ...req.auth.deviceInfo
     };
+    let trustedId = null;
 
     await cleanup2fa(user);
 
     if (!verify?.success) {
-        await sendSuspiciousAlert(user.email, deviceInfo);
+        sendSuspiciousAlert(user.email, deviceInfo);
         return sendResponse(res, 401, {
             message: verify?.message
         });
@@ -403,12 +399,18 @@ export const verifyTwoFAHandler = async (req, res) => {
 
     if (req.body.remeberDevice) {
         await redis.set(
-            `trusted:${user._id}:${fingerprintHash}`,
+            `trusted:${user._id}:${userInfo.fingerprintHash}`,
             true,
             "EX",
             60 * 60 * 24 * 30
         );
     }
+
+    const loginInfo = {
+        name: user.name,
+        ...req.auth.deviceInfo,
+        deviceName: userInfo.deviceName
+    };
 
     const accesToken = getAccesToken(user);
 
@@ -419,10 +421,9 @@ export const verifyTwoFAHandler = async (req, res) => {
         refreshExpiry
     );
 
-    userInfo.fingerprint = fingerprintHash;
     userInfo.token = refreshToken;
 
-    const tokenInfo = tokenBuilder(userinfo);
+    const tokenInfo = tokenBuilder(userInfo);
 
     user.refreshToken.push(tokenInfo);
 
@@ -439,6 +440,8 @@ export const verifyTwoFAHandler = async (req, res) => {
             id: true
         }
     );
+
+    sendLoginAlert(user.email, loginInfo);
 
     res.status(200)
         .cookie("accesToken", accesToken, cookieOption)

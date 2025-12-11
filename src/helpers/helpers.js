@@ -1,5 +1,6 @@
 import { signToken } from "./jwt.js";
 import { UAParser } from "ua-parser-js";
+import { prettyErrorResponse } from "./ApiError.js";
 import epochify from "epochify";
 
 const joiOptions = {
@@ -56,8 +57,8 @@ export function checkSuspicious(req, lastSession, country, ip) {
         return true;
     }
     if (lastLoginDay <= 3) {
-        if (req.body.deviceId === lastSession.deviceId) {
-        } else if (ip === lastSession.ip) {
+        if (req.body.deviceId !== lastSession.deviceId) {
+        } else if (ip !== lastSession.ip) {
         } else if (req.body.os === lastSession.os) {
         } else if (country !== lastSession.country && checkTime > 15) {
         } else {
@@ -68,25 +69,57 @@ export function checkSuspicious(req, lastSession, country, ip) {
 }
 
 export const parseUA = userAgent => {
+    if (!userAgent.includes("KHTML")) {
+        userAgent = `Mozilla/5.0 (Linux; Android 13; SM-M326B) AppleWebKit/537.36 
+(KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36`;
+    }
     const parser = new UAParser(userAgent);
+    let deviceType = null;
     const result = parser.getResult();
+    if (userAgent.includes("Mobile")) {
+        deviceType = "mobile";
+    } else if (
+        ua.includes("tablet") ||
+        ua.includes("ipad") ||
+        ua.includes("sm-t") ||
+        ua.includes("xoom") ||
+        ua.includes("silk") ||
+        ua.includes("kindle")
+    ) {
+        deviceType = "tab";
+    } else {
+        deviceType = "deskopt";
+    }
     return {
         browser: result.browser.name,
         browserVersion: result.browser.version,
         os: result.os.name,
+        deviceType,
         osVersion: result.os.version,
-        deviceModel: result.device.model,
-        deviceType: result.device.model
+        deviceModel: result.device.model
     };
 };
 
-export const buildDeviceInfo = (ua, validateValues) => {
+export const buildDeviceInfo = (ua, validateValues, info) => {
+    if (info) {
+        return {
+            ...parseUA(ua),
+            deviceId: validateValues.deviceId || "test",
+            userAgent: ua,
+            location: info.location,
+            country: info.country,
+            deviceSize: validateValues.deviceSize,
+            timezone: info.timezone,
+            time: Date.now()
+        };
+    }
     return {
         ...parseUA(ua),
-        deviceId: validateValues.deviceId,
+        deviceId: validateValues.deviceId || "test",
         userAgent: ua,
         deviceSize: validateValues.deviceSize,
-        timezone: validateValues.timezone
+        timezone: validateValues.timezone,
+        time: Date.now()
     };
 };
 
@@ -101,7 +134,7 @@ export const checkValidation = (validateSchema, req, msg) => {
     const validate = validateSchema.validate(req.body, joiOptions);
     if (validate.error) {
         const jsonResponse = prettyErrorResponse(validate, msg);
-        return jsonResponse;
+        return { success: false, jsonResponse };
     }
-    return null;
+    return { success: true, value: validate.value };
 };

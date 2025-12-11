@@ -1,26 +1,26 @@
 import express from "express";
 import authRouter from "./api/routes/auth.js";
 import cookieParser from "cookie-parser";
-
-// configure app
+import { getPath } from "./utilities/index.js";
+// configure appp
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static(getPath.publicDir));
 app.use(cookieParser(process.env.APP_SECRET));
 app.use((req, res, next) => {
-	process.extra = {}
-    process.extra.DOMAIN = req.get("host");
-    if (process.extra.DOMAIN.includes("localhost")) {
-        process.extra.DOMAIN_LINK = `http://${process.extra.DOMAIN}`;
-    } else {
-        process.extra.DOMAIN_LINK = `https://${process.env.DOMAIN}`;
+    if (!process.extra?.DOMAIN) {
+        process.extra = {};
+        process.extra.DOMAIN = req.get("host");
+        if (process.extra.DOMAIN.includes("localhost")) {
+            process.extra.DOMAIN_LINK = `http://${process.extra.DOMAIN}`;
+        } else {
+            process.extra.DOMAIN_LINK = `https://${process.env.DOMAIN}`;
+        }
     }
     next();
 });
 
-app.get("/sync", (req, res) => {
-    throw new Error("sync exploded");
-});
 // routes
 app.use("/auth", authRouter);
 

@@ -23,9 +23,18 @@ import { verifyHash } from "../helpers/hash.js";
 import ApiError, { prettyErrorResponse } from "../helpers/ApiError.js";
 import { setSession } from "../api/services/service.js";
 
-function getCountry(ip) {
+function getIpInfo(ip = "103.21.33.0") {
+    if (ip.includes("::ffff:")) {
+        ip = "103.21.33.0";
+    }
     const geo = geoip.lookup(ip);
-    return geo?.country || "UNKNOWN";
+    return {
+        country: geo?.country,
+        timezone: geo?.timezone,
+        region: geo?.region,
+        city: geo?.city,
+        location: `${geo?.city},${geo?.country}`
+    };
 }
 
 function getTime(req) {
@@ -33,7 +42,8 @@ function getTime(req) {
     const clientTime = new Date(req.body.clientTime).getTime();
     return {
         serverTime: time.timestamp,
-        clientTime: clientTime
+        clientTime,
+        fullTime: time
     };
 }
 
@@ -85,14 +95,14 @@ export const loginValidation = (req, res, next) => {
     req.auth = {};
     const { email, username } = req.body;
 
-    const validateError = checkValidation(
+    const validate = checkValidation(
         loginValidators,
         req,
         "vaildation failed for login"
     );
 
-    if (validateError) {
-        return sendResponse(res, 400, validateError);
+    if (!validate?.success) {
+        return sendResponse(res, 400, validate.jsonResponse);
     }
 
     if (email) {
@@ -105,9 +115,12 @@ export const loginValidation = (req, res, next) => {
 
     req.auth.ip = req.ip;
     req.auth.deviceInfo = {
-        ...buildDeviceInfo(req.headers["user-agent"], validate.value)
+        ...buildDeviceInfo(
+            req.headers["user-agent"],
+            validate.value,
+            getIpInfo(req.ip)
+        )
     };
-    req.auth.country = getCountry(req.auth.ip);
     req.auth.password = validate.value.password;
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     next();
@@ -115,64 +128,57 @@ export const loginValidation = (req, res, next) => {
 
 export const twoFAValidation = (req, res, next) => {
     req.auth = {};
-    const validateError = checkValidation(
+    const validate = checkValidation(
         twoFAValidators,
         req,
         "vaildation failed for twoFactorAuthentication"
     );
 
-    if (validateError) {
-        return sendResponse(res, 400, validateError);
+    if (!validate?.success) {
+        return sendResponse(res, 400, validate.jsonResponse);
     }
 
     req.auth.email = validate.value.email;
     req.auth.ip = req.ip;
-    req.auth.country = getCountry(req.ip);
+    req.auth.country = getIpInfo(req.ip);
     req.auth.loginMethod = validate.value.method || null;
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
-    req.auth.deviceInfo = {
-        ...buildDeviceInfo(req.headers["user-agent"], validate.value)
-    };
+    req.auth.deviceInfo = buildDeviceInfo(
+        req.headers["user-agent"],
+        validate.value,
+        getIpInfo(req.ip)
+    );
     next();
 };
 
 export const verifyTwoFAValidation = async (req, res, next) => {
     req.auth = {};
-    const getDeviceInfo = buildDeviceInfo(
-        req.headers["user-agent"],
-        validate.value
-    );
     const time = getTime(req);
     const trustedDeviceId = req.signedCookies.trustedDeviceId;
-    const deviceInfo = {
-        ip: req.ip,
-        country: getCountry(req.ip),
-        browser: getDeviceInfo.browser,
-        os: getDeviceInfo.os,
-        deviceModel: getDeviceInfo.deviceModel,
-        deviceId: validate.value.deviceId
-    };
 
-    const validateError = checkValidation(
+    const validate = checkValidation(
         verifyTwoFAValidators,
         req,
-        "vaildation failed for twoFactorAuthentication"
+        "vaildation failed for verify twoFactorAuthentication"
     );
 
-    if (validateError) {
-        return sendResponse(res, 400, validateError);
+    if (!validate?.success) {
+        return sendResponse(res, 400, validate.jsonResponse);
     }
 
-    const isDeviceSwap = checkDeviceSwap(
-        ...getDeviceInfo,
-        `device:info:${user._id}`,
-        ["time"]
-    );
-    if (isDeviceSwap) {
-        sendResponse(res, 401, isDeviceSwap);
-    }
+    const getDeviceInfo = {
+        ...buildDeviceInfo(
+            req.headers["user-agent"],
+            validate.value,
+            getIpInfo(req.ip)
+        ),
+        ip: req.ip,
+        deviceId: validate.value.deviceId,
+        time: time.serverTime
+    };
 
     const isTimeManipulation = checkTimeManipulation(time);
+
     if (isTimeManipulation) {
         return sendResponse(res, 401, isTimeManipulation);
     }
@@ -187,8 +193,21 @@ export const verifyTwoFAValidation = async (req, res, next) => {
         });
     }
 
+    const isDeviceSwap = await checkDeviceSwap(
+        getDeviceInfo,
+        `device:info:${user._id}`,
+        ["time", "deviceSize", "deviceId"]
+    );
+
+    if (!isDeviceSwap?.success) {
+        return sendResponse(res, 401, isDeviceSwap.message);
+    }
+
+    getDeviceInfo.deviceSize = isDeviceSwap?.info?.deviceSize;
+
     let isValid = await redis.get(`2fa:session:${user._id}`);
     isValid = JSON.parse(isValid);
+
     if (!isValid?.start) {
         return sendResponse(res, 401, {
             message: "2FA session not found start first 2fa",
@@ -198,14 +217,20 @@ export const verifyTwoFAValidation = async (req, res, next) => {
 
     let savedFp = await redis.get(`2fa:fp:start:${user._id}`);
 
-    const fingerprintValid = await compareFingerprint(checkDeviceInfo, savedFp);
+    const fingerprintValid = await compareFingerprint(getDeviceInfo, savedFp);
+
     if (!fingerprintValid) {
-        return "This request is blocked for securty reason";
+        return sendResponse(
+            res,
+            401,
+            "This request is blocked for securty reason"
+        );
     }
 
     const isRemeberDevice = await redis.exists(
         `trusted:${user._id}:${savedFp}`
     );
+
     if (isRemeberDevice) {
         req.auth.verify = { success: true };
     }
@@ -226,17 +251,14 @@ export const verifyTwoFAValidation = async (req, res, next) => {
 
     let refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.user = user;
+    req.auth.time = time;
     req.auth.code = validate.value.code;
     req.auth.method = user.twoFA.loginMethods;
-    req.auth.time = time.serverTime;
-    req.auth.fingerprintHash = savedFp;
-    req.auth.deviceInfo = {
-        ...deviceInfo
-    };
+    req.auth.deviceInfo = getDeviceInfo;
     req.auth.userInfo = {
         userId: user._id,
-        fingerprintHash: req.auth.fingerprintHash,
-        deviceName: `${deviceInfo.browser} on ${deviceInfo.os}`,
+        fingerprintHash: savedFp,
+        deviceName: `${getDeviceInfo.browser} on ${getDeviceInfo.os}`,
         createdAt: Date.now(),
         expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
     };

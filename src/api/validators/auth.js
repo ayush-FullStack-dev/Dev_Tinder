@@ -87,10 +87,6 @@ export const loginValidators = joi
         deviceSize: joi.number().required().messages({
             "any.required": "deviceSize is required."
         }),
-        timezone: joi.string().required().messages({
-            "any.required": " timezone is required.",
-            "string.empty": "timezone cannot be empty."
-        }),
         remember: joi.boolean().valid(true, false).required().messages({
             "any.only": "Invalid remember type only allowed true or false.",
             "any.required": "remember is required."
@@ -117,11 +113,6 @@ export const twoFAValidators = joi.object({
     deviceSize: joi.number().required().messages({
         "any.required": "deviceSize is required."
     }),
-    timezone: joi.string().required().messages({
-        "any.required": " timezone is required.",
-        "string.empty": "timezone cannot be empty."
-    }),
-
     method: joi
         .string()
         .required()
@@ -139,11 +130,6 @@ export const twoFAValidators = joi.object({
 export const verifyTwoFAValidators = joi.object({
     email: joi.string().email().required().messages({
         "string.email": "Please enter a valid email."
-    }),
-
-    deviceId: joi.string().required().messages({
-        "any.required": "deviceId is required.",
-        "string.empty": "deviceId cannot be empty."
     }),
 
     method: joi
