@@ -18,7 +18,8 @@ import {
     setRefreshExpiry,
     checkValidation
 } from "../helpers/helpers.js";
-import { checkDeviceSwap, checkTimeManipulation } from "../utils/util.js";
+import { sendSuspiciousAlert } from "../helpers/mail.js";
+import { checkDeviceSwap, checkTimeManipulation } from "../utils/cron.js";
 import { verifyHash } from "../helpers/hash.js";
 import ApiError, { prettyErrorResponse } from "../helpers/ApiError.js";
 import { setSession } from "../api/services/service.js";
@@ -39,7 +40,7 @@ function getIpInfo(ip = "103.21.33.0") {
 
 function getTime(req) {
     const time = epochify.getFullDateTime();
-    const clientTime = new Date(req.body.clientTime).getTime();
+    const clientTime = new Date(req.body.clientTime || Date.now()).getTime();
     return {
         serverTime: time.timestamp,
         clientTime,
@@ -113,15 +114,16 @@ export const loginValidation = (req, res, next) => {
         req.auth.fieldName = "username";
     }
 
-    req.auth.ip = req.ip;
     req.auth.deviceInfo = {
         ...buildDeviceInfo(
             req.headers["user-agent"],
             validate.value,
             getIpInfo(req.ip)
-        )
+        ),
+        ip: req.ip
     };
     req.auth.password = validate.value.password;
+    req.auth.time = getTime(req);
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     next();
 };
@@ -249,9 +251,13 @@ export const verifyTwoFAValidation = async (req, res, next) => {
         req.auth.verify = { success: true };
     }
 
+    let getRisk = await redis.get(`2fa:session:${user.email}`);
+    getRisk = JSON.parse(getRisk);
+
     let refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.user = user;
     req.auth.time = time;
+    req.auth.riskLevel = getRisk.risk;
     req.auth.code = validate.value.code;
     req.auth.method = user.twoFA.loginMethods;
     req.auth.deviceInfo = getDeviceInfo;

@@ -9,6 +9,5 @@ export const compareFingerprint = (org, hash) => {
     if (typeof org !== "string") {
         org = `${org.browser}|${org.os}|${org.osVersion}|${org.deviceModel}|${org.deviceType}|${org.deviceId}|${org.userAgent}|${org.deviceSize}|${org.timezone}`;
     }
-    console.log(hash);
     return verifyHash(org, hash);
 };

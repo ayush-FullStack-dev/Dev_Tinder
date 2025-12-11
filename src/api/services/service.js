@@ -12,6 +12,10 @@ export const setSession = async (data, user, link = "2fa:session") => {
     if (typeof data !== "string") {
         data = JSON.stringify(data);
     }
+    if (typeof user === "string") {
+        await redis.set(`${link}:${user}`, data);
+        return true;
+    }
     await redis.set(`${link}:${user._id}`, data);
     return true;
 };

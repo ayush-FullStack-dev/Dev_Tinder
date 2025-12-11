@@ -42,32 +42,6 @@ export function getRefreshToken(data, expiry) {
     return signToken(data, expiry);
 }
 
-export function checkSuspicious(req, lastSession, country, ip) {
-    const lastLoginDay = epochify.getDiff(
-        Date.now(),
-        lastSession.createdAt,
-        "days"
-    );
-    const checkTime = epochify.getDiff(
-        Date.now(),
-        lastSession.createdAt,
-        "minute"
-    );
-    if (lastLoginDay >= 25) {
-        return true;
-    }
-    if (lastLoginDay <= 3) {
-        if (req.body.deviceId !== lastSession.deviceId) {
-        } else if (ip !== lastSession.ip) {
-        } else if (req.body.os === lastSession.os) {
-        } else if (country !== lastSession.country && checkTime > 15) {
-        } else {
-            return true;
-        }
-    }
-    return false;
-}
-
 export const parseUA = userAgent => {
     if (!userAgent.includes("KHTML")) {
         userAgent = `Mozilla/5.0 (Linux; Android 13; SM-M326B) AppleWebKit/537.36 
@@ -106,6 +80,7 @@ export const buildDeviceInfo = (ua, validateValues, info) => {
             ...parseUA(ua),
             deviceId: validateValues.deviceId || "test",
             userAgent: ua,
+            city: info.city,
             location: info.location,
             country: info.country,
             deviceSize: validateValues.deviceSize,

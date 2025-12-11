@@ -8,8 +8,7 @@ import redis from "../../config/redis.js";
 import {
     sendResponse,
     getAccesToken,
-    getRefreshToken,
-    checkSuspicious
+    getRefreshToken
 } from "../../helpers/helpers.js";
 
 import {
@@ -26,7 +25,12 @@ import {
     compareFingerprint
 } from "../../helpers/fingerprint.js";
 
-import { tokenBuilder, cleanup2fa } from "../../utils/util.js";
+import {
+    tokenBuilder,
+    cleanup2fa,
+    getRiskScore,
+    getRiskLevel
+} from "../../utils/cron.js";
 import {
     sendVerifyLink,
     sendOtp,
@@ -127,9 +131,14 @@ export const verifyEvl = async (req, res) => {
 };
 
 export const loginHandler = async (req, res) => {
-    const { login, ip, country, refreshExpiry, fieldName, password } = req.auth;
+    const { login, refreshExpiry, fieldName, password, time } = req.auth;
+    let score = 0;
+    let twoFaOn = false;
+    let riskLevel = "low";
     const message = "Invalid credentials!";
-    let suspicious = false;
+    const userInfo = {
+        ...req.auth.deviceInfo
+    };
 
     const user = await findUser({
         [fieldName]: login
@@ -158,16 +167,20 @@ export const loginHandler = async (req, res) => {
 
     if (user.refreshToken.length) {
         const lastSession = user.refreshToken[user.refreshToken.length - 1];
-
-        suspicious = checkSuspicious(req, lastSession, country, ip);
+        score = await getRiskScore(userInfo, lastSession, { time });
+        console.log(score);
     }
 
     if (user.twoFA.enabled) {
-        suspicious = true;
+        twoFaOn = true;
+        if (score >= 85) {
+            riskLevel = "veryhigh";
+        } else {
+            riskLevel = "mid";
+        }
+    } else {
+        riskLevel = getRiskLevel(score);
     }
-    const userInfo = {
-        ...req.auth.deviceInfo
-    };
 
     const accesToken = getAccesToken(user);
 
@@ -178,20 +191,27 @@ export const loginHandler = async (req, res) => {
         refreshExpiry
     );
 
-    userInfo.fingerprint = fingerprintBuilder(userInfo);
-    userInfo.ip = ip;
+    userInfo.fingerprint = await fingerprintBuilder(userInfo);
     userInfo.token = refreshToken;
-    userInfo.country = country;
 
     const tokenInfo = tokenBuilder(userInfo);
 
-    if (suspicious) {
+    if (riskLevel === "veryhigh" && !twoFaOn) {
+        sendSuspiciousAlert(user.email, deviceInfo);
+        return sendResponse(
+            res,
+            401,
+            "You blocked a suspicious sign-in attempt."
+        );
+    }
+
+    if (riskLevel !== "verylow" && riskLevel !== "low") {
         const setUser = await setSession(
             {
                 verified: true,
-                suspicious: true
+                risk: riskLevel
             },
-            user
+            user.email
         );
         return sendResponse(res, 401, {
             message: "2FA required",
@@ -252,7 +272,18 @@ export const startTwoFAHandler = async (req, res) => {
         return sendResponse(res, 401, { message: "User is not found" });
     }
 
-    let isValid = await redis.get(`2fa:session:${user._id}`);
+    let getRisk = await redis.get(`2fa:session:${user.email}`);
+    getRisk = JSON.parse(getRisk);
+
+    if (getRisk.risk === "veryhigh") {
+        await sendSuspiciousAlert(user.email, userInfo);
+    }
+
+    if (getRisk.risk === "veryhigh" && loginMethod === "backupcode") {
+        return sendResponse(res, 401, "Backup code not allowed for high risk");
+    }
+
+    let isValid = await redis.get(`2fa:session:${user.email}`);
     isValid = JSON.parse(isValid);
 
     if (!isValid?.verified) {
@@ -372,23 +403,27 @@ export const resendOtpHandler = async (req, res) => {
 };
 
 export const verifyTwoFAHandler = async (req, res) => {
-    const { user, verify, userInfo, refreshExpiry } = req.auth;
+    const { user, verify, userInfo, refreshExpiry, riskLevel } = req.auth;
     const deviceInfo = {
         ...req.auth.deviceInfo
     };
     let trustedId = null;
 
-    await cleanup2fa(user);
+    if (riskLevel === "high" && !verify?.success) {
+        sendSuspiciousAlert(user.email, deviceInfo);
+    }
 
     if (!verify?.success) {
-        sendSuspiciousAlert(user.email, deviceInfo);
+        await cleanup2fa(user);
         return sendResponse(res, 401, {
-            message: verify?.message
+            message: verify?.message || "test"
         });
     }
 
+    await cleanup2fa(user);
+
     if (req.body.trustDevice) {
-        trustedId = randomBytes(16).toString("hex");
+        trustedId = crypto.randomBytes(16).toString("hex");
         await redis.set(
             `trustedDevice:${trustedId}`,
             userInfo,
