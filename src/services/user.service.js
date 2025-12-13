@@ -1,6 +1,6 @@
-import User from "../../models/User.js";
-import PendingUser from "../../models/PendingUser.js";
-import ApiError from "../../helpers/ApiError.js";
+import User from "../models/User.model.js";
+import PendingUser from "../models/PendingUser.model.js";
+import ApiError from "../helpers/ApiError.js";
 
 const options = {
     many: false,

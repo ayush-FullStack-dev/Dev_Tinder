@@ -43,10 +43,53 @@ export const userSchema = new mongoose.Schema({
         default:
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRs1fzJizYJbxmeZhwoQdq9ocGyT1dGjAhLq_ZCsJ56g&s=10"
     },
-    refreshToken: {
-        type: Array,
-        default: []
-    },
+    refreshToken: [
+        {
+            token: { type: String, required: true },
+
+            ip: String,
+            country: String,
+            city: String,
+
+            deviceId: String,
+            browser: String,
+            os: String,
+            deviceType: String,
+            deviceSize: String,
+            deviceModel: String,
+            timezone: String,
+
+            fingerprint: String,
+            version: { type: Number, default: 1 },
+
+            loginContext: {
+                twoFA: { type: Boolean, default: false },
+
+                method: {
+                    type: String,
+                    enum: [
+                        "password",
+                        "email_otp",
+                        "totp",
+                        "backup_code",
+                        "trusted_device",
+                        "remembered_device"
+                    ]
+                },
+
+                risk: {
+                    type: String,
+                    enum: ["verylow", "low", "mid", "high", "veryhigh"],
+                    default: "low"
+                }
+            },
+
+            createdAt: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ],
     twoFA: {
         enabled: {
             type: Boolean,

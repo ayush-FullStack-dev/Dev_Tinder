@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { userSchema } from "./User.js";
+import { userSchema } from "./User.model.js"
 
 const tempUserSchema = new mongoose.Schema({
     ...userSchema.obj,

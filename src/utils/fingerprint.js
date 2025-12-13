@@ -1,4 +1,4 @@
-import { generateHash, verifyHash } from "./hash.js";
+import { generateHash, verifyHash } from "../helpers/hash.js";
 
 export const fingerprintBuilder = userInfo => {
     const fingerprint = `${userInfo.browser}|${userInfo.os}|${userInfo.osVersion}|${userInfo.deviceModel}|${userInfo.deviceType}|${userInfo.deviceId}|${userInfo.userAgent}|${userInfo.deviceSize}|${userInfo.timezone}`;

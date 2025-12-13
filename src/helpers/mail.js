@@ -1,10 +1,9 @@
 import mailer from "nodemailer";
-import {
-    verifyAccountTemplate,
-    verifyOtpTemplete,
-    suspiciousAlertTemplete,
-    newLoginAlertTemplete
-} from "../templates/mail.js";
+
+import verifyAccountTemplate from "../templates/mail/verifyAccount.template.js";
+import  verifyOtpTemplete from "../templates/mail/verifyOtp.templete.js";
+import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.js";
+import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
 
 const transporter = mailer.createTransport({
     host: "smtp.gmail.com",

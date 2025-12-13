@@ -1,22 +1,26 @@
 import express from "express";
+
+import { loginHandler } from "../controllers/auth/login.controller.js";
 import {
     signupHandler,
-    verifyEvl,
-    loginHandler,
+    verifyEvl
+} from "../controllers/auth/signup.controller.js";
+import {
     startTwoFAHandler,
     verifyTwoFAHandler,
     resendOtpHandler
-} from "../controllers/auth.js";
+} from "../controllers/auth/twoFA.controller.js";
+
+
+import { signupValidation } from "../../middlewares/auth/signupValidation.js";
+import { loginValidation } from "../../middlewares/auth/loginValidation.js";
+import { twoFAValidation } from "../../middlewares/auth/twoFAValidation.js";
 import {
-    signupValidation,
-    loginValidation,
-    twoFAValidation,
-    
     verifyTwoFAValidation,
     verifyTwoFAEmail,
     verifyTwoFATotp,
     verifyTwoFABackupcode
-} from "../../middlewares/auth.js";
+} from "../../middlewares/auth/verifyTwoFAValidation.js";
 
 const router = express.Router();
 
@@ -36,4 +40,3 @@ router.post(
 );
 
 export default router;
-
