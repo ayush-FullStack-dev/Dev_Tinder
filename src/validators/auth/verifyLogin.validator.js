@@ -7,6 +7,7 @@ export const verifyLoginValidator = joi.object({
         "any.required": "ctx id is required.",
         "string.empty": "ctc id cannot be empty."
     }),
+    id: joi.string(),
     risk: joi
         .string()
         .valid(...riskLevel)

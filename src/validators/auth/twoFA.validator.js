@@ -4,6 +4,10 @@ const twoFAValidators = joi.object({
     email: joi.string().email().required().messages({
         "string.email": "Please enter a valid email."
     }),
+    ctxId: joi.string().min(31).max(33).required().messages({
+        "any.required": "ctx id is required.",
+        "string.empty": "ctc id cannot be empty."
+    }),
 
     password: joi.string().min(1).messages({
         "string.empty": "Password cannot be empty."

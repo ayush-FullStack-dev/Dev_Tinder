@@ -73,24 +73,47 @@ export const userSchema = new mongoose.Schema({
             version: { type: Number, default: 1 },
 
             loginContext: {
-                twoFA: { type: Boolean, default: false },
+                primary: {
+                    method: {
+                        type: String,
+                        enum: [
+                            "trusted_session",
+                            "passkey",
+                            "security_key",
+                            "password",
+                            "session_approval"
+                        ],
+                        required: true
+                    },
+                    timestamp: {
+                        type: Date,
+                        default: Date.now
+                    }
+                },
 
-                method: {
-                    type: String,
-                    enum: [
-                        "password",
-                        "email_otp",
-                        "totp",
-                        "backup_code",
-                        "trusted_device",
-                        "remembered_device"
+                mfa: {
+                    required: {
+                        type: Boolean,
+                        default: false
+                    },
+                    methodsUsed: [
+                        {
+                            type: String,
+                            enum: ["totp", "email_otp", "backup_code"]
+                        }
                     ]
                 },
 
-                risk: {
-                    type: String,
-                    enum: ["verylow", "low", "mid", "high", "veryhigh"],
-                    default: "low"
+                trust: {
+                    deviceTrusted: {
+                        type: Boolean,
+                        default: false
+                    },
+                    sessionLevel: {
+                        type: String,
+                        enum: ["low", "medium", "high", "veryhigh"],
+                        default: "low"
+                    }
                 }
             },
 

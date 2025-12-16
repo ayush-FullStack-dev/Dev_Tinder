@@ -217,12 +217,6 @@ export const verifyTwoFAHandler = async (req, res) => {
         userInfo
     });
 
-    const loginInfo = {
-        name: user.name,
-        ...req.auth.deviceInfo,
-        deviceName: userInfo.deviceName
-    };
-
     const accessToken = getAccesToken(user);
 
     const refreshToken = getRefreshToken(
@@ -232,14 +226,16 @@ export const verifyTwoFAHandler = async (req, res) => {
         refreshExpiry
     );
 
-    userInfo.token = refreshToken;
-    userInfo.loginContext = {
-        twoFA: true,
-        method: verify.method,
-        risk: riskLevel
-    };
+    const tokenInfo = user.refreshToken.find(k => k.token.equals(ctxId));
 
-    const tokenInfo = tokenBuilder(userInfo);
+    user.refreshToken = user.refreshToken.filter(k => !k.token.equals(ctxId));
+
+    tokenInfo.token = refreshToken;
+    tokenInfo.loginContext.mfa = {
+        required: true,
+        complete: true,
+        methodsUsed: verify.method
+    };
 
     user.refreshToken.push(tokenInfo);
 
@@ -257,7 +253,11 @@ export const verifyTwoFAHandler = async (req, res) => {
         }
     );
 
-    sendLoginAlert(user.email, loginInfo);
+    sendLoginAlert(user.email, {
+        name: user.name,
+        ...req.auth.deviceInfo,
+        deviceName: userInfo.deviceName
+    });
 
     res.status(200)
         .cookie("accessToken", accessToken, cookieOption)

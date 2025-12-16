@@ -92,9 +92,13 @@ export const verifyLoginValidation = async (req, res, next) => {
     req.auth.values = validate.value;
     req.auth.info = savedInfo;
     req.auth.ctxId = ctxId;
-    req.auth.incomingCredentialId = Buffer.from(validate.value.id, "base64url");
+    req.auth.incomingCredentialId = Buffer.from(
+        validate.value.id || "test",
+        "base64url"
+    );
+
     req.auth.deviceInfo = getDeviceInfo;
-    next();
+    return next();
 };
 
 export const verifyLoginTrustDevice = (req, res, next) => {
@@ -205,6 +209,12 @@ export const verifyLoginPassword = async (req, res, next) => {
         return next();
     }
 
+    if (!values.code) {
+        return sendResponse(res, 400, {
+            message: "Password is invalid"
+        });
+    }
+
     const isValidPass = await verifyHash(values.code, user.password);
 
     if (!isValidPass) {
@@ -222,6 +232,7 @@ export const verifyLoginPassword = async (req, res, next) => {
         stepup: info.risk === "high",
         method: "password"
     };
+
     return next();
 };
 

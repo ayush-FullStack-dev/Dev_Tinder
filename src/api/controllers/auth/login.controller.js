@@ -4,11 +4,12 @@ import crypto from "crypto";
 import { cookieOption } from "../../../constants/auth.constant.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
-import { setSession } from "../../../services/session.service.js";
+import { setSession, cleanupLogin } from "../../../services/session.service.js";
 
 import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
 import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
+import { setTwoFa } from "../../../helpers/twoFa.js";
 
 import { tokenBuilder } from "../../../utils/cron.js";
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
@@ -27,7 +28,7 @@ function collectOnMethod(loginMethods) {
     const methods = [];
 
     for (const method in loginMethods) {
-        if (loginMethods[method].on || loginMethods[method].code.length) {
+        if (loginMethods[method].on || loginMethods[method]?.code?.length) {
             methods.push(loginMethods[method].type);
         }
     }
@@ -65,34 +66,51 @@ export const loginIdentifyHandler = async (req, res) => {
 };
 
 export const verifyLoginHandler = async (req, res) => {
-    const { refreshExpiry, user, verify, deviceInfo, info } = req.auth;
+    const { refreshExpiry, user, verify, deviceInfo, info, ctxId } = req.auth;
+    const userInfo = {
+        ...deviceInfo,
+        loginContext: {
+            primary: {
+                method: verify.method
+            },
+            mfa: {
+                required: false,
+                complete: true
+            },
+            trust: {
+                deviceTrusted: true,
+                sessionLevel: info.risk
+            }
+        }
+    };
+
     const methods = collectOnMethod(user.twoFA.loginMethods);
 
     if (!verify?.success) {
+        await cleanupLogin(ctxId);
         return sendResponse(res, 401, verify?.message || "Unauthorized");
     }
 
     if (verify?.stepup) {
-        const twoFaCtxId = crypto.randomBytes(16).toString("hex");
-        await setSession(
+        const data = await setTwoFa(ctxId, userInfo);
+        user.refreshToken.push(data.info);
+        await updateUser(
+            user._id,
             {
-                verified: true,
-                risk: info.risk
+                refreshToken: user.refreshToken
             },
-            twoFaCtxId,
-            "2fa:data"
+            {
+                id: true
+            }
         );
-        return sendResponse(res, 401, {
-            message: "2fa required you need to verify-2fa step",
-            allowedMethod: methods,
-            ctxId: twoFaCtxId
-        });
+        return sendResponse(res, 401, data.response);
     }
 
     const accessToken = getAccesToken(user);
     const trustedSession = signToken({
-        sub: user._id,
-        did: deviceInfo.deviceId
+        sub: user._id, // user identity
+        did: deviceInfo.deviceId, // trusted device
+        ver: 1 // token version (future revoke)
     });
     const refreshToken = getRefreshToken(
         {
@@ -101,9 +119,9 @@ export const verifyLoginHandler = async (req, res) => {
         refreshExpiry
     );
 
-    deviceInfo.token = refreshToken;
+    userInfo.token = refreshToken;
 
-    const tokenInfo = tokenBuilder(deviceInfo);
+    const tokenInfo = tokenBuilder(userInfo);
     user.refreshToken.push(tokenInfo);
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {

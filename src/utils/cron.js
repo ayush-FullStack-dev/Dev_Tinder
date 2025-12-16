@@ -15,9 +15,19 @@ export const tokenBuilder = userInfo => {
         fingerprint: userInfo.fingerprint,
         createdAt: Date.now(),
         loginContext: {
-            twoFA: Boolean(userInfo.twoFA),
-            method: userInfo.method ?? "password",
-            risk: userInfo.risk ?? "low"
+            primary: {
+                method: userInfo.loginContext.primary.method || "password",
+                timestamp: Date.now()
+            },
+            mfa: {
+                required: !!userInfo.loginContext.mfa?.required,
+                complete: !!userInfo.loginContext.mfa?.complete,
+                methodsUsed: userInfo.loginContext.mfa?.methodsUsed || "EMAIL"
+            },
+            trust: {
+                deviceTrusted: !!userInfo.loginContext.trust?.deviceTrusted,
+                sessionLevel: userInfo.loginContext.trust?.sessionLevel || "low"
+            }
         }
     };
 };

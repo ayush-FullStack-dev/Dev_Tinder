@@ -18,6 +18,10 @@ const verifyTwoFAValidators = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
+    ctxId: joi.string().min(31).max(33).required().messages({
+        "any.required": "ctx id is required.",
+        "string.empty": "ctc id cannot be empty."
+    }),
     code: joi
         .string()
         .pattern(/^\d{6,}$/)
