@@ -1,21 +1,22 @@
-import loginValidators from "../../validators/auth/login.validator.js";
+import {
+    loginValidator,
+    loginIdentifyValidator
+} from "../../validators/auth/login.validator.js";
 
 import sendResponse from "../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
-import {
-    getIpInfo,
-    getTime,
-    checkValidation,
-    setRefreshExpiry
-} from "../../helpers/helpers.js";
+import { verifyToken } from "../../helpers/jwt.js";
+import { getIpInfo, getTime, checkValidation } from "../../helpers/helpers.js";
 
-export const loginValidation = (req, res, next) => {
-    req.auth = {};
+import { fingerprintBuilder } from "../../utils/fingerprint.js";
+import { findUser } from "../../services/user.service.js";
+
+export const loginIdentifyValidation = async (req, res, next) => {
     const { email, username } = req.body;
-
+    req.auth = {};
     const validate = checkValidation(
-        loginValidators,
+        loginIdentifyValidator,
         req,
         "vaildation failed for login"
     );
@@ -32,16 +33,26 @@ export const loginValidation = (req, res, next) => {
         req.auth.fieldName = "username";
     }
 
-    req.auth.deviceInfo = {
-        ...buildDeviceInfo(
-            req.headers["user-agent"],
-            validate.value,
-            getIpInfo( req.realIp)
-        ),
-        ip:  req.realIp
-    };
-    req.auth.password = validate.value.password;
+    const user = await findUser({
+        [req.auth.fieldName]: req.auth.login
+    });
+
+    if (!user) {
+        return sendResponse(res, 401, {
+            message
+        });
+    }
+
+    const deviceInfo = buildDeviceInfo(
+        req.headers["user-agent"],
+        validate.value,
+        getIpInfo(req.realIp)
+    );
+
+    deviceInfo.fingerprint = await fingerprintBuilder(deviceInfo);
+
+    req.auth.user = user;
+    req.auth.deviceInfo = deviceInfo;
     req.auth.time = getTime(req);
-    req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     next();
 };

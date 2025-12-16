@@ -25,7 +25,6 @@ export const isDeviceTrusted = async trust => {
     isTrustedDevice = JSON.parse(isTrustedDevice);
 
     if (trust.user.id === isTrustedDevice.userId) {
-        console.log("finnaly retrun true");
         return {
             success: true,
             method: "trusted_device"
@@ -33,7 +32,7 @@ export const isDeviceTrusted = async trust => {
     }
 
     const isRemeberDevice = await redis.exists(
-        `trusted:${trust.user._id}:${trust.fingerprint}`
+        `trusted:${trust.ctxId}:${trust.fingerprint}`
     );
 
     if (isRemeberDevice) {
@@ -65,7 +64,7 @@ export const setDeviceTrusted = async trust => {
 
     if (trust.remeberDevice) {
         await redis.set(
-            `trusted:${trust.user._id}:${trust.userInfo.fingerprintHash}`,
+            `trusted:${trust.ctxId}:${trust.userInfo.fingerprintHash}`,
             true,
             "EX",
             60 * 60 * 24 * 30

@@ -1,6 +1,9 @@
 import express from "express";
 
-import { loginHandler } from "../controllers/auth/login.controller.js";
+import {
+    loginIdentifyHandler,
+    verifyLoginHandler
+} from "../controllers/auth/login.controller.js";
 import {
     signupHandler,
     verifyEvl
@@ -11,10 +14,17 @@ import {
     resendOtpHandler
 } from "../controllers/auth/twoFA.controller.js";
 
-
 import { signupValidation } from "../../middlewares/auth/signupValidation.js";
-import { loginValidation } from "../../middlewares/auth/loginValidation.js";
+import { loginIdentifyValidation } from "../../middlewares/auth/loginValidation.js";
 import { twoFAValidation } from "../../middlewares/auth/twoFAValidation.js";
+import {
+    verifyLoginValidation,
+    verifyLoginTrustDevice,
+    verifyLoginPasskey,
+    verifyLoginPassword,
+    verifyLoginSessionApproval,
+    verifyLoginSecurityKey
+} from "../../middlewares/auth/verifyLoginValidation.js";
 import {
     verifyTwoFAValidation,
     verifyTwoFAEmail,
@@ -27,7 +37,18 @@ const router = express.Router();
 router.post("/signup", signupValidation, signupHandler);
 router.get("/verify", verifyEvl);
 
-router.post("/login", loginValidation, loginHandler);
+router.post("/login/identify", loginIdentifyValidation, loginIdentifyHandler);
+router.post(
+    "/login/confirm",
+    verifyLoginValidation,      // context + risk
+    verifyLoginTrustDevice,     // verylow auto-login
+    verifyLoginPasskey,         // low / mid
+    verifyLoginPassword,        // low / mid / high
+    verifyLoginSessionApproval,// mid / high / veryhigh
+    verifyLoginSecurityKey,     // high / veryhigh
+    verifyLoginHandler          // final decision
+);
+
 router.post("/verify-2fa/start/", twoFAValidation, startTwoFAHandler);
 router.post("/verify-2fa/resend/", twoFAValidation, resendOtpHandler);
 router.post(

@@ -1,6 +1,6 @@
- import joi from "joi";
- 
- const loginValidators = joi
+import joi from "joi";
+
+export const loginValidator = joi
     .object({
         username: joi.string().messages({
             "string.base": "Username must be a valid string."
@@ -31,4 +31,24 @@
         "object.missing": "Either username or email is required."
     });
 
-export default loginValidators;
+export const loginIdentifyValidator = joi
+    .object({
+        username: joi.string().messages({
+            "string.base": "Username must be a valid string."
+        }),
+
+        email: joi.string().email().messages({
+            "string.email": "Please enter a valid email."
+        }),
+        deviceId: joi.string().required().messages({
+            "any.required": "deviceId is required.",
+            "string.empty": "deviceId cannot be empty."
+        }),
+        deviceSize: joi.number().required().messages({
+            "any.required": "deviceSize is required."
+        })
+    })
+    .or("username", "email")
+    .messages({
+        "object.missing": "Either username or email is required."
+    });

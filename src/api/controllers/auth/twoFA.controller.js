@@ -30,6 +30,7 @@ import { tokenBuilder } from "../../../utils/cron.js";
 
 export const resendOtpHandler = async (req, res) => {
     const { email, ip, country, time } = req.auth;
+    const ctxId = req.body.ctxId;
 
     const user = await findUser({
         email
@@ -39,7 +40,7 @@ export const resendOtpHandler = async (req, res) => {
         throw new ApiError("UnauthorizedError", "Invalid credentials!", 401);
     }
 
-    let isValid = await getSession(`2fa:session:${user._id}`);
+    let isValid = await getSession(`2fa:session:${ctxId}`);
 
     if (!isValid.start) {
         return sendResponse(res, 401, {
@@ -70,7 +71,7 @@ export const resendOtpHandler = async (req, res) => {
         time
     };
 
-    const otp = await getOtpSetOtp(user);
+    const otp = await getOtpSetOtp(ctxId);
     await sendOtp(email, otp, deviceInfo);
     return sendResponse(res, 200, {
         message: "Otp resend Succesfull",
@@ -80,6 +81,7 @@ export const resendOtpHandler = async (req, res) => {
 
 export const startTwoFAHandler = async (req, res) => {
     const { loginMethod, email, password, ip } = req.auth;
+    const ctxId = req.body.ctxId;
     const deviceInfo = {
         ...req.auth.deviceInfo,
         ip
@@ -99,7 +101,7 @@ export const startTwoFAHandler = async (req, res) => {
         return sendResponse(res, 401, { message: "User is not found" });
     }
 
-    let isValid = await getSession(`2fa:data:${user._id}`);
+    let isValid = await getSession(`2fa:data:${ctxId}`);
 
     if (isValid?.risk === "veryhigh") {
         sendSuspiciousAlert(user.email, deviceInfo);
@@ -116,21 +118,21 @@ export const startTwoFAHandler = async (req, res) => {
         });
     }
 
-    await setSession(deviceInfo, user, "device:info");
-    await setSession(fingerprint, user, "2fa:fp:start");
+    await setSession(deviceInfo, ctxId, "device:info");
+    await setSession(fingerprint, ctxId, "2fa:fp:start");
 
     const method = user.twoFA.loginMethods;
     if (loginMethod === "EMAIL" && method.email.on) {
         let message = "Trusted device detected. Completing secure sign-in…";
         let requireCode = false;
         const deviceTrust = await isDeviceTrusted({
-            user,
+            ctxId,
             trustedId: req.signedCookies.trustedDeviceId,
             fingerprint
         });
 
         if (!deviceTrust?.success) {
-            const otp = await getOtpSetOtp(user);
+            const otp = await getOtpSetOtp(ctxId);
             const otpInfo = sendOtp(email, otp, deviceInfo);
             message = "Otp send Succesfull";
             requireCode = true;
@@ -141,7 +143,7 @@ export const startTwoFAHandler = async (req, res) => {
                 start: true,
                 method: "email"
             },
-            user
+            ctxId
         );
 
         return sendResponse(res, 200, {
@@ -157,7 +159,7 @@ export const startTwoFAHandler = async (req, res) => {
                 start: true,
                 method: "totp"
             },
-            user
+            ctxId
         );
         return sendResponse(res, 200, {
             message: "enter totp code",
@@ -172,7 +174,7 @@ export const startTwoFAHandler = async (req, res) => {
                 start: true,
                 method: "backupcode"
             },
-            user
+            ctxId
         );
         return sendResponse(res, 200, {
             message: "enter backup code",
@@ -186,31 +188,32 @@ export const startTwoFAHandler = async (req, res) => {
             start: false,
             method: "none"
         },
-        user
+        ctxId
     );
     return sendResponse(res, 401, { message: "Invalid 2fa login method " });
 };
 
 export const verifyTwoFAHandler = async (req, res) => {
-    const { user, verify, userInfo, refreshExpiry, riskLevel } = req.auth;
+    const { user, verify, userInfo, refreshExpiry, riskLevel, ctxId } =
+        req.auth;
 
     if (riskLevel === "high" && !verify?.success) {
         sendSuspiciousAlert(user.email, req.auth.deviceInfo);
     }
 
     if (!verify?.success) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: verify?.message || "test"
         });
     }
 
-    await cleanup2fa(user);
+    await cleanup2fa(ctxId);
 
     const checkDeviceTrusted = await setDeviceTrusted({
         trustDevice: req.body.trustDevice,
-        remeberDevice: req.body.remeberDevice,
-        user,
+        rememberDevice: req.body.rememberDevice,
+        ctxId,
         userInfo
     });
 
@@ -220,7 +223,7 @@ export const verifyTwoFAHandler = async (req, res) => {
         deviceName: userInfo.deviceName
     };
 
-    const accesToken = getAccesToken(user);
+    const accessToken = getAccesToken(user);
 
     const refreshToken = getRefreshToken(
         {
@@ -257,7 +260,7 @@ export const verifyTwoFAHandler = async (req, res) => {
     sendLoginAlert(user.email, loginInfo);
 
     res.status(200)
-        .cookie("accesToken", accesToken, cookieOption)
+        .cookie("accessToken", accessToken, cookieOption)
         .cookie("refreshToken", refreshToken, cookieOption)
         .cookie("trustedDeviceId", checkDeviceTrusted?.trustedId, cookieOption)
         .json({

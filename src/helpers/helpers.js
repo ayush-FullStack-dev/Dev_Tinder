@@ -31,6 +31,7 @@ export const getIpInfo = (ip = "103.21.33.0") => {
         timezone: geo?.timezone,
         region: geo?.region,
         city: geo?.city,
+        ip: ip,
         location: `${geo?.city},${geo?.country}`
     };
 };

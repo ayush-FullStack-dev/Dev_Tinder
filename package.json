@@ -17,6 +17,7 @@
         "dev": "node server.js"
     },
     "dependencies": {
+        "@simplewebauthn/server": "^13.2.2",
         "bcryptjs": "^3.0.3",
         "cookie-parser": "^1.4.7",
         "dotenv": "^17.2.3",
@@ -29,6 +30,7 @@
         "mongoose": "^9.0.0",
         "nodemailer": "^7.0.11",
         "otplib": "^12.0.1",
-        "ua-parser-js": "^2.0.6"
+        "ua-parser-js": "^2.0.6",
+        "web-push": "^3.6.7"
     }
 }

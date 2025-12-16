@@ -19,7 +19,6 @@ app.use((req, res, next) => {
     } else if (ip === "::1") {
         ip = "127.0.0.1";
     }
-
     req.realIp = ip;
     if (!process.extra?.DOMAIN) {
         process.extra = {};

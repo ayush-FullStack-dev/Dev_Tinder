@@ -22,14 +22,14 @@ export const twoFAValidation = (req, res, next) => {
     }
 
     req.auth.email = validate.value.email;
-    req.auth.ip =  req.realIp;
-    req.auth.country = getIpInfo( req.realIp);
+    req.auth.ip = req.realIp;
+    req.auth.country = getIpInfo(req.realIp);
     req.auth.loginMethod = validate.value.method || null;
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.deviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         validate.value,
-        getIpInfo( req.realIp)
+        getIpInfo(req.realIp)
     );
     next();
 };

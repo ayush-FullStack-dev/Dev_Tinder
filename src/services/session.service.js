@@ -1,14 +1,19 @@
-import { generateHash } from "../helpers/hash.js"
+import { generateHash } from "../helpers/hash.js";
 import redis from "../config/redis.js";
 
-export const getOtpSetOtp = async user => {
+export const getOtpSetOtp = async ctxId => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     const saveOtp = await generateHash(otp.toString());
-    await redis.set(`otp:${user._id}`, saveOtp, "EX", 600);
+    await redis.set(`otp:${ctxId}`, saveOtp, "EX", 600);
     return otp;
 };
 
-export const setSession = async (data, user, link = "2fa:session") => {
+export const setSession = async (
+    data,
+    user,
+    link = "2fa:session",
+    ...others
+) => {
     if (typeof data !== "string") {
         data = JSON.stringify(data);
     }
@@ -16,15 +21,29 @@ export const setSession = async (data, user, link = "2fa:session") => {
         await redis.set(`${link}:${user}`, data);
         return true;
     }
-    await redis.set(`${link}:${user._id}`, data);
+    await redis.set(`${link}:${user._id}`, data, ...others);
     return true;
 };
 
 export const cleanup2fa = async user => {
-    await redis.del(`device:info:${user._id}`);
-    await redis.del(`2fa:session:${user._id}`);
-    await redis.del(`2fa:data:${user.id}`);
-    await redis.del(`2fa:fp:start:${user._id}`);
+    let id = user._id;
+    if (user !== "object") {
+        id = user;
+    }
+    await redis.del(`device:info:${id}`);
+    await redis.del(`2fa:session:${id}`);
+    await redis.del(`2fa:data:${id}`);
+    await redis.del(`2fa:fp:start:${id}`);
+    return true;
+};
+
+export const cleanupLogin = async user => {
+    let id = user._id;
+    if (user !== "object") {
+        id = user;
+    }
+    await redis.del(`login:info:${id}`);
+    await redis.del(`login:ctx:${id}`);
     return true;
 };
 

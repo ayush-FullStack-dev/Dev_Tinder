@@ -25,6 +25,7 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     const time = getTime(req);
     const trustedDeviceId = req.signedCookies.trustedDeviceId;
     const loginMethod = req.body.method.toLocaleLowerCase();
+    const ctxId = req.body.ctxId;
     const validate = checkValidation(
         verifyTwoFAValidators,
         req,
@@ -45,19 +46,14 @@ export const verifyTwoFAValidation = async (req, res, next) => {
         });
     }
 
-    const getDeviceInfo = {
-        ...buildDeviceInfo(
-            req.headers["user-agent"],
-            validate.value,
-            getIpInfo(req.realIp)
-        ),
-        ip: req.realIp,
-        deviceId: validate.value.deviceId,
-        time: time.serverTime
-    };
+    const getDeviceInfo = buildDeviceInfo(
+        req.headers["user-agent"],
+        validate.value,
+        getIpInfo(req.realIp)
+    );
 
     // validate that the 2FA session actually exists
-    let isValid = await getSession(`2fa:session:${user._id}`);
+    let isValid = await getSession(`2fa:session:${ctxId}`);
 
     if (!isValid?.start) {
         return sendResponse(res, 401, {
@@ -67,16 +63,15 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     }
 
     // getting  /start route values
-    let savedInfo = await getSession(`device:info:${user._id}`);
-    let savedFp = await getSession(`2fa:fp:start:${user._id}`, "string");
+    let savedInfo = await getSession(`device:info:${ctxId}`);
+    let savedFp = await getSession(`2fa:fp:start:${ctxId}`, "string");
     savedInfo.fingerprint = savedFp;
     getDeviceInfo.deviceSize = savedInfo.deviceSize;
 
     // if any device/geo/fp change happened after /start → block immediately
     const riskScore = await getRiskScore(getDeviceInfo, savedInfo, { time });
-    console.log(riskScore);
     if (riskScore > 0) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(
             res,
             401,
@@ -85,7 +80,7 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     }
 
     if (isValid.method !== loginMethod) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "This req prevent method-hopping attack!"
         });
@@ -93,16 +88,17 @@ export const verifyTwoFAValidation = async (req, res, next) => {
 
     // check device exist in trusted if exist then don't ask 2fa direct login else 2fa continue
     req.auth.verify = await isDeviceTrusted({
-        user,
+        ctxId,
         trustedId: trustedDeviceId,
         fingerprint: savedFp
-    }); 
+    });
 
-    let refreshExpiry = setRefreshExpiry(validate.value);
+    req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.user = user;
+    req.auth.ctxId = ctxId;
     req.auth.time = time;
     req.auth.loginMethod = loginMethod;
-    req.auth.riskLevel = await getSession(`2fa:data:${user.id}`).risk;
+    req.auth.riskLevel = await getSession(`2fa:data:${ctxId}`).risk;
     req.auth.code = validate.value.code;
     req.auth.method = user.twoFA.loginMethods;
     req.auth.deviceInfo = getDeviceInfo;
@@ -117,24 +113,24 @@ export const verifyTwoFAValidation = async (req, res, next) => {
 };
 
 export const verifyTwoFAEmail = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify } = req.auth;
+    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
 
     if (verify?.success) {
         return next();
     }
 
     if (loginMethod === "email" && !method.email.on) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "email is disabled!"
         });
     }
 
     if (loginMethod === "email" && method.email.on) {
-        const key = `otp:${user._id}`;
+        const key = `otp:${ctxId}`;
         const getOtp = await getSession(key, "string");
         if (!getOtp) {
-            await cleanup2fa(user);
+            await cleanup2fa(ctxId);
             return sendResponse(res, 401, {
                 message: "one time password is invalid!"
             });
@@ -148,7 +144,7 @@ export const verifyTwoFAEmail = async (req, res, next) => {
             };
         } else {
             await redis.del(key);
-            await cleanup2fa(user);
+            await cleanup2fa(ctxId);
             req.auth.verify = { success: true, method: "email_otp" };
         }
     }
@@ -157,21 +153,21 @@ export const verifyTwoFAEmail = async (req, res, next) => {
 };
 
 export const verifyTwoFATotp = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify } = req.auth;
+    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
     if (verify?.success) return next();
 
     if (loginMethod === "totp" && !method.totp.on) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "totp in disabled!"
         });
     }
 
     if (loginMethod === "totp" && method.totp.on) {
-        const isCodeValid = await getSession(`totp:last:${user._id}`, "string");
+        const isCodeValid = await getSession(`totp:last:${ctxId}`, "string");
 
         if (isCodeValid === code) {
-            await cleanup2fa(user);
+            await cleanup2fa(ctxId);
             return sendResponse(res, 401, {
                 message: "replay attack detected"
             });
@@ -180,7 +176,7 @@ export const verifyTwoFATotp = async (req, res, next) => {
         req.auth.verify = verifyTotpCode(code, method.totp.code);
 
         if (!verify?.success) {
-            await redis.set(`totp:last:${user._id}`, code, "EX", 60);
+            await redis.set(`totp:last:${ctxId}`, code, "EX", 60);
         }
     }
 
@@ -188,12 +184,12 @@ export const verifyTwoFATotp = async (req, res, next) => {
 };
 
 export const verifyTwoFABackupcode = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify } = req.auth;
+    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
 
     if (verify?.success) return next();
 
     if (loginMethod === "backupcode" && !method.backupcode.code.length) {
-        await cleanup2fa(user);
+        await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "BackupCode is disabled!"
         });

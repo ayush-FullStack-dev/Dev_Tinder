@@ -43,6 +43,16 @@ export const userSchema = new mongoose.Schema({
         default:
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRs1fzJizYJbxmeZhwoQdq9ocGyT1dGjAhLq_ZCsJ56g&s=10"
     },
+    passkeys: [Object],
+    securityKeys: [
+        {
+            credentialId: Buffer,
+            publicKey: Buffer,
+            counter: Number,
+            transports: [String],
+            createdAt: Date
+        }
+    ],
     refreshToken: [
         {
             token: { type: String, required: true },

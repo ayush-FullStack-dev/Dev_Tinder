@@ -1,77 +1,99 @@
 import sendResponse from "../../../helpers/sendResponse.js";
+import crypto from "crypto";
 
 import { cookieOption } from "../../../constants/auth.constant.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
 import { setSession } from "../../../services/session.service.js";
 
-import { verifyHash } from "../../../helpers/hash.js";
+import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
 import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
 
+import { tokenBuilder } from "../../../utils/cron.js";
+import { fingerprintBuilder } from "../../../utils/fingerprint.js";
+import {
+    calculateLoginRisk,
+    sendSecurityUpgrade,
+    resolveRiskLevel,
+    buildLoginDecisionResponse
+} from "../../../utils/security/loginRisk.js";
 import {
     getRiskScore,
     getRiskLevel
 } from "../../../utils/security/riskEngine.js";
 
-import { fingerprintBuilder } from "../../../utils/fingerprint.js";
-import { tokenBuilder } from "../../../utils/cron.js";
-
-export const loginHandler = async (req, res) => {
-    const { login, refreshExpiry, fieldName, password, time } = req.auth;
-    let score = 0;
-    let twoFaOn = false;
-    let riskLevel = "low";
-    const message = "Invalid credentials!";
-    const userInfo = {
-        ...req.auth.deviceInfo
-    };
-
-    const user = await findUser({
-        [fieldName]: login
-    });
-
-    if (!user) {
-        return sendResponse(res, 401, {
-            message
-        });
-    }
-
-    if (!(await verifyHash(password, user.password))) {
-        return sendResponse(res, 401, {
-            message
-        });
-    }
-
+function collectOnMethod(loginMethods) {
     const methods = [];
 
-    for (const key in user.twoFA.loginMethods) {
-        const method = user.twoFA.loginMethods[key];
-        if (method.on) {
-            methods.push(method.type);
+    for (const method in loginMethods) {
+        if (loginMethods[method].on || loginMethods[method].code.length) {
+            methods.push(loginMethods[method].type);
         }
     }
 
-    if (user.refreshToken.length) {
-        const lastSession = user.refreshToken[user.refreshToken.length - 1];
-        score = await getRiskScore(userInfo, lastSession, {
-            time
+    return methods;
+}
+
+export const loginIdentifyHandler = async (req, res) => {
+    const { user, deviceInfo, time } = req.auth;
+    const ctxId = crypto.randomBytes(16).toString("hex");
+    const score = await calculateLoginRisk(user, deviceInfo, time);
+    const riskLevel = await resolveRiskLevel(score, user.twoFA.enabled);
+
+    if (riskLevel === "veryhigh" && !user.twoFA.enabled) {
+        return sendSecurityUpgrade(user, res, deviceInfo);
+    }
+
+    const response = await buildLoginDecisionResponse(riskLevel, ctxId, user);
+
+    await setSession(deviceInfo, ctxId, "login:info");
+
+    await setSession(
+        {
+            success: true,
+            risk: riskLevel,
+            allowedMethod: response.allowedMethod,
+            stepUp: response.stepUp,
+            riskScore: score,
+            userId: user._id
+        },
+        ctxId,
+        "login:ctx"
+    );
+    return sendResponse(res, 200, response);
+};
+
+export const verifyLoginHandler = async (req, res) => {
+    const { refreshExpiry, user, verify, deviceInfo, info } = req.auth;
+    const methods = collectOnMethod(user.twoFA.loginMethods);
+
+    if (!verify?.success) {
+        return sendResponse(res, 401, verify?.message || "Unauthorized");
+    }
+
+    if (verify?.stepup) {
+        const twoFaCtxId = crypto.randomBytes(16).toString("hex");
+        await setSession(
+            {
+                verified: true,
+                risk: info.risk
+            },
+            twoFaCtxId,
+            "2fa:data"
+        );
+        return sendResponse(res, 401, {
+            message: "2fa required you need to verify-2fa step",
+            allowedMethod: methods,
+            ctxId: twoFaCtxId
         });
     }
 
-    if (user.twoFA.enabled) {
-        twoFaOn = true;
-        if (score >= 85) {
-            riskLevel = "veryhigh";
-        } else {
-            riskLevel = "mid";
-        }
-    } else {
-        riskLevel = getRiskLevel(score);
-    }
-
-    const accesToken = getAccesToken(user);
-
+    const accessToken = getAccesToken(user);
+    const trustedSession = signToken({
+        sub: user._id,
+        did: deviceInfo.deviceId
+    });
     const refreshToken = getRefreshToken(
         {
             _id: user._id
@@ -79,36 +101,9 @@ export const loginHandler = async (req, res) => {
         refreshExpiry
     );
 
-    userInfo.fingerprint = await fingerprintBuilder(userInfo);
-    userInfo.token = refreshToken;
+    deviceInfo.token = refreshToken;
 
-    const tokenInfo = tokenBuilder(userInfo);
-
-    if (riskLevel === "veryhigh" && !twoFaOn) {
-        sendSuspiciousAlert(user.email, userInfo);
-        return sendResponse(
-            res,
-            401,
-            "You blocked a suspicious sign-in attempt."
-        );
-    }
-
-    if (riskLevel !== "verylow" && riskLevel !== "low") {
-        const setUser = await setSession(
-            {
-                verified: true,
-                risk: riskLevel
-            },
-            user,
-            "2fa:data"
-        );
-        return sendResponse(res, 401, {
-            message: "2FA required",
-            methods,
-            route: "/auth/verify-2fa/start/"
-        });
-    }
-
+    const tokenInfo = tokenBuilder(deviceInfo);
     user.refreshToken.push(tokenInfo);
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {
@@ -126,8 +121,9 @@ export const loginHandler = async (req, res) => {
     );
 
     res.status(200)
-        .cookie("accesToken", accesToken, cookieOption)
+        .cookie("accessToken", accessToken, cookieOption)
         .cookie("refreshToken", refreshToken, cookieOption)
+        .cookie("trustedSession", trustedSession, cookieOption)
         .json({
             success: true,
             message: "User login successfully",

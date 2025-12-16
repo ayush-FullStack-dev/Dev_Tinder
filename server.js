@@ -1,5 +1,6 @@
 import connectDB from "./src/config/mongodb.js";
 import { connectRedis } from "./src/config/redis.js";
+import { webPushStart } from "./src/config/webpush.js";
 import app from "./src/app.js";
 
 // configure server
@@ -17,6 +18,7 @@ async function init() {
             await connectDB();
             connectRedis();
             startServer();
+            webPushStart();
         } catch (error) {
             console.log("Database Connected failed! Error is:", error);
             process.exit(1);
@@ -30,6 +32,7 @@ async function init() {
     connectDB().catch(err => {
         console.log("Database Connected failed! Error is:", err);
     });
+    webPushStart();
 }
 
 init();

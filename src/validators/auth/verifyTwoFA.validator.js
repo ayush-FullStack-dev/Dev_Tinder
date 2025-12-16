@@ -1,5 +1,6 @@
 import joi from "joi";
 
+import { twoFaMethods } from "../../constants/auth.constant.js";
 const verifyTwoFAValidators = joi.object({
     email: joi.string().email().required().messages({
         "string.email": "Please enter a valid email."
@@ -7,7 +8,7 @@ const verifyTwoFAValidators = joi.object({
 
     method: joi
         .string()
-        .valid("EMAIL", "TOTP", "BACKUPCODE")
+        .valid(...twoFaMethods)
         .messages({
             "any.only": "Invalid twoFA method.",
             "any.required": "twoFa method is required."

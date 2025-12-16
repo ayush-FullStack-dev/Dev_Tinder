@@ -1,19 +1,22 @@
 import epochify from "epochify";
-
 import { compareFingerprint } from "../fingerprint.js";
-import { checkTimeManipulation } from "./timeManipulation.js";
+import { checkTimeManipulation } from "./timeManipulation.js"
 
 export const getRiskLevel = score => {
-    if (score < 30) return "verylow";
-    if (score < 55) return "low";
-    if (score < 75) return "mid";
-    if (score < 100) return "high";
+    if (score <= 20) return "verylow";
+    if (score <= 40) return "low";
+    if (score <= 60) return "mid";
+    if (score <= 80) return "high";
     return "veryhigh";
 };
 
 export const getRiskScore = async (current, last, others) => {
     let score = 0;
+
     const hour = new Date().getHours();
+    const diffMin = epochify.getDiff(Date.now(), last.createdAt, "minute");
+    const diffDay = epochify.getDiff(Date.now(), last.createdAt, "days");
+
     const timeManip = checkTimeManipulation(others.time);
     const fpValid = await compareFingerprint(
         current,
@@ -21,31 +24,57 @@ export const getRiskScore = async (current, last, others) => {
             "$2b$10$EDstMQkU6TFzC9cRATw32OtFI15cveoGhDM0fgYlg9N.9zP2P9AAq"
     );
 
-    const diffMin = epochify.getDiff(Date.now(), last.createdAt, "minute");
-    const diffDay = epochify.getDiff(Date.now(), last.createdAt, "days");
+    let geoScore = 0;
 
-if (current.ip !== last.ip) score += 5;
-if (current.country !== last.country) score += 30;
-if (current.country === last.country && current.city !== last.city)
-score += 10;
-if (current.timezone !== last.timezone) score += 15;
+    if (current.country !== last.country) {
+        geoScore += 30;
+    } else if (current.city !== last.city) {
+        geoScore += 10;
+    }
 
-// DEVICE  
-if (current.deviceId !== last.deviceId) score += 25;  
-if (current.browser !== last.browser) score += 5;  
-if (current.os !== last.os) score += 15;  
-if (current.deviceType !== last.deviceType) score += 20;  
-if (current.deviceSize !== last.deviceSize) score += 10;  
-if (current.deviceModel !== last.deviceModel) score += 25;  
-if (!fpValid) score += 40;  
+    if (current.timezone !== last.timezone) {
+        geoScore += current.country === last.country ? 10 : 5;
+    }
 
-// TIME  
-if (diffMin < 15) score += 25;  
-if (hour <= 5) score += 5;  
-if (!timeManip?.success) score += 40;  
+    score += Math.min(geoScore, 40);
 
-// BEHAVIOR  
-if (diffDay >= 25) score += 15;
+    let deviceChanged = false;
+    let deviceScore = 0;
 
-    return score;
+    if (current.deviceId !== last.deviceId) {
+        deviceChanged = true;
+        deviceScore += 30;
+    }
+
+    if (deviceChanged && !fpValid) {
+        deviceScore += 15;
+    }
+
+    if (deviceChanged && fpValid) {
+        deviceScore -= 5;
+    }
+
+    score += Math.min(Math.max(deviceScore, 0), 45);
+
+    if (diffMin < 10 && deviceChanged) {
+        score += 15;
+    }
+
+    if (hour <= 5 && deviceChanged) {
+        score += 5;
+    }
+
+    if (!timeManip?.success) {
+        score += 20;
+    }
+
+    if (diffDay >= 30) {
+        score += 15;
+    }
+
+    if (diffDay >= 30 && current.country !== last.country) {
+        score += 10;
+    }
+
+    return Math.min(score, 100);
 };
