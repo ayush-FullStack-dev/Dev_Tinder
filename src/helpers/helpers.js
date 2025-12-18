@@ -45,3 +45,15 @@ export const getTime = req => {
         fullTime: time
     };
 };
+
+export const collectOnMethod = loginMethods => {
+    const methods = [];
+
+    for (const method in loginMethods) {
+        if (loginMethods[method].on || loginMethods[method]?.code?.length) {
+            methods.push(loginMethods[method].type);
+        }
+    }
+
+    return methods;
+};

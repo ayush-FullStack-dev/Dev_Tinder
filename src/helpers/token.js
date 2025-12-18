@@ -18,3 +18,20 @@ export function getAccesToken(user) {
 export function getRefreshToken(data, expiry) {
     return signToken(data, expiry);
 }
+
+export function verifyRefreshToken(token) {
+    const decodeData = verifyToken(token);
+
+    if (!decodeData.success) {
+        return {
+            success: false,
+            message: "Session expired, please login again"
+        };
+    }
+
+    return {
+        success: true,
+        message: decodeData.message,
+        data: decodeData.data
+    };
+}

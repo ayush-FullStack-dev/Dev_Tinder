@@ -2,7 +2,11 @@ import { setSession } from "../../services/session.service.js";
 import { findPushSubscription } from "../../services/pushSubscription.service.js";
 import { sendNotification } from "../../helpers/sendNotification.js";
 
-export const sendSessionApproval = async (deviceInfo, user) => {
+export const sendSessionApproval = async (
+    deviceInfo,
+    user,
+    route = "/auth/login/confirm/"
+) => {
     const approvalId = crypto.randomBytes(16).toString("hex");
     await setSession(
         {
@@ -29,8 +33,26 @@ export const sendSessionApproval = async (deviceInfo, user) => {
     });
 
     return {
-        message: "session approval request send ssuccessfully to login devices",
+        message: "session approval request send successfully to login devices",
         approvalId,
-        route: "/auth/login/confirm/"
+        route
     };
+};
+
+export const checkSessionApproval = approval => {
+    if (approval?.status === "approved") {
+        return {
+            success: true,
+            method: "session_approval",
+            stepup: info.risk === "high" || info.risk === "veryhigh"
+        };
+    }
+
+    if (approval?.status === "declined") {
+        return {
+            success: false,
+            message: "session approval rejected by user",
+            method: "session_approval"
+        };
+    }
 };

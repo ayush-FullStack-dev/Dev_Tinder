@@ -15,7 +15,10 @@ import {
 import { verifyLoginValidator } from "../../validators/auth/verifyLogin.validator.js";
 
 import { getRiskScore } from "../../utils/security/riskEngine.js";
-import { sendSessionApproval } from "../../utils/security/sessionApproveal.js";
+import {
+    sendSessionApproval,
+    checkSessionApproval
+} from "../../utils/security/sessionApproveal.js";
 
 import { verifyKey } from "../../helpers/web.autn.js";
 
@@ -257,27 +260,11 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
         return sendResponse(res, 200, response);
     }
 
-    if (approval?.status === "approved") {
-        req.auth.verify = {
-            success: true,
-            method: "session_approval",
-            stepup: info.risk === "high" || info.risk === "veryhigh"
-        };
-        return next();
-    }
-
-    if (approval?.status === "declined") {
-        req.auth.verify = {
-            success: false,
-            message: "session approval rejected by user",
-            method: "session_approval"
-        };
-        return next();
-    }
-
     if (approval?.status === "pending") {
         return sendResponse(res, 202, "waiting for approval...");
     }
+
+    req.auth.verify = checkSessionApproval(approval);
 
     return next();
 };

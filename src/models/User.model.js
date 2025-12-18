@@ -56,11 +56,13 @@ export const userSchema = new mongoose.Schema({
     refreshToken: [
         {
             token: { type: String, required: true },
-
+            used: {
+                type: Boolean,
+                default: false
+            },
             ip: String,
             country: String,
             city: String,
-
             deviceId: String,
             browser: String,
             os: String,
@@ -68,10 +70,8 @@ export const userSchema = new mongoose.Schema({
             deviceSize: String,
             deviceModel: String,
             timezone: String,
-
             fingerprint: String,
             version: { type: Number, default: 1 },
-
             loginContext: {
                 primary: {
                     method: {

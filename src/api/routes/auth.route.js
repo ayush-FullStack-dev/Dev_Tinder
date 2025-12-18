@@ -13,6 +13,7 @@ import {
     verifyTwoFAHandler,
     resendOtpHandler
 } from "../controllers/auth/twoFA.controller.js";
+import { issueNewTokens } from "../controllers/auth/refresh.controller.js";
 
 import { signupValidation } from "../../middlewares/auth/signupValidation.js";
 import { loginIdentifyValidation } from "../../middlewares/auth/loginValidation.js";
@@ -31,23 +32,35 @@ import {
     verifyTwoFATotp,
     verifyTwoFABackupcode
 } from "../../middlewares/auth/verifyTwoFAValidation.js";
+import {
+    extractRefreshToken,
+    validateRefreshToken,
+    bindTokenToDevice,
+    reEvaluateRisk,
+    handleStepUpIfNeeded,
+    rotateRefreshToken
+} from "../../middlewares/auth/refreshValidation.js";
 
 const router = express.Router();
 
+// Create new user
 router.post("/signup", signupValidation, signupHandler);
 router.get("/verify", verifyEvl);
 
+// login to exting info
 router.post("/login/identify", loginIdentifyValidation, loginIdentifyHandler);
 router.post(
     "/login/confirm",
-    verifyLoginValidation,      // context + risk
-    verifyLoginTrustDevice,     // verylow auto-login
-    verifyLoginPasskey,         // low / mid
-    verifyLoginPassword,        // low / mid / high
-    verifyLoginSessionApproval,// mid / high / veryhigh
-    verifyLoginSecurityKey,     // high / veryhigh
-    verifyLoginHandler          // final decision
+    verifyLoginValidation, // context + risk
+    verifyLoginTrustDevice, // verylow auto-login
+    verifyLoginPasskey, // low / mid
+    verifyLoginPassword, // low / mid / high
+    verifyLoginSessionApproval, // mid / high / veryhigh
+    verifyLoginSecurityKey, // high / veryhigh
+    verifyLoginHandler // final decision
 );
+
+// verify-2fa
 
 router.post("/verify-2fa/start/", twoFAValidation, startTwoFAHandler);
 router.post("/verify-2fa/resend/", twoFAValidation, resendOtpHandler);
@@ -58,6 +71,18 @@ router.post(
     verifyTwoFATotp,
     verifyTwoFABackupcode,
     verifyTwoFAHandler
+);
+
+// get new token
+router.post(
+    "/refresh/",
+    extractRefreshToken,
+    validateRefreshToken,
+    bindTokenToDevice,
+    reEvaluateRisk,
+    handleStepUpIfNeeded,
+    rotateRefreshToken,
+    issueNewTokens
 );
 
 export default router;

@@ -9,6 +9,7 @@ import { setSession, cleanupLogin } from "../../../services/session.service.js";
 import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
 import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
+import { collectOnMethod } from "../../../helpers/helpers.js";
 import { setTwoFa } from "../../../helpers/twoFa.js";
 
 import { tokenBuilder } from "../../../utils/cron.js";
@@ -23,18 +24,6 @@ import {
     getRiskScore,
     getRiskLevel
 } from "../../../utils/security/riskEngine.js";
-
-function collectOnMethod(loginMethods) {
-    const methods = [];
-
-    for (const method in loginMethods) {
-        if (loginMethods[method].on || loginMethods[method]?.code?.length) {
-            methods.push(loginMethods[method].type);
-        }
-    }
-
-    return methods;
-}
 
 export const loginIdentifyHandler = async (req, res) => {
     const { user, deviceInfo, time } = req.auth;
@@ -92,7 +81,7 @@ export const verifyLoginHandler = async (req, res) => {
     }
 
     if (verify?.stepup) {
-        const data = await setTwoFa(ctxId, userInfo);
+        const data = await setTwoFa(ctxId, userInfo, methods);
         user.refreshToken.push(data.info);
         await updateUser(
             user._id,
