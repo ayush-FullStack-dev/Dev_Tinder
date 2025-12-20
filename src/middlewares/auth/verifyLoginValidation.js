@@ -77,9 +77,18 @@ export const verifyLoginValidation = async (req, res, next) => {
         );
     }
 
+    if (savedInfo.risk !== validate.value.risk) {
+        await cleanupLogin(ctxId);
+        return sendResponse(
+            res,
+            401,
+            "This request is prevent Method-hopping attack!"
+        );
+    }
+
     if (
-        savedInfo.risk !== validate.value.risk ||
-        !savedInfo.allowedMethod.includes(validate.value.method)
+        savedInfo?.allowedMethod &&
+        !savedInfo?.allowedMethod?.includes(validate.value.method)
     ) {
         await cleanupLogin(ctxId);
         return sendResponse(
@@ -107,6 +116,10 @@ export const verifyLoginValidation = async (req, res, next) => {
 export const verifyLoginTrustDevice = (req, res, next) => {
     const { user, deviceInfo, info } = req.auth;
     if (info.risk !== "verylow") return next();
+    if (user.logout?.length) {
+       const  lastLogout = user.logout[user.logout.length - 1];
+        if (lastLogout?.logout === "logout-all") return next();
+    }
 
     if (info?.riskScore <= 5) {
         req.auth.verify = {

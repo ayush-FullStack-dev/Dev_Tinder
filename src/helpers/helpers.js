@@ -31,14 +31,14 @@ export const getIpInfo = (ip = "103.21.33.0") => {
         timezone: geo?.timezone,
         region: geo?.region,
         city: geo?.city,
-        ip: ip,
+        ip,
         location: `${geo?.city},${geo?.country}`
     };
 };
 
 export const getTime = req => {
     const time = epochify.getFullDateTime();
-    const clientTime = new Date(req.body.clientTime || Date.now()).getTime();
+    const clientTime = new Date(req?.body?.clientTime || Date.now()).getTime();
     return {
         serverTime: time.timestamp,
         clientTime,

@@ -53,6 +53,24 @@ export const userSchema = new mongoose.Schema({
             createdAt: Date
         }
     ],
+    logout: [
+        {
+            reason: {
+                type: String
+            },
+            id: {
+                type: String
+            },
+            at: {
+                type: Date,
+                default: Date.now()
+            },
+            action: {
+                type: String,
+                enum: ["logout", "logout-all"]
+            }
+        }
+    ],
     refreshToken: [
         {
             token: { type: String, required: true },
@@ -96,12 +114,15 @@ export const userSchema = new mongoose.Schema({
                         type: Boolean,
                         default: false
                     },
-                    methodsUsed: [
-                        {
-                            type: String,
-                            enum: ["totp", "email_otp", "backup_code"]
-                        }
-                    ]
+                    complete: {
+                        type: Boolean,
+                        default: false
+                    },
+                    methodsUsed: {
+                        type: String,
+                        enum: ["totp", "email_otp", "backup_code", "none"],
+                        default: "none"
+                    }
                 },
 
                 trust: {
@@ -111,7 +132,7 @@ export const userSchema = new mongoose.Schema({
                     },
                     sessionLevel: {
                         type: String,
-                        enum: ["low", "medium", "high", "veryhigh"],
+                        enum: ["verylow", "low", "medium", "high", "veryhigh"],
                         default: "low"
                     }
                 }

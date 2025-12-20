@@ -64,7 +64,8 @@ export const verifyLoginHandler = async (req, res) => {
             },
             mfa: {
                 required: false,
-                complete: true
+                complete: true,
+                methodsUsed: "none"
             },
             trust: {
                 deviceTrusted: true,
@@ -108,10 +109,10 @@ export const verifyLoginHandler = async (req, res) => {
         refreshExpiry
     );
 
+    userInfo.fingerprint = await fingerprintBuilder(userInfo);
     userInfo.token = refreshToken;
 
-    const tokenInfo = tokenBuilder(userInfo);
-    user.refreshToken.push(tokenInfo);
+    user.refreshToken.push(tokenBuilder(userInfo));
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {
         user.refreshToken.shift();

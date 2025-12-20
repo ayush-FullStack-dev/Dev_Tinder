@@ -1,8 +1,14 @@
 import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyRefreshToken } from "../../helpers/token.js";
-import { getIpInfo, collectOnMethod, getTime } from "../../helpers/helpers.js";
+import {
+    getIpInfo,
+    collectOnMethod,
+    getTime,
+    setRefreshExpiry
+} from "../../helpers/helpers.js";
 import { setTwoFa } from "../../helpers/twoFa.js";
+import { getAccesToken, getRefreshToken } from "../../helpers/token.js";
 
 import { findUser, updateUser } from "../../services/user.service.js";
 import { getSession } from "../../services/session.service.js";
@@ -19,8 +25,8 @@ import {
 } from "../../utils/fingerprint.js";
 
 export const extractRefreshToken = (req, res, next) => {
-    const oldRefreshToken = req.signedCookies.refreshToken;
-    const oldAccessToken = req.signedCookies.accessToken;
+    const oldRefreshToken = req.signedCookies?.refreshToken;
+    const oldAccessToken = req.signedCookies?.accessToken;
 
     if (!oldRefreshToken) {
         return sendResponse(
@@ -30,8 +36,10 @@ export const extractRefreshToken = (req, res, next) => {
         );
     }
 
-    req.auth.oldRefreshToken = oldRefreshToken;
-    req.auth.oldAccessToken = oldAccessToken;
+    req.auth = {
+        oldRefreshToken,
+        oldAccessToken
+    };
     next();
 };
 
@@ -63,6 +71,7 @@ export const validateRefreshToken = async (req, res, next) => {
     if (findedToken?.version !== 1) {
         return removeCookie(res, 401, "Session expired Sign in to continue");
     }
+
     req.auth.user = user;
     req.auth.token = findedToken;
     next();
@@ -130,6 +139,10 @@ export const reEvaluateRisk = async (req, res, next) => {
     const riskLevel = getRiskLevel(score);
 
     req.auth.riskLevel = riskLevel;
+    tokenInfo.loginContext.trust = {
+        deviceTrusted: true,
+        sessionLevel: riskLevel
+    };
 
     if (riskLevel === "veryhigh") {
         req.auth.verify = {
@@ -191,7 +204,7 @@ export const handleStepUpIfNeeded = async (req, res, next) => {
 };
 
 export const rotateRefreshToken = async (req, res, next) => {
-    const { token, user, tokenIndex } = req.auth;
+    const { token, user, tokenIndex, tokenInfo } = req.auth;
     const refreshExpiry = setRefreshExpiry(req.body);
     const accessToken = getAccesToken(user);
     const refreshToken = getRefreshToken(
@@ -202,8 +215,7 @@ export const rotateRefreshToken = async (req, res, next) => {
     );
 
     tokenInfo.token = refreshToken;
-    tokenInfo = tokenBuilder(tokenInfo);
-    user.refreshToken[tokenIndex] = tokenInfo;
+    user.refreshToken.splice(tokenIndex, 1, tokenBuilder(tokenInfo));
     req.auth.refreshToken = refreshToken;
     req.auth.accessToken = accessToken;
     return next();

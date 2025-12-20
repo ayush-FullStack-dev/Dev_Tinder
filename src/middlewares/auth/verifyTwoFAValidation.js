@@ -87,12 +87,16 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     }
 
     // check device exist in trusted if exist then don't ask 2fa direct login else 2fa continue
-    req.auth.verify = await isDeviceTrusted({
-        ctxId,
-        trustedId: trustedDeviceId,
-        fingerprint: savedFp
-    });
-
+    if (user.logout?.length) {
+        const lastLogout = user.logout[user.logout.length - 1];
+        if (lastLogout.logout !== "logout-all") {
+            req.auth.verify = await isDeviceTrusted({
+                ctxId,
+                trustedId: trustedDeviceId,
+                fingerprint: savedFp
+            });
+        }
+    }
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.user = user;
     req.auth.ctxId = ctxId;
@@ -115,7 +119,7 @@ export const verifyTwoFAValidation = async (req, res, next) => {
 export const verifyTwoFAEmail = async (req, res, next) => {
     let { user, loginMethod, code, method, verify, ctxId } = req.auth;
 
-    if (verify?.success) {
+    if (verify?.success !== undefined) {
         return next();
     }
 

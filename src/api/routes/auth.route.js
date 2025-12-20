@@ -14,6 +14,7 @@ import {
     resendOtpHandler
 } from "../controllers/auth/twoFA.controller.js";
 import { issueNewTokens } from "../controllers/auth/refresh.controller.js";
+import { sendLogoutResponse } from "../controllers/auth/logout.controller.js";
 
 import { signupValidation } from "../../middlewares/auth/signupValidation.js";
 import { loginIdentifyValidation } from "../../middlewares/auth/loginValidation.js";
@@ -40,6 +41,12 @@ import {
     handleStepUpIfNeeded,
     rotateRefreshToken
 } from "../../middlewares/auth/refreshValidation.js";
+import {
+    extractLogoutInfo,
+    validateLogout,
+    logoutAllSession,
+    logoutCurrentSession
+} from "../../middlewares/auth/logoutValidation.js";
 
 const router = express.Router();
 
@@ -85,4 +92,19 @@ router.post(
     issueNewTokens
 );
 
+// logout exsiting sessions
+router.post(
+    "/logout/",
+    extractLogoutInfo,
+    validateLogout,
+    logoutCurrentSession,
+    sendLogoutResponse
+);
+router.post(
+    "/logout-all/",
+    extractLogoutInfo,
+    validateLogout,
+    logoutAllSession,
+    sendLogoutResponse
+);
 export default router;

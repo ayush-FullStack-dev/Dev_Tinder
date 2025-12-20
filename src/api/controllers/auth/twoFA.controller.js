@@ -230,14 +230,16 @@ export const verifyTwoFAHandler = async (req, res) => {
 
     user.refreshToken = user.refreshToken.filter(k => !k.token.equals(ctxId));
 
+    tokenInfo.fingerprint = await fingerprintBuilder(tokenInfo);
     tokenInfo.token = refreshToken;
     tokenInfo.loginContext.mfa = {
         required: true,
         complete: true,
         methodsUsed: verify.method
     };
+    
 
-    user.refreshToken.push(tokenInfo);
+    user.refreshToken.push(tokenBuilder(tokenInfo));
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {
         user.refreshToken.shift();

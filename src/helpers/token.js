@@ -1,4 +1,5 @@
 import { signToken } from "./jwt.js";
+import {verifyToken} from "./jwt.js"
 
 export function getAccesToken(user) {
     return signToken(

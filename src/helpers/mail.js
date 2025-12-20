@@ -1,9 +1,11 @@
 import mailer from "nodemailer";
 
 import verifyAccountTemplate from "../templates/mail/verifyAccount.template.js";
-import  verifyOtpTemplete from "../templates/mail/verifyOtp.templete.js";
+import verifyOtpTemplete from "../templates/mail/verifyOtp.templete.js";
 import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.js";
 import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
+
+import { logoutAllTemplate } from "../templates/mail/logoutAlert.templete.js";
 
 const transporter = mailer.createTransport({
     host: "smtp.gmail.com",
@@ -49,7 +51,7 @@ export const sendOtp = async (userMail, otp, deviceInfo) => {
             deviceInfo.os,
             deviceInfo.ip,
             deviceInfo.country,
-            deviceInfo.time
+            deviceInfo.fullTime.readable,
         )
     );
     return mailInfo;
@@ -58,7 +60,7 @@ export const sendOtp = async (userMail, otp, deviceInfo) => {
 export const sendSuspiciousAlert = async (userMail, deviceInfo) => {
     const link = `${process.extra.DOMAIN_LINK}/account/activity/`;
     for (const info in deviceInfo) {
-        deviceInfo[info] = deviceInfo[info] || "test";
+        deviceInfo[info] = deviceInfo[info] || "UNKNOWN";
     }
 
     const mailInfo = await sendMail(
@@ -71,7 +73,7 @@ export const sendSuspiciousAlert = async (userMail, deviceInfo) => {
             deviceInfo.os,
             deviceInfo.country,
             link,
-            deviceInfo.time
+            deviceInfo.fullTime.readable,
         )
     );
     return mailInfo;
@@ -81,20 +83,45 @@ export const sendLoginAlert = async (userMail, userInfo) => {
     const link = `${process.extra.DOMAIN_LINK}/account/resetPassword/`;
 
     for (const info in userInfo) {
-        userInfo[info] = userInfo[info] || "test";
+        userInfo[info] = userInfo[info] || "UNKNOWN";
     }
 
     const mailInfo = await sendMail(
         userMail,
         `New login to DevTinder from ${userInfo.deviceName}`,
-        suspiciousAlertTemplete(
+        newLoginAlertTemplete(
             userMail,
             userInfo.name,
             userInfo.ip,
             userInfo.location,
             userInfo.deviceModel,
             userInfo.browser,
-            userInfo.time,
+            userInfo.fullTime.readable,
+            link
+        )
+    );
+    return mailInfo;
+};
+
+export const sendLogoutAllAlert = async (userMail, userInfo) => {
+    const link = `${process.extra.DOMAIN_LINK}/account/resetPassword/`;
+
+    for (const info in userInfo) {
+        userInfo[info] = userInfo[info] || "UNKNOWN";
+    }
+
+    const mailInfo = await sendMail(
+        userMail,
+        `Signed out from all devices`,
+        logoutAllTemplate(
+            userInfo.name,
+            userInfo.fullTime.readable,
+            userInfo.reason,
+            userInfo.ip,
+            userInfo.deviceModel,
+            userInfo.browser,
+            userInfo.os,
+            userInfo.location,
             link
         )
     );

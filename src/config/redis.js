@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import ApiError from "../helpers/ApiError.js";
+import { success, info } from "../../logs/printLogs.js";
 
 const redis = new Redis({
     port: process.env.REDIS_PORT || 6379,
@@ -12,13 +13,13 @@ const redis = new Redis({
 });
 
 export function connectRedis() {
+    info("CONNECTING REDIS ...");
     redis.on("connect", () => {
-        console.log("Redis connected successfully");
+        success("REDIS CONNECTED ✓");
     });
 
     redis.on("error", error => {
-        const message = "Redis connection unsuccessful!";
-        throw new ApiError("InternalServerError", message, 500);
+        throw new ApiError("InternalServerError", "Redis connection unsuccessfully", 500);
     });
 }
 

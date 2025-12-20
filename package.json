@@ -19,10 +19,12 @@
     "dependencies": {
         "@simplewebauthn/server": "^13.2.2",
         "bcryptjs": "^3.0.3",
+        "chalk": "^5.6.2",
         "cookie-parser": "^1.4.7",
         "dotenv": "^17.2.3",
         "epochify": "^1.0.12",
         "express": "^5.1.0",
+        "figlet": "^1.9.4",
         "geoip-lite": "^1.4.10",
         "ioredis": "^5.8.2",
         "joi": "^18.0.2",

@@ -2,11 +2,12 @@ import mongoose from "mongoose";
 import ApiError from "../helpers/ApiError.js";
 import config from "./config.js";
 
-async function connectMongo() {
+import { success, info } from "../../logs/printLogs.js";
 
-        await mongoose.connect(config.MONGO_URL);
-        console.log("Database Connected Succesfull");
-   
+async function connectMongo() {
+    info("CONNECTING DATABASE ...");
+    await mongoose.connect(config.MONGO_URL);
+    success("DATABASE CONNECTED ✓");
 }
 
 export default connectMongo;

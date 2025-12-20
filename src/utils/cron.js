@@ -22,7 +22,7 @@ export const tokenBuilder = userInfo => {
             mfa: {
                 required: !!userInfo.loginContext.mfa?.required,
                 complete: !!userInfo.loginContext.mfa?.complete,
-                methodsUsed: userInfo.loginContext.mfa?.methodsUsed || "EMAIL"
+                methodsUsed: userInfo.loginContext.mfa?.methodsUsed || "none"
             },
             trust: {
                 deviceTrusted: !!userInfo.loginContext.trust?.deviceTrusted,

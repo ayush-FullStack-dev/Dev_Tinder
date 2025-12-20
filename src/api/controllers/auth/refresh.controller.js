@@ -1,20 +1,43 @@
 import { removeCookie } from "../../../helpers/sendResponse.js";
+import { updateUser } from "../../../services/user.service.js";
+
+import { cookieOption } from "../../../constants/auth.constant.js";
+
+import {
+    logoutAllSession,
+    logoutCurrentSession
+} from "../../../middlewares/auth/logoutValidation.js";
 
 export const issueNewTokens = async (req, res, next) => {
     const { user, verify, riskLevel, tokenInfo, refreshToken, accessToken } =
         req.auth;
-
-    tokenInfo.loginContext.trust = {
-        deviceTrusted: true,
-        sessionLevel: riskLevel
-    };
-
+    req.auth.device = tokenInfo;
+    req.auth.reason = "security_risk";
     if (verify?.action === "logout-all") {
-        // wait i implement logic to send email & logout when logout route complete
-        return removeCookie(res, 401, verify?.message);
+        await logoutAllSession(req);
+        return res
+            .clearCookie("accessToken", cookieOption)
+            .clearCookie("refreshToken", cookieOption)
+            .clearCookie("trustedSession", cookieOption)
+            .clearCookie("trustedDeviceId", cookieOption)
+            .status(401)
+            .json({
+                success: false,
+                message: verify?.message,
+                logout: verify?.action
+            });
     } else if (verify?.action === "logout") {
-        // wait i implement logic to send email & logout when logout route complete
-        return removeCookie(res, 401, verify?.message);
+        const info = await logoutCurrentSession(req);
+        return res
+            .clearCookie("accessToken", cookieOption)
+            .clearCookie("refreshToken", cookieOption)
+            .clearCookie("trustedSession", cookieOption)
+            .clearCookie("trustedDeviceId", cookieOption)
+            .status(401)
+            .json({
+                ...info,
+                message: verify?.message
+            });
     }
 
     await updateUser(

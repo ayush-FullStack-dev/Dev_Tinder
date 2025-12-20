@@ -54,6 +54,7 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
         return {
             action: "AUTO_LOGIN",
             risk: riskLevel,
+            loginCtx: ctxId,
             message: "Signed in automatically"
         };
     }
