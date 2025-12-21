@@ -1,5 +1,5 @@
 import { signToken } from "./jwt.js";
-import {verifyToken} from "./jwt.js"
+import { verifyToken } from "./jwt.js";
 
 export function getAccesToken(user) {
     return signToken(
@@ -27,6 +27,23 @@ export function verifyRefreshToken(token) {
         return {
             success: false,
             message: "Session expired, please login again"
+        };
+    }
+
+    return {
+        success: true,
+        message: decodeData.message,
+        data: decodeData.data
+    };
+}
+
+export function verifyAccesToken(token) {
+    const decodeData = verifyToken(token);
+
+    if (!decodeData.success) {
+        return {
+            success: false,
+            message: "Session expired, please refresh now"
         };
     }
 

@@ -1,8 +1,10 @@
 export const tokenBuilder = userInfo => {
+    const id = crypto.randomBytes(16).toString("hex");
     return {
         ip: userInfo.ip,
         country: userInfo.country,
         city: userInfo.city,
+        ctxId: id,
         deviceId: userInfo.deviceId,
         browser: userInfo.browser,
         os: userInfo.os,

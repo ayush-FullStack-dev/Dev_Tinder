@@ -80,6 +80,7 @@ export const userSchema = new mongoose.Schema({
             },
             ip: String,
             country: String,
+            ctxId: String,
             city: String,
             deviceId: String,
             browser: String,
@@ -89,6 +90,7 @@ export const userSchema = new mongoose.Schema({
             deviceModel: String,
             timezone: String,
             fingerprint: String,
+            deviceName: String,
             version: { type: Number, default: 1 },
             loginContext: {
                 primary: {
@@ -139,6 +141,10 @@ export const userSchema = new mongoose.Schema({
             },
 
             createdAt: {
+                type: Date,
+                default: Date.now
+            },
+            lastActive: {
                 type: Date,
                 default: Date.now
             }

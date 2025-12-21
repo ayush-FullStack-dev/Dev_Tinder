@@ -38,7 +38,13 @@ export const getIpInfo = (ip = "103.21.33.0") => {
 
 export const getTime = req => {
     const time = epochify.getFullDateTime();
-    const clientTime = new Date(req?.body?.clientTime || Date.now()).getTime();
+    let clientTime = null;
+    if (req?.body) {
+        clientTime = new Date(req?.body?.clientTime || Date.now()).getTime();
+    } else {
+        clientTime = new Date(req);
+    }
+
     return {
         serverTime: time.timestamp,
         clientTime,

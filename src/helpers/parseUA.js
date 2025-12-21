@@ -11,12 +11,12 @@ export const parseUA = userAgent => {
     if (userAgent.includes("Mobile")) {
         deviceType = "mobile";
     } else if (
-        ua.includes("tablet") ||
-        ua.includes("ipad") ||
-        ua.includes("sm-t") ||
-        ua.includes("xoom") ||
-        ua.includes("silk") ||
-        ua.includes("kindle")
+        userAgent.includes("tablet") ||
+        userAgent.includes("ipad") ||
+        userAgent.includes("sm-t") ||
+        userAgent.includes("xoom") ||
+        userAgent.includes("silk") ||
+        userAgent.includes("kindle")
     ) {
         deviceType = "tab";
     } else {
@@ -27,6 +27,7 @@ export const parseUA = userAgent => {
         browserVersion: result.browser.version,
         os: result.os.name,
         deviceType,
+        deviceName: `${result.browser.name} on ${deviceType}`,
         osVersion: result.os.version,
         deviceModel: result.device.model
     };

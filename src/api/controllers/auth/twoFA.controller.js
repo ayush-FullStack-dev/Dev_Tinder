@@ -226,9 +226,9 @@ export const verifyTwoFAHandler = async (req, res) => {
         refreshExpiry
     );
 
-    const tokenInfo = user.refreshToken.find(k => k.token.equals(ctxId));
+    const tokenInfo = user.refreshToken.find(k => k.ctxId.equals(ctxId));
 
-    user.refreshToken = user.refreshToken.filter(k => !k.token.equals(ctxId));
+    user.refreshToken = user.refreshToken.filter(k => !k.ctxId.equals(ctxId));
 
     tokenInfo.fingerprint = await fingerprintBuilder(tokenInfo);
     tokenInfo.token = refreshToken;
@@ -237,7 +237,6 @@ export const verifyTwoFAHandler = async (req, res) => {
         complete: true,
         methodsUsed: verify.method
     };
-    
 
     user.refreshToken.push(tokenBuilder(tokenInfo));
 

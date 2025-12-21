@@ -2,7 +2,7 @@ import { cleanupLogin, setSession } from "../services/session.service.js";
 
 export const setTwoFa = async (ctxId, userInfo, methods) => {
     const twoFaCtxId = crypto.randomBytes(16).toString("hex");
-    userInfo.token = twoFaCtxId;
+    userInfo.ctxId = twoFaCtxId;
     userInfo.loginContext.mfa = {
         required: true,
         complete: false
@@ -11,6 +11,7 @@ export const setTwoFa = async (ctxId, userInfo, methods) => {
     if (ctxId) {
         await cleanupLogin(ctxId);
     }
+    
     await setSession(
         {
             verified: true,

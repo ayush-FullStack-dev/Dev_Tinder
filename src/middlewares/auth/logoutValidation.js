@@ -8,11 +8,11 @@ import crypto from "crypto";
 
 import { sendLogoutAllAlert } from "../../helpers/mail.js";
 
-function getLogoutInfo(reason, action, device) {
+function getLogoutInfo(reason, action, device, ctxId) {
     if (!device) {
         return {
             reason: reason || "manual",
-            id: crypto.randomUUID(),
+            id: ctxId || crypto.randomUUID(),
             at: Date.now(),
             action: action ?? "logout"
         };
@@ -79,18 +79,18 @@ export const validateLogout = async (req, res, next) => {
 
 export const logoutAllSession = async (req, res, next) => {
     const { user, device, reason } = req.auth;
-    device.name = user.name;
     const invalidateAllRefreshToken = user.refreshToken.map(t => ({
         ...t,
         version: t.version + 1
     }));
 
-    const logoutInfo = getLogoutInfo(reason || "manual", "logout-all");
+    const logoutInfo = getLogoutInfo(reason || "manual", "logout-all", device);
     user.logout.push(logoutInfo);
 
     if (user.logout.length >= 15) {
         user.logout.shift();
     }
+    device.name = user.name;
 
     sendLogoutAllAlert(user.email, device);
 
@@ -116,8 +116,13 @@ export const logoutAllSession = async (req, res, next) => {
 
 // logout one
 export const logoutCurrentSession = async (req, res, next) => {
-    const { user, tokenIndex, device, reason } = req.auth;
-    const logoutInfo = getLogoutInfo(reason || "manual", "logout", device);
+    const { user, tokenIndex, device, reason, action } = req.auth;
+    const logoutInfo = getLogoutInfo(
+        reason || "manual",
+        action || "logout",
+        device,
+        user.refreshToken[tokenIndex].ctxId
+    );
     user.logout.push(logoutInfo);
     if (user.logout.length >= 15) {
         user.logout.shift();

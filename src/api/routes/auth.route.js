@@ -1,5 +1,6 @@
 import express from "express";
 
+// importing handlers
 import {
     loginIdentifyHandler,
     verifyLoginHandler
@@ -15,7 +16,12 @@ import {
 } from "../controllers/auth/twoFA.controller.js";
 import { issueNewTokens } from "../controllers/auth/refresh.controller.js";
 import { sendLogoutResponse } from "../controllers/auth/logout.controller.js";
+import {
+    sessionHandler,
+    sessionRevokeHandler
+} from "../controllers/auth/session.controller.js";
 
+// importing middleware
 import { signupValidation } from "../../middlewares/auth/signupValidation.js";
 import { loginIdentifyValidation } from "../../middlewares/auth/loginValidation.js";
 import { twoFAValidation } from "../../middlewares/auth/twoFAValidation.js";
@@ -48,8 +54,14 @@ import {
     logoutCurrentSession
 } from "../../middlewares/auth/logoutValidation.js";
 
+import {
+    isLogin,
+    findLoginData
+} from "../../middlewares/auth/auth.middleware.js";
+
 const router = express.Router();
 
+// authentication ---Start---
 // Create new user
 router.post("/signup", signupValidation, signupHandler);
 router.get("/verify", verifyEvl);
@@ -68,7 +80,6 @@ router.post(
 );
 
 // verify-2fa
-
 router.post("/verify-2fa/start/", twoFAValidation, startTwoFAHandler);
 router.post("/verify-2fa/resend/", twoFAValidation, resendOtpHandler);
 router.post(
@@ -107,4 +118,15 @@ router.post(
     logoutAllSession,
     sendLogoutResponse
 );
+
+// authentication ---End---
+
+router.get("/session/", isLogin, findLoginData, sessionHandler);
+router.post(
+    "/session/revoke/:id",
+    isLogin,
+    findLoginData,
+    sessionRevokeHandler
+); 
+
 export default router;
