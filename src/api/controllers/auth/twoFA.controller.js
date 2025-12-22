@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 import ApiError from "../../../helpers/ApiError.js";
 import redis from "../../../config/redis.js";
-import sendResponse from "../../../helpers/sendResponse.js";
+import sendResponse, { clearCtxId } from "../../../helpers/sendResponse.js";
 
 import { cookieOption } from "../../../constants/auth.constant.js";
 
@@ -30,7 +30,7 @@ import { tokenBuilder } from "../../../utils/cron.js";
 
 export const resendOtpHandler = async (req, res) => {
     const { email, ip, country, time } = req.auth;
-    const ctxId = req.body.ctxId;
+    const ctxId = req.signedCookies.twoFA_ctx;
 
     const user = await findUser({
         email
@@ -81,7 +81,7 @@ export const resendOtpHandler = async (req, res) => {
 
 export const startTwoFAHandler = async (req, res) => {
     const { loginMethod, email, password, ip } = req.auth;
-    const ctxId = req.body.ctxId;
+    const ctxId = req.signedCookies.twoFA_ctx;
     const deviceInfo = {
         ...req.auth.deviceInfo,
         ip
@@ -90,7 +90,7 @@ export const startTwoFAHandler = async (req, res) => {
     const fingerprint = await fingerprintBuilder(req.auth.deviceInfo);
 
     if (!loginMethod) {
-        throw new ApiError("BadRequest", "2Fa login method is undefined", 400);
+        return sendResponse(res, 400, "2Fa login method is undefined");
     }
 
     const user = await findUser({
@@ -98,7 +98,7 @@ export const startTwoFAHandler = async (req, res) => {
     });
 
     if (!user) {
-        return sendResponse(res, 401, { message: "User is not found" });
+        return clearCtxId(res, 401, "user not found", "twoFA_ctx");
     }
 
     let isValid = await getSession(`2fa:data:${ctxId}`);
@@ -108,14 +108,24 @@ export const startTwoFAHandler = async (req, res) => {
     }
 
     if (isValid?.risk === "veryhigh" && loginMethod === "backupcode") {
-        return sendResponse(res, 401, "Backup code not allowed for high risk");
+        return clearCtxId(
+            res,
+            401,
+            "Backup code not allowed for high risk",
+            "twoFA_ctx"
+        );
     }
 
     if (!isValid?.verified) {
-        return sendResponse(res, 401, {
-            message: "2FA session expired or invalid. Please login again.",
-            route: "/auth/login"
-        });
+        return clearCtxId(
+            res,
+            401,
+            {
+                message: "2FA session expired or invalid. Please login again.",
+                route: "/auth/login"
+            },
+            "twoFA_ctx"
+        );
     }
 
     await setSession(deviceInfo, ctxId, "device:info");
@@ -190,7 +200,7 @@ export const startTwoFAHandler = async (req, res) => {
         },
         ctxId
     );
-    return sendResponse(res, 401, { message: "Invalid 2fa login method " });
+    return clearCtxId(res, 401, "Invalid 2fa login method", "twoFA_ctx");
 };
 
 export const verifyTwoFAHandler = async (req, res) => {
@@ -203,9 +213,7 @@ export const verifyTwoFAHandler = async (req, res) => {
 
     if (!verify?.success) {
         await cleanup2fa(ctxId);
-        return sendResponse(res, 401, {
-            message: verify?.message || "test"
-        });
+        return clearCtxId(res, 401, verify?.message, "twoFA_ctx");
     }
 
     await cleanup2fa(ctxId);
@@ -261,6 +269,7 @@ export const verifyTwoFAHandler = async (req, res) => {
     });
 
     res.status(200)
+        .clearCookie("twoFA_ctx", cookieOption)
         .cookie("accessToken", accessToken, cookieOption)
         .cookie("refreshToken", refreshToken, cookieOption)
         .cookie("trustedDeviceId", checkDeviceTrusted?.trustedId, cookieOption)

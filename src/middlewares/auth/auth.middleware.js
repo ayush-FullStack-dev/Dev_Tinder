@@ -1,9 +1,11 @@
-import { verifyAccesToken } from "../../helpers/token.js";
 import sendResponse from "../../helpers/sendResponse.js";
 
+import { findUser } from "../../services/user.service.js";
+import { verifyAccesToken } from "../../helpers/token.js";
+
 export const isLogin = (req, res, next) => {
-    const accessToken = req.signedCookies.accessToken;
-    const refreshToken = req.signedCookies.refreshToken;
+    const accessToken = req.signedCookies?.accessToken;
+    const refreshToken = req.signedCookies?.refreshToken;
     const data = verifyAccesToken(accessToken);
 
     if (!accessToken) {
@@ -18,13 +20,17 @@ export const isLogin = (req, res, next) => {
         });
     }
 
-    req.auth.info = data.data;
-    req.auth.refreshToken = refreshToken;
-    next();
+    req.auth = {
+        ...req.auth,
+        info: data?.data,
+        refreshToken
+    };
+
+    return next();
 };
 
 export const findLoginData = async (req, res, next) => {
-    const { info } = req.auth;
+    const { info, refreshToken } = req.auth;
 
     const user = await findUser({
         _id: info._id
@@ -37,8 +43,40 @@ export const findLoginData = async (req, res, next) => {
     }
 
     const findedToken = user.refreshToken.find(k => k.token === refreshToken);
-    
-    req.auth.findedCurrent = findedToken
+
+    req.auth.findedCurrent = findedToken;
     req.auth.user = user;
+    next();
+};
+
+export const validateBasicInfo = (req, res, next) => {
+    if (!req?.body) {
+        return sendResponse(res, 400, "provide a valid body");
+    }
+
+    const { clientTime = Date.now(), deviceId, deviceSize } = req.body;
+
+    req.body.clientTime = clientTime;
+
+    if (!clientTime) {
+        return sendResponse(res, 400, "provide current client timestamp");
+    }
+
+    if (!deviceId || deviceId?.length !== 32) {
+        return sendResponse(res, 400, "provide valid  deviceId");
+    }
+
+    if (!deviceSize) {
+        return sendResponse(
+            res,
+            400,
+            "provide device size mix of width + height"
+        );
+    }
+
+    if (deviceSize >= 170 && deviceSize <= 3000) {
+        return sendResponse(res, 400, "provide valid device size");
+    }
+
     next();
 };

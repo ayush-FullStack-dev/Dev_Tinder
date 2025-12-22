@@ -18,10 +18,7 @@ const verifyTwoFAValidators = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
-    ctxId: joi.string().min(31).max(33).required().messages({
-        "any.required": "ctx id is required.",
-        "string.empty": "ctc id cannot be empty."
-    }),
+    
     code: joi
         .string()
         .pattern(/^\d{6,}$/)
@@ -37,6 +34,8 @@ const verifyTwoFAValidators = joi.object({
     remeberDevice: joi.boolean().valid(true, false).messages({
         "any.only": "Invalid remeberDevice type only allowed true or false."
     }),
+    clientTime: joi.number(),
+    deviceSize: joi.number(),
     remember: joi.boolean().valid(true, false).required().messages({
         "any.only": "Invalid remember type only allowed true or false.",
         "any.required": "remember is required."

@@ -7,24 +7,7 @@ import { getIpInfo } from "../../helpers/helpers.js";
 import crypto from "crypto";
 
 import { sendLogoutAllAlert } from "../../helpers/mail.js";
-
-function getLogoutInfo(reason, action, device, ctxId) {
-    if (!device) {
-        return {
-            reason: reason || "manual",
-            id: ctxId || crypto.randomUUID(),
-            at: Date.now(),
-            action: action ?? "logout"
-        };
-    }
-    return {
-        reason: reason || "manual",
-        id: crypto.randomUUID(),
-        at: Date.now(),
-        action: action ?? "logout",
-        ...device
-    };
-}
+import { getLogoutInfo } from "../../helpers/logout.js";
 
 export const extractLogoutInfo = (req, res, next) => {
     const refreshToken = req.signedCookies.refreshToken;

@@ -20,6 +20,11 @@ import {
     sessionHandler,
     sessionRevokeHandler
 } from "../controllers/auth/session.controller.js";
+import {
+    verifyIdentifyHandler,
+    verifyVerifactionHandler
+} from "../controllers/auth/auth.controller.js";
+import { changePasswordHandler } from "../controllers/auth/password.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signupValidation.js";
@@ -53,23 +58,29 @@ import {
     logoutAllSession,
     logoutCurrentSession
 } from "../../middlewares/auth/logoutValidation.js";
-
 import {
     isLogin,
-    findLoginData
+    findLoginData,
+    validateBasicInfo
 } from "../../middlewares/auth/auth.middleware.js";
+import { verifyVerifaction } from "../../middlewares/auth/verifyAuth.middleware.js";
 
 const router = express.Router();
 
-// authentication ---Start---
 // Create new user
-router.post("/signup", signupValidation, signupHandler);
-router.get("/verify", verifyEvl);
+router.post("/signup/", signupValidation, signupHandler);
+router.get("/verify/", verifyEvl);
 
 // login to exting info
-router.post("/login/identify", loginIdentifyValidation, loginIdentifyHandler);
 router.post(
-    "/login/confirm",
+    "/login/identify/",
+    validateBasicInfo,
+    loginIdentifyValidation,
+    loginIdentifyHandler
+);
+router.post(
+    "/login/confirm/",
+    validateBasicInfo,
     verifyLoginValidation, // context + risk
     verifyLoginTrustDevice, // verylow auto-login
     verifyLoginPasskey, // low / mid
@@ -94,6 +105,7 @@ router.post(
 // get new token
 router.post(
     "/refresh/",
+    validateBasicInfo,
     extractRefreshToken,
     validateRefreshToken,
     bindTokenToDevice,
@@ -106,6 +118,7 @@ router.post(
 // logout exsiting sessions
 router.post(
     "/logout/",
+    validateBasicInfo,
     extractLogoutInfo,
     validateLogout,
     logoutCurrentSession,
@@ -113,20 +126,43 @@ router.post(
 );
 router.post(
     "/logout-all/",
+    validateBasicInfo,
     extractLogoutInfo,
     validateLogout,
     logoutAllSession,
     sendLogoutResponse
 );
 
-// authentication ---End---
-
+// see all active session & revoke it
 router.get("/session/", isLogin, findLoginData, sessionHandler);
 router.post(
-    "/session/revoke/:id",
+    "/session/revoke/:id/",
     isLogin,
     findLoginData,
     sessionRevokeHandler
-); 
+);
+
+// password releted routes
+router.post(
+    "/change-password/start/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifyIdentifyHandler
+);
+
+router.post(
+    "/change-password/confirm/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifyVerifaction,
+    verifyLoginPasskey, // low / mid
+    verifyLoginPassword, // low / mid / high
+    verifyLoginSessionApproval, // mid / high / veryhigh
+    verifyLoginSecurityKey, // high / veryhigh
+    verifyVerifactionHandler, // final decision
+    changePasswordHandler // chnage password
+);
 
 export default router;

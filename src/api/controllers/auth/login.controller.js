@@ -1,11 +1,11 @@
-import sendResponse from "../../../helpers/sendResponse.js";
+import sendResponse, { setCtxId } from "../../../helpers/sendResponse.js";
 import crypto from "crypto";
 
 import { cookieOption } from "../../../constants/auth.constant.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
-import { setSession, cleanupLogin } from "../../../services/session.service.js";
 
+import { setSession, cleanupLogin } from "../../../services/session.service.js";
 import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
 import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
@@ -51,7 +51,7 @@ export const loginIdentifyHandler = async (req, res) => {
         ctxId,
         "login:ctx"
     );
-    return sendResponse(res, 200, response);
+    return setCtxId(res, 200, response, ctxId, "login_ctx");
 };
 
 export const verifyLoginHandler = async (req, res) => {
@@ -93,14 +93,18 @@ export const verifyLoginHandler = async (req, res) => {
                 id: true
             }
         );
-        return sendResponse(res, 401, data.response);
+
+        return res
+            .status(401)
+            .clearCookie("login_ctx", cookieOption)
+            .cookie("twoFA_ctx", ctxId, cookieOption)
+            .json(data.response);
     }
 
     const accessToken = getAccesToken(user);
     const trustedSession = signToken({
         sub: user._id, // user identity
-        did: deviceInfo.deviceId, // trusted device
-        ver: 1 // token version (future revoke)
+        did: deviceInfo.deviceId // trusted device
     });
     const refreshToken = getRefreshToken(
         {
@@ -112,6 +116,8 @@ export const verifyLoginHandler = async (req, res) => {
     userInfo.fingerprint = await fingerprintBuilder(userInfo);
     userInfo.token = refreshToken;
 
+    
+    
     user.refreshToken.push(tokenBuilder(userInfo));
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {
@@ -129,6 +135,7 @@ export const verifyLoginHandler = async (req, res) => {
     );
 
     res.status(200)
+        .clearCookie("login_ctx", cookieOption)
         .cookie("accessToken", accessToken, cookieOption)
         .cookie("refreshToken", refreshToken, cookieOption)
         .cookie("trustedSession", trustedSession, cookieOption)

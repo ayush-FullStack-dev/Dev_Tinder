@@ -2,6 +2,8 @@ import sendResponse from "../../../helpers/sendResponse.js";
 
 import { getTime } from "../../../helpers/helpers.js";
 
+import { logoutCurrentSession } from "../../../middlewares/auth/logoutValidation.js";
+
 export const sessionHandler = (req, res) => {
     const { user, findedCurrent } = req.auth;
     const validSessions = [];
@@ -12,7 +14,7 @@ export const sessionHandler = (req, res) => {
         const createdAt = getTime(session.createdAt).fullTime.readable;
         const lastActive = getTime(session.lastActive).fullTime.readable;
         const obj = {
-            id: "s_" + session.ctxId.slice(-8),
+            id: "s_" + session?.ctxId?.slice(-8),
             device: {
                 name: session.deviceName,
                 type: session.deviceType
@@ -56,7 +58,8 @@ export const sessionRevokeHandler = async (req, res) => {
         });
     }
 
-    const tokenIndex = user.refreshToken.findIndex(t => t.ctxId.endsWith(id));
+    const tokenIndex = user.refreshToken.findIndex(t => t.ctxId?.endsWith(id));
+
     const findSession = user.refreshToken[tokenIndex];
 
     if (!findSession) {

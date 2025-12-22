@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 export const tokenBuilder = userInfo => {
     const id = crypto.randomBytes(16).toString("hex");
     return {
@@ -11,6 +13,7 @@ export const tokenBuilder = userInfo => {
         deviceType: userInfo.deviceType,
         deviceSize: userInfo.deviceSize,
         deviceModel: userInfo.deviceModel,
+        deviceName: `${userInfo.browser} on ${userInfo.os}`,
         timezone: userInfo.timezone,
         token: userInfo.token,
         version: 1,

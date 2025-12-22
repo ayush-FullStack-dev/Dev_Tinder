@@ -67,7 +67,7 @@ export const userSchema = new mongoose.Schema({
             },
             action: {
                 type: String,
-                enum: ["logout", "logout-all"]
+                enum: ["logout", "logout-all", "session-revoke"]
             }
         }
     ],
@@ -134,7 +134,7 @@ export const userSchema = new mongoose.Schema({
                     },
                     sessionLevel: {
                         type: String,
-                        enum: ["verylow", "low", "medium", "high", "veryhigh"],
+                        enum: ["verylow", "low", "mid", "high", "veryhigh"],
                         default: "low"
                     }
                 }

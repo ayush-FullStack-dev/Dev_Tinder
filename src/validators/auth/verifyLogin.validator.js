@@ -24,6 +24,8 @@ export const verifyLoginValidator = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
+    clientTime: joi.number(),
+    deviceSize: joi.number(),
     remember: joi.boolean().valid(true, false).required().messages({
         "any.only": "Invalid remember type only allowed true or false.",
         "any.required": "remember is required."

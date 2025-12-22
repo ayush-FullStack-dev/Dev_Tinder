@@ -25,15 +25,18 @@ import { verifyKey } from "../../helpers/web.autn.js";
 import { verifyHash } from "../../helpers/hash.js";
 
 export const verifyLoginValidation = async (req, res, next) => {
-    req.auth = {};
     const time = getTime(req);
-    const ctxId = req.body.ctxId;
+    const ctxId = req.signedCookies?.login_ctx;
 
     const validate = checkValidation(
         verifyLoginValidator,
         req,
         "validation faild for verify login"
     );
+
+    if (!validate?.success) {
+        return sendResponse(res, 400, validate.jsonResponse);
+    }
 
     const getDeviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
@@ -44,7 +47,6 @@ export const verifyLoginValidation = async (req, res, next) => {
     const savedDeviceInfo = await getSession(`login:info:${ctxId}`);
 
     const savedInfo = await getSession(`login:ctx:${ctxId}`);
-    getDeviceInfo.deviceSize = savedDeviceInfo?.deviceSize;
 
     if (!savedInfo?.success) {
         return sendResponse(res, 401, {
@@ -98,18 +100,19 @@ export const verifyLoginValidation = async (req, res, next) => {
         );
     }
 
-    getDeviceInfo.deviceName = `${getDeviceInfo.browser} on ${getDeviceInfo.os}`;
-    req.auth.refreshExpiry = setRefreshExpiry(validate.value);
-    req.auth.user = user;
-    req.auth.values = validate.value;
-    req.auth.info = savedInfo;
-    req.auth.ctxId = ctxId;
-    req.auth.incomingCredentialId = Buffer.from(
-        validate.value.id || "test",
-        "base64url"
-    );
+    req.auth = {
+        refreshExpiry: setRefreshExpiry(validate.value),
+        user: user,
+        values: validate.value,
+        info: savedInfo,
+        ctxId,
+        deviceInfo: getDeviceInfo,
+        incomingCredentialId: Buffer.from(
+            validate.value.id || "test",
+            "base64url"
+        )
+    };
 
-    req.auth.deviceInfo = getDeviceInfo;
     return next();
 };
 
@@ -117,7 +120,7 @@ export const verifyLoginTrustDevice = (req, res, next) => {
     const { user, deviceInfo, info } = req.auth;
     if (info.risk !== "verylow") return next();
     if (user.logout?.length) {
-       const  lastLogout = user.logout[user.logout.length - 1];
+        const lastLogout = user.logout[user.logout.length - 1];
         if (lastLogout?.logout === "logout-all") return next();
     }
 
@@ -248,6 +251,7 @@ export const verifyLoginPassword = async (req, res, next) => {
         stepup: info.risk === "high",
         method: "password"
     };
+    
 
     return next();
 };

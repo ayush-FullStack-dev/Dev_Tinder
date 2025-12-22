@@ -12,7 +12,13 @@ export const setRefreshExpiry = validateValues => {
     return "1d";
 };
 
-export const checkValidation = (validateSchema, req, msg) => {
+export const checkValidation = (
+    validateSchema,
+    req,
+    msg,
+    
+) => {
+    
     const validate = validateSchema.validate(req.body, joiOptions);
     if (validate.error) {
         const jsonResponse = prettyErrorResponse(validate, msg);

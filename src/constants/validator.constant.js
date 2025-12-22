@@ -1,6 +1,6 @@
 export const joiOptions = {
     abortEarly: false,
-    allowUnknown: false,
+    allowUnknown: true,
     stripUnknown: false
 };
 

@@ -6,6 +6,7 @@ import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.
 import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
 
 import { logoutAllTemplate } from "../templates/mail/logoutAlert.templete.js";
+import { passwordChangedAlertTemplate } from "../templates/mail/passwordChanged.template.js";
 
 const transporter = mailer.createTransport({
     host: "smtp.gmail.com",
@@ -51,7 +52,7 @@ export const sendOtp = async (userMail, otp, deviceInfo) => {
             deviceInfo.os,
             deviceInfo.ip,
             deviceInfo.country,
-            deviceInfo.fullTime.readable,
+            deviceInfo.fullTime.readable
         )
     );
     return mailInfo;
@@ -73,7 +74,7 @@ export const sendSuspiciousAlert = async (userMail, deviceInfo) => {
             deviceInfo.os,
             deviceInfo.country,
             link,
-            deviceInfo.fullTime.readable,
+            deviceInfo.fullTime.readable
         )
     );
     return mailInfo;
@@ -125,5 +126,27 @@ export const sendLogoutAllAlert = async (userMail, userInfo) => {
             link
         )
     );
+    return mailInfo;
+};
+
+export const sendPasswordChangedAlert = async (userMail, userInfo) => {
+    const link = `${process.extra.DOMAIN_LINK}/account/resetPassword/`;
+
+    for (const info in userInfo) {
+        userInfo[info] = userInfo[info] || "UNKNOWN";
+    }
+
+    const mailInfo = await sendMail(
+        userMail,
+        `Signed out from all devices`,
+        passwordChangedAlertTemplate(
+            userInfo.name,
+            userInfo.deviceName,
+            userInfo.location,
+            userInfo.fullTime.readable,
+            link
+        )
+    );
+
     return mailInfo;
 };

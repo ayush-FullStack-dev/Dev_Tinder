@@ -25,7 +25,7 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     const time = getTime(req);
     const trustedDeviceId = req.signedCookies.trustedDeviceId;
     const loginMethod = req.body.method.toLocaleLowerCase();
-    const ctxId = req.body.ctxId;
+    const ctxId = req.signedCookies?.twoFA_ctx;
     const validate = checkValidation(
         verifyTwoFAValidators,
         req,
