@@ -2,7 +2,7 @@ import joi from "joi";
 
 import { loginMethods, riskLevel } from "../../constants/auth.constant.js";
 
-export const verifyLoginValidator = joi.object({
+export const verifyAuthValidator = joi.object({
     id: joi.string(),
     risk: joi
         .string()
@@ -21,9 +21,5 @@ export const verifyLoginValidator = joi.object({
         "string.empty": "deviceId cannot be empty."
     }),
     clientTime: joi.number(),
-    deviceSize: joi.number(),
-    remember: joi.boolean().valid(true, false).required().messages({
-        "any.only": "Invalid remember type only allowed true or false.",
-        "any.required": "remember is required."
-    })
+    deviceSize: joi.number()
 });

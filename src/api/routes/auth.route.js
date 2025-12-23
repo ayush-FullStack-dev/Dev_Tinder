@@ -27,9 +27,9 @@ import {
 import { changePasswordHandler } from "../controllers/auth/password.controller.js";
 
 // importing middleware
-import { signupValidation } from "../../middlewares/auth/signupValidation.js";
-import { loginIdentifyValidation } from "../../middlewares/auth/loginValidation.js";
-import { twoFAValidation } from "../../middlewares/auth/twoFAValidation.js";
+import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
+import { loginIdentifyValidation } from "../../middlewares/auth/login.middleware.js";
+import { twoFAValidation } from "../../middlewares/auth/twoFA.middleware.js";
 import {
     verifyLoginValidation,
     verifyLoginTrustDevice,
@@ -37,13 +37,13 @@ import {
     verifyLoginPassword,
     verifyLoginSessionApproval,
     verifyLoginSecurityKey
-} from "../../middlewares/auth/verifyLoginValidation.js";
+} from "../../middlewares/auth/verifyLogin.middleware.js";
 import {
     verifyTwoFAValidation,
     verifyTwoFAEmail,
     verifyTwoFATotp,
     verifyTwoFABackupcode
-} from "../../middlewares/auth/verifyTwoFAValidation.js";
+} from "../../middlewares/auth/verifyTwoFA.middleware.js";
 import {
     extractRefreshToken,
     validateRefreshToken,
@@ -51,13 +51,13 @@ import {
     reEvaluateRisk,
     handleStepUpIfNeeded,
     rotateRefreshToken
-} from "../../middlewares/auth/refreshValidation.js";
+} from "../../middlewares/auth/refresh.middleware.js";
 import {
     extractLogoutInfo,
     validateLogout,
     logoutAllSession,
     logoutCurrentSession
-} from "../../middlewares/auth/logoutValidation.js";
+} from "../../middlewares/auth/logout.middleware.js";
 import {
     isLogin,
     findLoginData,

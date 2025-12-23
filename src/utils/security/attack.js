@@ -1,5 +1,5 @@
-export const checkMethodHooping = async (savedInfo, value) => {
-    if (savedInfo.risk !== value.risk)
+export const checkMethodHooping =  (savedInfo, value) => {
+    if (savedInfo?.risk !== value?.risk)
         return "This request is prevent Method-hopping attack!";
 
     if (

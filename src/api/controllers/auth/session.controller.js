@@ -2,7 +2,7 @@ import sendResponse from "../../../helpers/sendResponse.js";
 
 import { getTime } from "../../../helpers/helpers.js";
 
-import { logoutCurrentSession } from "../../../middlewares/auth/logoutValidation.js";
+import { logoutCurrentSession } from "../../../middlewares/auth/logout.middleware.js";
 
 export const sessionHandler = (req, res) => {
     const { user, findedCurrent } = req.auth;

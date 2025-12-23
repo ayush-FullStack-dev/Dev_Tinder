@@ -77,7 +77,7 @@ export const changePasswordHandler = async (req, res, next) => {
         }
     );
 
-     sendPasswordChangedAlert(user.email, deviceInfo);
+    sendPasswordChangedAlert(user.email, deviceInfo);
 
-    return clearCtxId(res, 200, "Password changed successfully", verify_ctx);
+    return clearCtxId(res, 200, "Password changed successfully", "verify_ctx");
 };

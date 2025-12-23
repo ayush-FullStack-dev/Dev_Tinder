@@ -6,7 +6,7 @@ import { cookieOption } from "../../../constants/auth.constant.js";
 import {
     logoutAllSession,
     logoutCurrentSession
-} from "../../../middlewares/auth/logoutValidation.js";
+} from "../../../middlewares/auth/logout.middleware.js";
 
 export const issueNewTokens = async (req, res, next) => {
     const { user, verify, riskLevel, tokenInfo, refreshToken, accessToken } =
