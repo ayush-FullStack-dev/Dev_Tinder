@@ -24,7 +24,10 @@ import {
     verifyIdentifyHandler,
     verifyVerifactionHandler
 } from "../controllers/auth/auth.controller.js";
-import { changePasswordHandler } from "../controllers/auth/password.controller.js";
+import {
+    changePasswordHandler,
+    forgotPasswordHandler
+} from "../controllers/auth/password.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -150,19 +153,20 @@ router.post(
     findLoginData,
     verifyIdentifyHandler
 );
-
 router.post(
     "/change-password/confirm/",
     validateBasicInfo,
     isLogin,
     findLoginData,
     verifyVerifaction,
+    changePasswordHandler, // chnage password
     verifyLoginPasskey, // low / mid
     verifyLoginPassword, // low / mid / high
     verifyLoginSessionApproval, // mid / high / veryhigh
     verifyLoginSecurityKey, // high / veryhigh
-    verifyVerifactionHandler, // final decision
-    changePasswordHandler // chnage password
+    verifyVerifactionHandler("change:password", "submit_new_password") // check verified
 );
+
+router.post("/forgot-password/", forgotPasswordHandler);
 
 export default router;

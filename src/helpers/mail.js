@@ -6,7 +6,10 @@ import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.
 import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
 
 import { logoutAllTemplate } from "../templates/mail/logoutAlert.templete.js";
-import { passwordChangedAlertTemplate } from "../templates/mail/passwordChanged.template.js";
+import {
+    passwordChangedAlertTemplate,
+    forgotPasswordTemplate
+} from "../templates/mail/password.template.js";
 
 const transporter = mailer.createTransport({
     host: "smtp.gmail.com",
@@ -138,7 +141,7 @@ export const sendPasswordChangedAlert = async (userMail, userInfo) => {
 
     const mailInfo = await sendMail(
         userMail,
-        `Signed out from all devices`,
+        `Your DevTinder password was changed`,
         passwordChangedAlertTemplate(
             userInfo.name,
             userInfo.deviceName,
@@ -146,6 +149,16 @@ export const sendPasswordChangedAlert = async (userMail, userInfo) => {
             userInfo.fullTime.readable,
             link
         )
+    );
+
+    return mailInfo;
+};
+
+export const sendforgotPasswordReq = async (user, link) => {
+    const mailInfo = await sendMail(
+        user.email,
+        `Reset your DevTinder password`,
+        forgotPasswordTemplate(user.name, link)
     );
 
     return mailInfo;

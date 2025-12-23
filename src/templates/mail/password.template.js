@@ -167,3 +167,134 @@ export const passwordChangedAlertTemplate = (
 </html>`;
     return html;
 };
+
+export const forgotPasswordTemplate = (name, link) => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Password Reset</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f4f6fb;
+      color: #111827;
+    }
+
+    .container {
+      padding: 40px 12px;
+    }
+
+    .card {
+      max-width: 520px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 22px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #2563eb;
+      color: #ffffff !important;
+      padding: 14px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+
+    .info {
+      font-size: 13px;
+      color: #374151;
+      line-height: 20px;
+      margin-bottom: 20px;
+    }
+
+    .warn {
+      background: #f9fafb;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 13px;
+      color: #374151;
+      margin-bottom: 20px;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 28px;
+    }
+
+    .muted {
+      color: #6b7280;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+
+      <div class="title">Reset your password</div>
+
+      <div class="subtitle">
+        Hi <strong>${name}</strong>,<br>
+        We received a request to reset your account password.
+      </div>
+
+      <a href="${link}" class="btn">
+        Reset Password
+      </a>
+
+      <div class="info">
+        This link will expire in <strong>15 minutes</strong> for your security.
+      </div>
+
+      <div class="warn">
+        If you didn’t request a password reset, you can safely ignore this email.
+        Your account will remain secure.
+      </div>
+
+      <div class="info muted">
+        Or copy & paste this link into your browser:<br>
+        ${link}
+      </div>
+
+      <div class="footer">
+        DevTinder Security Team<br>
+        © 2025 DevTinder Inc.
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`;
+    return html;
+};

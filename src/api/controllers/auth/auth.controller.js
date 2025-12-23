@@ -58,13 +58,32 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     );
 };
 
-export const verifyVerifactionHandler = async (req, res, next) => {
-    const { verify, ctxId } = req.auth;
+export const verifyVerifactionHandler =  (link, nextStep) => {
+    return async (req, res, next) => {
+        const { verify, ctxId } = req.auth;
 
-    if (!verify?.success) {
-        await cleanupLogin(ctxId);
-        return sendResponse(res, 401, verify?.message || "Unauthorized");
-    }
+        if (!verify?.success) {
+            await cleanupLogin(ctxId);
+            return sendResponse(res, 401, verify?.message || "Unauthorized");
+        }
 
-    return next();
+        if (link) {
+            await setSession(
+                {
+                    verified: true,
+                    ...verify
+                },
+                ctxId,
+                link
+            );
+        }
+
+        if (nextStep) {
+            return sendResponse(res, 200, {
+                next: nextStep
+            });
+        }
+
+        return next();
+    };
 };

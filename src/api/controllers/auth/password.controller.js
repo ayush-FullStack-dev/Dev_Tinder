@@ -1,14 +1,19 @@
+import crypto from "crypto";
+
 import sendResponse, { clearCtxId } from "../../../helpers/sendResponse.js";
 import { getLogoutInfo } from "../../../helpers/logout.js";
 import { verifyHash, generateHash } from "../../../helpers/hash.js";
 
 import { getSession, setSession } from "../../../services/session.service.js";
-import { updateUser } from "../../../services/user.service.js";
+import { findUser, updateUser } from "../../../services/user.service.js";
 
-import { sendPasswordChangedAlert } from "../../../helpers/mail.js";
+import {
+    sendPasswordChangedAlert,
+    sendforgotPasswordReq
+} from "../../../helpers/mail.js";
 
 export const changePasswordHandler = async (req, res, next) => {
-    const { user, verify, ctxId, deviceInfo, findedCurrent } = req.auth;
+    const { user, deviceInfo, ctxId, findedCurrent } = req.auth;
     deviceInfo.name = user.name;
     const getData = await getSession(`change:password:${ctxId}`);
     const invalidateRefreshToken = user.refreshToken.map(t => {
@@ -22,18 +27,7 @@ export const changePasswordHandler = async (req, res, next) => {
     });
 
     if (!getData?.verified) {
-        await setSession(
-            {
-                verified: true,
-                ...verify
-            },
-            ctxId,
-            `change:password`
-        );
-
-        return sendResponse(res, 200, {
-            next: "submit_new_password"
-        });
+        return next();
     }
 
     const isValidPass =
@@ -80,4 +74,50 @@ export const changePasswordHandler = async (req, res, next) => {
     sendPasswordChangedAlert(user.email, deviceInfo);
 
     return clearCtxId(res, 200, "Password changed successfully", "verify_ctx");
+};
+
+export const forgotPasswordHandler = async (req, res) => {
+    const { email } = req.body;
+    const isMail =
+        /^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63}){1,3}$/.test(
+            email
+        );
+
+    if (!isMail) {
+        return sendResponse(res, 400, "Enter a valid email address");
+    }
+
+    const user = await findUser({
+        email
+    });
+
+    if (user) {
+        const token = crypto
+            .randomBytes(Number(process.env.BYTE))
+            .toString("hex");
+        const link = `${process.extra.DOMAIN_LINK}/auth/reset-password/${token}`;
+
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        await setSession(
+            {
+                userId: user?._id
+            },
+            hashedToken,
+            "forgot:password",
+            "EX",
+            600
+        );
+
+        await sendforgotPasswordReq(user, link);
+    }
+
+    return sendResponse(
+        res,
+        200,
+        "we've sent password reset link successfully"
+    );
 };
