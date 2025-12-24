@@ -7,7 +7,8 @@ import sendResponse from "../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyToken } from "../../helpers/jwt.js";
-import { getIpInfo, getTime, checkValidation } from "../../helpers/helpers.js";
+import { getTime, checkValidation } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 
 import { fingerprintBuilder } from "../../utils/fingerprint.js";
 import { findUser } from "../../services/user.service.js";

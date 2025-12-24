@@ -12,34 +12,13 @@ export const setRefreshExpiry = validateValues => {
     return "1d";
 };
 
-export const checkValidation = (
-    validateSchema,
-    req,
-    msg,
-    
-) => {
-    
+export const checkValidation = (validateSchema, req, msg) => {
     const validate = validateSchema.validate(req.body, joiOptions);
     if (validate.error) {
         const jsonResponse = prettyErrorResponse(validate, msg);
         return { success: false, jsonResponse };
     }
     return { success: true, value: validate.value };
-};
-
-export const getIpInfo = (ip = "103.21.33.0") => {
-    if (ip.includes("::ffff:") || ip === "127.0.0.1") {
-        ip = "103.21.33.0";
-    }
-    const geo = geoip.lookup(ip);
-    return {
-        country: geo?.country,
-        timezone: geo?.timezone,
-        region: geo?.region,
-        city: geo?.city,
-        ip,
-        location: `${geo?.city},${geo?.country}`
-    };
 };
 
 export const getTime = req => {
@@ -69,3 +48,5 @@ export const collectOnMethod = loginMethods => {
 
     return methods;
 };
+
+

@@ -298,3 +298,164 @@ export const forgotPasswordTemplate = (name, link) => {
 </html>`;
     return html;
 };
+
+export const resetPasswordAlertTemplate = (
+    name,
+    device,
+    browser,
+    os,
+    location,
+    ip,
+    time
+) => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Password Reset Successful</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(180deg, #f4f6fb 0%, #eef2ff 100%);
+    color: #111827;
+  }
+
+  .card {
+    max-width: 560px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 34px;
+    box-shadow: 0 20px 40px rgba(0,0,0,.10);
+  }
+
+  .badge {
+    display: inline-block;
+    background: #ecfdf5;
+    color: #047857;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: #4b5563;
+    margin-bottom: 26px;
+    line-height: 24px;
+  }
+
+  .device-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 24px;
+    background: #f9fafb;
+  }
+
+  .device-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  .device-meta {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 21px;
+  }
+
+  .info {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 20px;
+  }
+
+  .warning {
+    background: #fff7ed;
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #92400e;
+  }
+
+  .footer {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 32px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+  }
+</style>
+</head>
+
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:44px 14px;">
+<tr>
+<td align="center">
+
+<table class="card" cellpadding="0" cellspacing="0">
+<tr>
+<td>
+
+<div class="badge">Security update</div>
+
+<div class="title">Password reset successful</div>
+
+<div class="subtitle">
+Hi <strong>${name}</strong>,<br>
+Your account password has been successfully updated.
+</div>
+
+<div class="device-card">
+  <div class="device-title">Reset performed from</div>
+  <div class="device-meta">
+    ${device} · ${browser} · ${os}<br>
+    ${location} · ${ip}<br>
+    <strong>Time:</strong> ${time}
+  </div>
+</div>
+
+<div class="info">
+For your protection, we signed you out from all active devices.
+Please sign in again using your new password.
+</div>
+
+<div class="warning">
+<strong>Was this not you?</strong><br>
+If you didn’t reset your password, contact our support team immediately.
+</div>
+
+<div class="footer">
+DevTinder Security Team<br>
+© 2025 DevTinder Inc. All rights reserved.
+</div>
+
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+</table>
+</body>
+</html>`;
+    return html;
+};

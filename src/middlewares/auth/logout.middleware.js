@@ -2,7 +2,7 @@ import { verifyRefreshToken } from "../../helpers/token.js";
 import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { findUser, updateUser } from "../../services/user.service.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
-import { getIpInfo } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 
 import crypto from "crypto";
 
@@ -62,10 +62,14 @@ export const validateLogout = async (req, res, next) => {
 
 export const logoutAllSession = async (req, res, next) => {
     const { user, device, reason } = req.auth;
-    const invalidateAllRefreshToken = user.refreshToken.map(t => ({
-        ...t,
-        version: t.version + 1
-    }));
+
+    const invalidateAllRefreshToken = user.refreshToken.map(t => {
+        const version = t.version + 1;
+        return {
+            ...t,
+            version
+        };
+    });
 
     const logoutInfo = getLogoutInfo(reason || "manual", "logout-all", device);
     user.logout.push(logoutInfo);

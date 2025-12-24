@@ -8,10 +8,10 @@ import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyHash } from "../../helpers/hash.js";
 import {
     getTime,
-    getIpInfo,
     setRefreshExpiry,
     checkValidation
 } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 
 import { isDeviceTrusted } from "../../services/auth.service.js";
 import { findUser } from "../../services/user.service.js";

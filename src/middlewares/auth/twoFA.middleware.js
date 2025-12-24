@@ -4,10 +4,11 @@ import sendResponse from "../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import {
-    getIpInfo,
+    
     setRefreshExpiry,
     checkValidation
 } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 
 export const twoFAValidation = (req, res, next) => {
     req.auth = {};

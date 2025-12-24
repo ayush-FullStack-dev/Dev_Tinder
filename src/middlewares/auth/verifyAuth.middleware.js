@@ -1,5 +1,6 @@
 import sendResponse, { clearCtxId } from "../../helpers/sendResponse.js";
-import { getTime, checkValidation, getIpInfo } from "../../helpers/helpers.js";
+import { getTime, checkValidation,  } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 
 import { verifyAuthValidator } from "../../validators/auth/verifyAuth.validator.js";

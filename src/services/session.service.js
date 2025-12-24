@@ -18,7 +18,7 @@ export const setSession = async (
         data = JSON.stringify(data);
     }
     if (typeof user === "string") {
-        await redis.set(`${link}:${user}`, data);
+        await redis.set(`${link}:${user}`, data,...others);
         return true;
     }
     await redis.set(`${link}:${user._id}`, data, ...others);

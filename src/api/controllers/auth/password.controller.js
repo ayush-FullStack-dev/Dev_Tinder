@@ -1,58 +1,61 @@
 import crypto from "crypto";
 
 import sendResponse, { clearCtxId } from "../../../helpers/sendResponse.js";
-import { getLogoutInfo } from "../../../helpers/logout.js";
+import redis from "../../../config/redis.js";
+import { getLogoutInfo, getInvalidateToken } from "../../../helpers/logout.js";
 import { verifyHash, generateHash } from "../../../helpers/hash.js";
+import { getIpInfo } from "../../../helpers/ip.js";
+import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 
 import { getSession, setSession } from "../../../services/session.service.js";
 import { findUser, updateUser } from "../../../services/user.service.js";
+import { getRiskScore } from "../../../utils/security/riskEngine.js";
 
 import {
     sendPasswordChangedAlert,
-    sendforgotPasswordReq
+    sendforgotPasswordReq,
+    sendPasswordResetAlert
 } from "../../../helpers/mail.js";
+
+const isValidPass = async (newPass, oldPassword) => {
+    const isValidPass =
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/.test(
+            newPass
+        );
+
+    if (!isValidPass) {
+        return "That password doesn’t work. Please follow the password rules and try again.";
+    }
+
+    const oldPass = await verifyHash(newPass, oldPassword);
+
+    if (oldPass) {
+        return "Your new password must be different from your current password";
+    }
+
+    return null;
+};
 
 export const changePasswordHandler = async (req, res, next) => {
     const { user, deviceInfo, ctxId, findedCurrent } = req.auth;
     deviceInfo.name = user.name;
     const getData = await getSession(`change:password:${ctxId}`);
-    const invalidateRefreshToken = user.refreshToken.map(t => {
-        if (t.ctxId === findedCurrent.ctxId) {
-            return t;
-        }
-        return {
-            ...t,
-            version: t.version + 1
-        };
-    });
 
     if (!getData?.verified) {
         return next();
     }
 
-    const isValidPass =
-        /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/.test(
-            req.body?.password
-        );
+    const checkIsPass = await isValidPass(req.body.password, user.password);
 
-    if (!isValidPass) {
-        return sendResponse(res, 400, "please enter a valid password");
+    if (checkIsPass) {
+        return sendResponse(res, 401, checkIsPass);
     }
 
-    const oldPass = await verifyHash(req.body.password, user.password);
     const logoutInfo = getLogoutInfo(
         "password_changed",
         "password_change",
         deviceInfo
     );
-
-    if (oldPass) {
-        return sendResponse(
-            res,
-            400,
-            "Your new password must be different from your current password"
-        );
-    }
 
     user.logout.push(logoutInfo);
     if (user.logout.length >= 15) {
@@ -63,7 +66,7 @@ export const changePasswordHandler = async (req, res, next) => {
         user._id,
         {
             password: await generateHash(req.body.password),
-            refreshToken: invalidateRefreshToken,
+            refreshToken: getInvalidateToken(user.refreshToken, findedCurrent),
             logout: user.logout
         },
         {
@@ -104,7 +107,8 @@ export const forgotPasswordHandler = async (req, res) => {
 
         await setSession(
             {
-                userId: user?._id
+                userId: user?._id,
+                verified: true
             },
             hashedToken,
             "forgot:password",
@@ -119,5 +123,145 @@ export const forgotPasswordHandler = async (req, res) => {
         res,
         200,
         "we've sent password reset link successfully"
+    );
+};
+
+export const resetPasswordValidation = async (req, res) => {
+    const rawToken = req.params?.token;
+    const device = buildDeviceInfo(
+        req.headers["user-agent"],
+        req.body,
+        getIpInfo(req.realIp)
+    );
+
+    if (rawToken?.length !== Number(process.env.BYTE) * 2) {
+        return sendResponse(
+            res,
+            400,
+            "This password reset link is invalid provide a valid token"
+        );
+    }
+
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+    const data = await getSession(`forgot:password:${hashedToken}`);
+
+    if (!data?.verified) {
+        return sendResponse(
+            res,
+            401,
+            "This password reset link is invalid or has expired."
+        );
+    }
+
+    await setSession(
+        {
+            ...data,
+            by: "server",
+            device
+        },
+        hashedToken,
+        "forgot:password",
+        "XX",
+        "KEEPTTL"
+    );
+
+    return sendResponse(res, 200, {
+        next: "set_new_password",
+        info: {
+            route: "/auth/reset-password/",
+            request: "post"
+        }
+    });
+};
+
+export const resetPasswordHandler = async (req, res) => {
+    const device = buildDeviceInfo(
+        req.headers["user-agent"],
+        req.body,
+        getIpInfo(req.realIp)
+    );
+
+    if (req.params?.token?.length !== Number(process.env.BYTE) * 2) {
+        return sendResponse(
+            res,
+            400,
+            "This password reset link is invalid provide a valid token"
+        );
+    }
+
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
+    const data = await getSession(`forgot:password:${hashedToken}`);
+
+    if (data?.by !== "server") {
+        return sendResponse(res, 401, {
+            message: "You need to verify first",
+            next: "verify_token",
+            info: {
+                route: "/auth/reset-password/",
+                request: "get"
+            }
+        });
+    }
+
+    const user = await findUser({
+        _id: data.userId
+    });
+    if (!user) {
+        return sendResponse(res, 401, {
+            message: "We couldn’t reset your password. Please start again.",
+            action: "RESTART_PASSWORD_RESET"
+        });
+    }
+
+    const score = await getRiskScore(device, data.device);
+
+    if (score > 0) {
+        await redis.del(`forgot:password:${hashedToken}`);
+        return sendResponse(
+            res,
+            401,
+            "We detected unusual activity. This request has been stopped for your security"
+        );
+    }
+
+    const checkIsPass = await isValidPass(req.body.password, user.password);
+    if (checkIsPass) {
+        return sendResponse(res, 401, checkIsPass);
+    }
+
+    user.logout.push(getLogoutInfo("account_recovery", "logout-all", device));
+
+    if (user.logout.length >= 15) {
+        user.logout.shift();
+    }
+
+    await updateUser(
+        user._id,
+        {
+            password: await generateHash(req.body.password),
+            refreshToken: getInvalidateToken(user.refreshToken),
+            logout: user.logout
+        },
+        {
+            id: true
+        }
+    );
+
+    await redis.del(`forgot:password:${hashedToken}`);
+
+    sendPasswordResetAlert(user.email, device, user.name);
+
+    return sendResponse(
+        res,
+        200,
+        "Your password has been reset successfully. Please sign in again."
     );
 };

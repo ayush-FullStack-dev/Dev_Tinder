@@ -6,9 +6,12 @@ import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.
 import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
 
 import { logoutAllTemplate } from "../templates/mail/logoutAlert.templete.js";
+
+import { maskIp } from "../helpers/ip.js";
 import {
     passwordChangedAlertTemplate,
-    forgotPasswordTemplate
+    forgotPasswordTemplate,
+    resetPasswordAlertTemplate
 } from "../templates/mail/password.template.js";
 
 const transporter = mailer.createTransport({
@@ -159,6 +162,28 @@ export const sendforgotPasswordReq = async (user, link) => {
         user.email,
         `Reset your DevTinder password`,
         forgotPasswordTemplate(user.name, link)
+    );
+
+    return mailInfo;
+};
+
+export const sendPasswordResetAlert = async (userMail, userInfo, name) => {
+    for (const info in userInfo) {
+        userInfo[info] = userInfo[info] || "UNKNOWN";
+    }
+
+    const mailInfo = await sendMail(
+        userMail,
+        `Your password has been reset successfully`,
+        resetPasswordAlertTemplate(
+            userInfo.name || name,
+            userInfo.deviceModel,
+            `${userInfo.browser} ${userInfo.browserVersion}`,
+            `${userInfo.os} ${userInfo.osVersion}`,
+            userInfo.location,
+            maskIp(userInfo.ip),
+            userInfo.fullTime.readable
+        )
     );
 
     return mailInfo;

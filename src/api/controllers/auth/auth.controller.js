@@ -2,7 +2,8 @@ import crypto from "crypto";
 import sendResponse, { setCtxId } from "../../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
-import { getIpInfo } from "../../../helpers/helpers.js";
+import { getIpInfo } from "../../../helpers/ip.js"
+
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
 import {
     calculateLoginRisk,
@@ -58,7 +59,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     );
 };
 
-export const verifyVerifactionHandler =  (link, nextStep) => {
+export const verifyVerifactionHandler = (link, nextStep) => {
     return async (req, res, next) => {
         const { verify, ctxId } = req.auth;
 

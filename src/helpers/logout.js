@@ -15,3 +15,27 @@ export function getLogoutInfo(reason, action, device, ctxId) {
         ...device
     };
 }
+
+export const getInvalidateToken = (refreshToken, current) => {
+    if (current) {
+        return refreshToken.map(t => {
+            const version = t.version + 1;
+            if (t.ctxId === current.ctxId) {
+                return t;
+            }
+            return {
+                ...t,
+                version
+            };
+        });
+    }
+
+    return refreshToken.map(t => {
+        const version = t.version + 1;
+
+        return {
+            ...t,
+            version
+        };
+    });
+};

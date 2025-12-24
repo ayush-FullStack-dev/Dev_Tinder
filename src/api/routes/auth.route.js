@@ -26,7 +26,9 @@ import {
 } from "../controllers/auth/auth.controller.js";
 import {
     changePasswordHandler,
-    forgotPasswordHandler
+    forgotPasswordHandler,
+    resetPasswordValidation,
+    resetPasswordHandler
 } from "../controllers/auth/password.controller.js";
 
 // importing middleware
@@ -168,5 +170,9 @@ router.post(
 );
 
 router.post("/forgot-password/", forgotPasswordHandler);
+router
+    .route("/reset-password/:token/")
+    .get(resetPasswordValidation)
+    .post( resetPasswordHandler);
 
 export default router;

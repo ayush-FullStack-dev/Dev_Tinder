@@ -2,11 +2,12 @@ import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyRefreshToken } from "../../helpers/token.js";
 import {
-    getIpInfo,
+    
     collectOnMethod,
     getTime,
     setRefreshExpiry
 } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 import { setTwoFa } from "../../helpers/twoFa.js";
 import { getAccesToken, getRefreshToken } from "../../helpers/token.js";
 

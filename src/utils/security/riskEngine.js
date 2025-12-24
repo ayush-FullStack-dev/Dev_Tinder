@@ -1,6 +1,6 @@
 import epochify from "epochify";
 import { compareFingerprint } from "../fingerprint.js";
-import { checkTimeManipulation } from "./timeManipulation.js"
+import { checkTimeManipulation } from "./timeManipulation.js";
 
 export const getRiskLevel = score => {
     if (score <= 20) return "verylow";
@@ -17,7 +17,14 @@ export const getRiskScore = async (current, last, others) => {
     const diffMin = epochify.getDiff(Date.now(), last.createdAt, "minute");
     const diffDay = epochify.getDiff(Date.now(), last.createdAt, "days");
 
-    const timeManip = checkTimeManipulation(others.time);
+    let timeManip = {
+        success: true
+    };
+
+    if (others) {
+        timeManip = checkTimeManipulation(others.time);
+    }
+
     const fpValid = await compareFingerprint(
         current,
         last.fingerprint ||

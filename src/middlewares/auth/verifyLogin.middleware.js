@@ -8,9 +8,9 @@ import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import {
     checkValidation,
     getTime,
-    getIpInfo,
     setRefreshExpiry
 } from "../../helpers/helpers.js";
+import { getIpInfo } from "../../helpers/ip.js";
 
 import { verifyLoginValidator } from "../../validators/auth/verifyLogin.validator.js";
 
@@ -251,7 +251,6 @@ export const verifyLoginPassword = async (req, res, next) => {
         stepup: info.risk === "high",
         method: "password"
     };
-    
 
     return next();
 };
