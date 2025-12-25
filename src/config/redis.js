@@ -2,15 +2,7 @@ import Redis from "ioredis";
 import ApiError from "../helpers/ApiError.js";
 import { success, info } from "../../logs/printLogs.js";
 
-const redis = new Redis({
-    port: process.env.REDIS_PORT || 6379,
-    host: process.env.REDIS_HOST || "localhost",
-    db: process.env.REDIS_DB || 0,
-    ...(process.env.REDIS_PASSWORD && {
-        username: process.env.REDIS_USERNAME || "default",
-        password: process.env.REDIS_PASSWORD || "default"
-    })
-});
+const redis = new Redis(process.env.REDIS_URI);
 
 export function connectRedis() {
     info("CONNECTING REDIS ...");

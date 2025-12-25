@@ -53,6 +53,7 @@ export const userSchema = new mongoose.Schema({
             createdAt: Date
         }
     ],
+    trustedSession: [],
     logout: [
         {
             reason: {
@@ -155,11 +156,12 @@ export const userSchema = new mongoose.Schema({
             type: Boolean,
             default: false
         },
-        loginMethods: {
+        twoFAMethods: {
             email: {
                 type: Object,
                 default: {
                     type: "EMAIL",
+                    emails: [],
                     on: true
                 }
             },

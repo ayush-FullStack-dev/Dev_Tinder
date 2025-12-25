@@ -44,6 +44,7 @@ export const loginIdentifyValidation = async (req, res, next) => {
         });
     }
 
+    
     const deviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         validate.value,

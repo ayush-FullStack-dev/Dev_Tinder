@@ -1,3 +1,5 @@
+import geoip from "geoip-lite"
+
 export const maskIp = ip => {
     if (!ip || typeof ip !== "string") return "";
 

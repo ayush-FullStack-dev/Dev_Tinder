@@ -2,7 +2,7 @@ import crypto from "crypto";
 import sendResponse, { setCtxId } from "../../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
-import { getIpInfo } from "../../../helpers/ip.js"
+import { getIpInfo } from "../../../helpers/ip.js";
 
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
 import {
@@ -59,7 +59,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     );
 };
 
-export const verifyVerifactionHandler = (link, nextStep) => {
+export const verifyVerifactionHandler = (link, nextStep, others) => {
     return async (req, res, next) => {
         const { verify, ctxId } = req.auth;
 
@@ -69,14 +69,29 @@ export const verifyVerifactionHandler = (link, nextStep) => {
         }
 
         if (link) {
+            const hashedToken = crypto
+                .createHash("sha256")
+                .update(ctxId)
+                .digest("hex");
+
             await setSession(
                 {
                     verified: true,
                     ...verify
                 },
-                ctxId,
-                link
+                hashedToken,
+                link,
+                "EX",
+                300
             );
+        }
+
+        if (others) {
+            return sendResponse(res, 200, {
+                ...others,
+                token: ctxId,
+                next: `${nextStep}${ctxId}`
+            });
         }
 
         if (nextStep) {

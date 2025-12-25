@@ -68,7 +68,10 @@ import {
     findLoginData,
     validateBasicInfo
 } from "../../middlewares/auth/auth.middleware.js";
-import { verifyVerifaction } from "../../middlewares/auth/verifyAuth.middleware.js";
+import {
+    verifyVerifaction,
+    verifedTwoFaUser
+} from "../../middlewares/auth/verifyAuth.middleware.js";
 
 const router = express.Router();
 
@@ -173,6 +176,46 @@ router.post("/forgot-password/", forgotPasswordHandler);
 router
     .route("/reset-password/:token/")
     .get(resetPasswordValidation)
-    .post( resetPasswordHandler);
+    .post(resetPasswordHandler);
+
+router.post(
+    "/mfa/verify/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifyVerifaction,
+    verifyLoginPasskey, // low / mid
+    verifyLoginPassword, // low / mid / high
+    verifyLoginSessionApproval, // mid / high / veryhigh
+    verifyLoginSecurityKey, // high / veryhigh
+    verifyVerifactionHandler("verify:2fa", "/mfa/mange?rpat=", {
+        verified: true,
+        expiresIn: Date.now() + 300000
+    }) // check verified
+);
+
+router.post(
+    "/mfa/verify/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifyVerifaction,
+    verifyLoginPasskey, // low / mid
+    verifyLoginPassword, // low / mid / high
+    verifyLoginSessionApproval, // mid / high / veryhigh
+    verifyLoginSecurityKey, // high / veryhigh
+    verifyVerifactionHandler("verify:2fa", "/mfa/mange?rpat=", {
+        verified: true,
+        expiresIn: Date.now() + 300000
+    }) // check verified
+);
+
+router.get(
+    "/mfa/manage/",
+    validateBasicInfo, // basic things need for device info
+    isLogin, // check user is logged or not
+    findLoginData, // if logged find user in db
+    verifedTwoFaUser // check verified
+);
 
 export default router;

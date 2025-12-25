@@ -1,5 +1,5 @@
 import sendResponse, { clearCtxId } from "../../helpers/sendResponse.js";
-import { getTime, checkValidation,  } from "../../helpers/helpers.js";
+import { getTime, checkValidation } from "../../helpers/helpers.js";
 import { getIpInfo } from "../../helpers/ip.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 
@@ -76,5 +76,26 @@ export const verifyVerifaction = async (req, res, next) => {
         deviceInfo: getDeviceInfo
     };
 
+    return next();
+};
+
+export const verifedTwoFaUser = async (req, res, next) => {
+    if (!req.query?.rpat) {
+        return sendResponse(res, 400, "Send a valid rpat id");
+    }
+
+    const data = await getSession(`verify:2fa:${req.query.rpat}`);
+
+    if (!data?.verified) {
+        return sendResponse(res, 401, {
+            message: "Your TwoFa session has expired. Please start again.",
+            action: "RESTART_VERIFACTION"
+        });
+    }
+
+    req.auth = {
+        ...req.auth,
+        verifyInfo: data
+    };
     return next();
 };

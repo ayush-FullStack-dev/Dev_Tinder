@@ -1,14 +1,18 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 
-const privateKey = fs.readFileSync(
-    "env/AsymmetricCryptography/jwt.private.key",
-    "utf8"
-);
-const publicKey = fs.readFileSync(
-    "env/AsymmetricCryptography/jwt.public.key",
-    "utf8"
-);
+const isProd = process.env.NODE_ENV === "production";
+
+ const PRIVATE_KEY_PATH = isProd
+    ? "/etc/secrets/jwt_private.key"
+    : path.resolve("env/AsymmetricCryptography/jwt.private.key");
+
+const PUBLIC_KEY_PATH = isProd
+    ? "/etc/secrets/jwt_public.key"
+    : path.resolve("env/AsymmetricCryptography/jwt.public.key");
+
+const privateKey = fs.readFileSync(PRIVATE_KEY_PATH, "utf8");
+const publicKey = fs.readFileSync(PUBLIC_KEY_PATH, "utf8")
 
 export function signToken(
     payload,

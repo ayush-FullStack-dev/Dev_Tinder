@@ -39,7 +39,8 @@ const isValidPass = async (newPass, oldPassword) => {
 export const changePasswordHandler = async (req, res, next) => {
     const { user, deviceInfo, ctxId, findedCurrent } = req.auth;
     deviceInfo.name = user.name;
-    const getData = await getSession(`change:password:${ctxId}`);
+    const hashedToken = crypto.createHash("sha256").update(ctxId).digest("hex");
+    const getData = await getSession(`change:password:${hashedToken}`);
 
     if (!getData?.verified) {
         return next();
