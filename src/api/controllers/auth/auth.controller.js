@@ -74,6 +74,7 @@ export const verifyVerifactionHandler = (link, nextStep, others) => {
                 .update(ctxId)
                 .digest("hex");
 
+            
             await setSession(
                 {
                     verified: true,

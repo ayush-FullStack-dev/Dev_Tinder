@@ -158,27 +158,89 @@ export const userSchema = new mongoose.Schema({
         },
         twoFAMethods: {
             email: {
-                type: Object,
-                default: {
-                    type: "EMAIL",
-                    emails: [],
-                    on: true
-                }
+                type: {
+                    type: String,
+                    enum: ["EMAIL"],
+                    default: "EMAIL"
+                },
+                enabled: {
+                    type: Boolean,
+                    default: false
+                },
+                primary: {
+                    type: String
+                },
+                emails: [
+                    {
+                        value: {
+                            type: String,
+                            required: true
+                        },
+                        verified: {
+                            type: Boolean,
+                            default: false
+                        },
+                        primary: {
+                            type: Boolean,
+                            default: false
+                        },
+                        addedAt: {
+                            type: Date,
+                            default: Date.now()
+                        },
+                        lastUsedAt: {
+                            type: Date,
+                            default: null
+                        }
+                    }
+                ],
+
+                createdAt: { type: Date, default: Date.now() }
             },
             totp: {
-                type: Object,
-                default: {
-                    type: "TOTP",
-                    on: false,
-                    code: ""
-                }
+                type: {
+                    type: String,
+                    enum: ["TOTP"],
+                    default: "TOTP"
+                },
+
+                enabled: {
+                    type: Boolean,
+                    default: false
+                },
+                verified: {
+                    type: Boolean,
+                    default: false
+                },
+                secret: {
+                    type: String,
+                    default: null
+                },
+                createdAt: { type: Date, default: Date.now() },
+                lastUsedAt: { type: Date, default: null }
             },
-            backupcode: {
-                type: Object,
-                default: {
-                    type: "BACKUPCODE",
-                    code: []
-                }
+            backupCodes: {
+                enabled: { type: Boolean, default: false },
+
+                codes: [
+                    {
+                        iv: {
+                            type: String,
+                            required: true
+                        },
+                        content: {
+                            type: String,
+                            required: true
+                        },
+                        tag: {
+                            type: String,
+                            required: true
+                        }
+                    }
+                ],
+                renew: { type: Boolean, default: false },
+                createdAt: { type: Date, default: Date.now() },
+                lastUsedAt: { type: Date, default: null }
             }
         }
     }

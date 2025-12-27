@@ -18,7 +18,7 @@ export const setSession = async (
         data = JSON.stringify(data);
     }
     if (typeof user === "string") {
-        await redis.set(`${link}:${user}`, data,...others);
+        await redis.set(`${link}:${user}`, data, ...others);
         return true;
     }
     await redis.set(`${link}:${user._id}`, data, ...others);
@@ -53,4 +53,10 @@ export const getSession = async (link, option) => {
         return JSON.parse(data);
     }
     return data;
+};
+
+export const cleanupMfa = async ( hash) => {
+    await redis.del(`verify:2fa:${hash}`);
+    await redis.del(`email:verified:${hash}`);
+    return true;
 };

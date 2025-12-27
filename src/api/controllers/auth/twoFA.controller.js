@@ -25,6 +25,8 @@ import {
     cleanup2fa
 } from "../../../services/session.service.js";
 
+import { getMaskedMails } from "../../../helpers/mail.js";
+
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
 import { tokenBuilder } from "../../../utils/cron.js";
 
@@ -54,7 +56,7 @@ export const resendOtpHandler = async (req, res) => {
         });
     }
 
-    const emailAllowed = user.twoFA.loginMethods.email.on;
+    const emailAllowed = user.twoFA.twoFAMethods.email.enabled;
 
     if (!emailAllowed) {
         return sendResponse(res, 401, {
@@ -131,8 +133,8 @@ export const startTwoFAHandler = async (req, res) => {
     await setSession(deviceInfo, ctxId, "device:info");
     await setSession(fingerprint, ctxId, "2fa:fp:start");
 
-    const method = user.twoFA.loginMethods;
-    if (loginMethod === "EMAIL" && method.email.on) {
+    const method = user.twoFA.twoFAMethods;
+    if (loginMethod === "EMAIL" && method.email.enabled) {
         let message = "Trusted device detected. Completing secure sign-in…";
         let requireCode = false;
         const deviceTrust = await isDeviceTrusted({
@@ -142,8 +144,34 @@ export const startTwoFAHandler = async (req, res) => {
         });
 
         if (!deviceTrust?.success) {
+            const getData = await getSession(`otp:email:${ctxId}`);
+            if (!getData) {
+                const allowedEmail = getMaskedMails(method.email.emails);
+                await setSession(
+                    {
+                        verified: true,
+                        allowedEmail
+                    },
+                    ctxId,
+                    "otp:email"
+                );
+                return sendResponse(res, 200, {
+                    message:
+                        "Select an email address to receive the verification code.",
+                    allowedEmail,
+                    next: "submit_email"
+                });
+            }
+
+            if (!getData?.allowedEmail?.includes(req.body?.otpMail)) {
+                return sendResponse(
+                    res,
+                    401,
+                    "Selected email is not allowed for this verification."
+                );
+            }
             const otp = await getOtpSetOtp(ctxId);
-            const otpInfo = sendOtp(email, otp, deviceInfo);
+            const otpInfo = sendOtp(req.body?.otpMail, otp, deviceInfo);
             message = "Otp send Succesfull";
             requireCode = true;
         }
@@ -151,7 +179,8 @@ export const startTwoFAHandler = async (req, res) => {
         await setSession(
             {
                 start: true,
-                method: "email"
+                method: "email",
+                email: req.body?.otpMail || false
             },
             ctxId
         );
@@ -163,7 +192,7 @@ export const startTwoFAHandler = async (req, res) => {
         });
     }
 
-    if (loginMethod === "TOTP" && method.totp.on) {
+    if (loginMethod === "TOTP" && method.totp.enabled) {
         await setSession(
             {
                 start: true,
@@ -178,7 +207,7 @@ export const startTwoFAHandler = async (req, res) => {
         });
     }
 
-    if (loginMethod === "BACKUPCODE" && method.backupcode.code.length) {
+    if (loginMethod === "BACKUPCODE" && method.backupCodes.enabled) {
         await setSession(
             {
                 start: true,

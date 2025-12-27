@@ -104,7 +104,7 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     req.auth.loginMethod = loginMethod;
     req.auth.riskLevel = await getSession(`2fa:data:${ctxId}`).risk;
     req.auth.code = validate.value.code;
-    req.auth.method = user.twoFA.loginMethods;
+    req.auth.method = user.twoFA.twoFAMethods;
     req.auth.deviceInfo = getDeviceInfo;
     req.auth.userInfo = {
         userId: user._id,
@@ -130,7 +130,7 @@ export const verifyTwoFAEmail = async (req, res, next) => {
         });
     }
 
-    if (loginMethod === "email" && method.email.on) {
+    if (loginMethod === "email" && method.email.enabled) {
         const key = `otp:${ctxId}`;
         const getOtp = await getSession(key, "string");
         if (!getOtp) {
@@ -160,14 +160,14 @@ export const verifyTwoFATotp = async (req, res, next) => {
     let { user, loginMethod, code, method, verify, ctxId } = req.auth;
     if (verify?.success) return next();
 
-    if (loginMethod === "totp" && !method.totp.on) {
+    if (loginMethod === "totp" && !method.totp.enabled) {
         await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "totp in disabled!"
         });
     }
 
-    if (loginMethod === "totp" && method.totp.on) {
+    if (loginMethod === "totp" && method.totp.enabled) {
         const isCodeValid = await getSession(`totp:last:${ctxId}`, "string");
 
         if (isCodeValid === code) {
@@ -177,7 +177,7 @@ export const verifyTwoFATotp = async (req, res, next) => {
             });
         }
 
-        req.auth.verify = verifyTotpCode(code, method.totp.code);
+        req.auth.verify = verifyTotpCode(code, method.totp.secret);
 
         if (!verify?.success) {
             await redis.set(`totp:last:${ctxId}`, code, "EX", 60);
@@ -192,16 +192,16 @@ export const verifyTwoFABackupcode = async (req, res, next) => {
 
     if (verify?.success) return next();
 
-    if (loginMethod === "backupcode" && !method.backupcode.code.length) {
+    if (loginMethod === "backupcode" && !method.backupCodes.enabled) {
         await cleanup2fa(ctxId);
         return sendResponse(res, 401, {
             message: "BackupCode is disabled!"
         });
     }
 
-    if (loginMethod === "backupcode" && method.backupcode.code.length) {
+    if (loginMethod === "backupcode" && method.backupCodes.enabled) {
         let existsCode = null;
-        for (const backupcode of method.backupcode.code) {
+        for (const backupcode of method.backupCodes.codes) {
             const verifyCode = await verifyHash(code, backupcode);
             if (verifyCode) {
                 existsCode = backupcode;
@@ -215,7 +215,7 @@ export const verifyTwoFABackupcode = async (req, res, next) => {
                 method: "backup_code"
             };
         } else {
-            method.backupcode.code = method.backupcode.code.filter(
+            method.backupCodes.codes = method.backupCodes.codes.filter(
                 backupcode => backupcode !== existsCode
             );
             await updateUser(user._id, {

@@ -2,10 +2,8 @@ import connectDB from "./src/config/mongodb.js";
 import { connectRedis } from "./src/config/redis.js";
 import { webPushStart } from "./src/config/webpush.js";
 import app from "./src/app.js";
-import fs from "fs";
 
-console.log("private exists:", fs.existsSync("/etc/secrets/jwt_private.key"));
-console.log("public exists:", fs.existsSync("/etc/secrets/jwt_public.key"));
+
 
 import chalk, {
     printASCII,

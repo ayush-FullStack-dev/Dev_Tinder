@@ -49,4 +49,19 @@ export const collectOnMethod = loginMethods => {
     return methods;
 };
 
+export const getAsterisk = (maskMails, skips = []) => {
+    const asterisk = [];
+    for (let i = 0; i < maskMails.length; i++) {
+        if (maskMails[0] === maskMails[i]) {
+            continue;
+        } else if (
+            skips.includes(i) ||
+            maskMails[maskMails.length - 1] === maskMails[i]
+        ) {
+            continue;
+        }
+        asterisk.push("*");
+    }
 
+    return asterisk.join("");
+};

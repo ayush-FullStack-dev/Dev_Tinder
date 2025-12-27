@@ -1,4 +1,7 @@
+import crypto from "crypto";
+
 import sendResponse, { clearCtxId } from "../../helpers/sendResponse.js";
+
 import { getTime, checkValidation } from "../../helpers/helpers.js";
 import { getIpInfo } from "../../helpers/ip.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
@@ -84,7 +87,18 @@ export const verifedTwoFaUser = async (req, res, next) => {
         return sendResponse(res, 400, "Send a valid rpat id");
     }
 
-    const data = await getSession(`verify:2fa:${req.query.rpat}`);
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(req.query?.rpat)
+        .digest("hex");
+
+    const getDeviceInfo = buildDeviceInfo(
+        req.headers["user-agent"],
+        req.body,
+        getIpInfo(req.realIp)
+    );
+
+    const data = await getSession(`verify:2fa:${hashedToken}`);
 
     if (!data?.verified) {
         return sendResponse(res, 401, {
@@ -95,7 +109,10 @@ export const verifedTwoFaUser = async (req, res, next) => {
 
     req.auth = {
         ...req.auth,
-        verifyInfo: data
+        verifyInfo: data,
+        device: getDeviceInfo,
+        hashedToken
     };
+
     return next();
 };

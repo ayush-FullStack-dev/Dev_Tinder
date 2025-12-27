@@ -8,6 +8,7 @@ import newLoginAlertTemplete from "../templates/mail/newLoginAlert.templete.js";
 import { logoutAllTemplate } from "../templates/mail/logoutAlert.templete.js";
 
 import { maskIp } from "../helpers/ip.js";
+import { getAsterisk } from "../helpers/helpers.js";
 import {
     passwordChangedAlertTemplate,
     forgotPasswordTemplate,
@@ -187,4 +188,57 @@ export const sendPasswordResetAlert = async (userMail, userInfo, name) => {
     );
 
     return mailInfo;
+};
+
+export const getMaskMail = mail => {
+    const username = mail.split("@");
+
+    if (username[0].length === 1) {
+        return `*@${username[1]}`;
+    }
+
+    if (username[0].length === 2) {
+        const maskMail = username[0].split("");
+        return `${maskMail[0]}*@${username[1]}`;
+    }
+
+    if (username[0].length <= 4) {
+        const maskMail = username[0].split("");
+        const length = maskMail.length;
+        const asterisk = getAsterisk(maskMail, [length - 1]);
+        return `${maskMail[0]}${asterisk}${maskMail[maskMail.length - 1]}@${
+            username[1]
+        }`;
+    }
+
+    if (username[0].length <= 6) {
+        const maskMail = username[0].split("");
+        const length = maskMail.length;
+        const asterisk = getAsterisk(maskMail, [length - 1, length - 2]);
+        return `${maskMail[0]}${asterisk}${maskMail[maskMail.length - 2]}${
+            maskMail[maskMail.length - 1]
+        }@${username[1]}`;
+    }
+
+    {
+        const maskMail = username[0].split("");
+        const length = maskMail.length;
+        const asterisk = getAsterisk(maskMail, [
+            length - 1,
+            length - 2,
+            length - 3
+        ]);
+        return `${maskMail[0]}${asterisk}${maskMail[maskMail.length - 3]}${
+            maskMail[maskMail.length - 2]
+        }${maskMail[maskMail.length - 1]}@${username[1]}`;
+    }
+};
+
+export const getMaskedMails = emails => {
+    const allowedEmail = [];
+    for (const email of emails) {
+        const maskedMail = getMaskMail(email);
+        allowedEmail.push(maskedMail);
+    }
+    return allowedEmail
 };

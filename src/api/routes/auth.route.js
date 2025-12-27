@@ -30,6 +30,25 @@ import {
     resetPasswordValidation,
     resetPasswordHandler
 } from "../controllers/auth/password.controller.js";
+import { manageMfaHandler } from "../controllers/auth/mfa/mfa.controller.js";
+import {
+    renewBackupCodeHandler,
+    addBackupCodeHandler,
+    activeBackupCodeHandler,
+    deleteBackupCodeHandler
+} from "../controllers/auth/mfa/backupcodes.controller.js";
+import {
+    activeTotpHandler,
+    addTotpHandler,
+    renewTotpHandler,
+    deleteTotpHandler
+} from "../controllers/auth/mfa/totp.controller.js";
+import {
+    activeMailsHandler,
+    addNewMailHandler,
+    verifyMailHandler,
+    revokeMailHandler
+} from "../controllers/auth/mfa/email.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -171,16 +190,17 @@ router.post(
     verifyLoginSecurityKey, // high / veryhigh
     verifyVerifactionHandler("change:password", "submit_new_password") // check verified
 );
-
 router.post("/forgot-password/", forgotPasswordHandler);
 router
     .route("/reset-password/:token/")
     .get(resetPasswordValidation)
     .post(resetPasswordHandler);
 
+// twoFA releted routes
+router.post("/mfa/start/", isLogin, findLoginData, verifyIdentifyHandler);
+
 router.post(
     "/mfa/verify/",
-    validateBasicInfo,
     isLogin,
     findLoginData,
     verifyVerifaction,
@@ -188,34 +208,36 @@ router.post(
     verifyLoginPassword, // low / mid / high
     verifyLoginSessionApproval, // mid / high / veryhigh
     verifyLoginSecurityKey, // high / veryhigh
-    verifyVerifactionHandler("verify:2fa", "/mfa/mange?rpat=", {
+    verifyVerifactionHandler("verify:2fa", "/mfa/manage?rpat=", {
         verified: true,
         expiresIn: Date.now() + 300000
     }) // check verified
 );
 
-router.post(
-    "/mfa/verify/",
-    validateBasicInfo,
-    isLogin,
-    findLoginData,
-    verifyVerifaction,
-    verifyLoginPasskey, // low / mid
-    verifyLoginPassword, // low / mid / high
-    verifyLoginSessionApproval, // mid / high / veryhigh
-    verifyLoginSecurityKey, // high / veryhigh
-    verifyVerifactionHandler("verify:2fa", "/mfa/mange?rpat=", {
-        verified: true,
-        expiresIn: Date.now() + 300000
-    }) // check verified
-);
+router.use("/mfa/manage/", isLogin, findLoginData, verifedTwoFaUser);
 
-router.get(
-    "/mfa/manage/",
-    validateBasicInfo, // basic things need for device info
-    isLogin, // check user is logged or not
-    findLoginData, // if logged find user in db
-    verifedTwoFaUser // check verified
-);
+router.get("/mfa/manage/", manageMfaHandler);
+
+router
+    .route("/mfa/manage/backupcode/")
+    .get(activeBackupCodeHandler)
+    .post(addBackupCodeHandler)
+    .put(renewBackupCodeHandler)
+    .delete(deleteBackupCodeHandler);
+
+router
+    .route("/mfa/manage/totp/")
+    .get(activeTotpHandler)
+    .post(addTotpHandler)
+    .patch(renewTotpHandler)
+    .delete(deleteTotpHandler);
+
+router
+    .route("/mfa/manage/email/")
+    .get(activeMailsHandler)
+    .post(addNewMailHandler)
+    .delete(revokeMailHandler);
+
+router.post("/mfa/manage/email/verify/", verifyMailHandler);
 
 export default router;

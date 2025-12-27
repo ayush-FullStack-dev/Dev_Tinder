@@ -1,3 +1,5 @@
+import sendResponse from "../../../../helpers/sendResponse.js";
+
 export const manageMfaHandler = (req, res) => {
     const { user } = req.auth;
 
@@ -11,23 +13,23 @@ export const manageMfaHandler = (req, res) => {
                     count: user.passkeys.length
                 },
                 authenticator: {
-                    enabled: !!user.twoFA.loginMethods.totp.on
+                    enabled: !!user.twoFA.twoFAMethods.totp.enabled
                 },
                 googlePrompt: {
-                    enabled: !!user.trustedSession.length,
-                    devices: user.trustedSession.length
+                    enabled: !!user?.trustedSession?.length,
+                    devices: user?.trustedSession?.length
                 },
                 email: {
-                    enabled: user.twoFA.loginMethods.email.on,
-                    emails: user.twoFA.loginMethods.email.emails
+                    enabled: user.twoFA.twoFAMethods.email.enabled,
+                    emails: user.twoFA.twoFAMethods.email.emails
                 },
                 backupCodes: {
-                    enabled: !!user.twoFA.loginMethods.backupcode.length,
-                    remaining: user.twoFA.loginMethods.backupcode.length
+                    enabled: user.twoFA.twoFAMethods.backupCodes.enabled,
+                    remaining: user.twoFA.twoFAMethods.backupCodes.codes.length
                 }
             },
 
-            lastUpdated: user.twoFA.loginMethods.lastUpdated
+            lastUpdated: user.twoFA.twoFAMethods.lastUpdated
         }
     });
 };
