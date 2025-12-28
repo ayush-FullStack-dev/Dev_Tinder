@@ -56,9 +56,25 @@ export const getSession = async (link, option) => {
     return data;
 };
 
-export const cleanupMfa = async hash => {
-    await redis.del(`verify:2fa:${hash}`);
+export const cleanupMfa = async (hash, mail) => {
+    await redis.del(`verify:mfa:${hash}`);
     await redis.del(`verify:device:${hash}`);
     await redis.del(`email:verified:${hash}`);
+    await redis.del(`verified:email:${mail}`);
     return true;
+};
+
+export const removeKeys = async link => {
+    await redis.del(link);
+    return true;
+};
+
+export const runRedisLua = async (lua, link, keys = 1) => {
+    let data = await redis.eval(lua, keys, link);
+    try {
+        data = JSON.parse(data);
+        return data;
+    } catch (error) {
+        return data;
+    }
 };

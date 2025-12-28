@@ -33,7 +33,7 @@ export const findLoginData = async (req, res, next) => {
     const { info, refreshToken } = req.auth;
 
     const user = await findUser({
-        _id: info._id
+        _id: info?._id
     });
 
     if (!user) {
@@ -98,7 +98,7 @@ export const validateBasicInfo = (req, res, next) => {
     if (devicesize >= 170 && devicesize <= 3000) {
         return sendResponse(res, 400, "provide valid device size");
     }
-    
+
     req.body = {
         ...req.body,
         clientTime: clienttime,

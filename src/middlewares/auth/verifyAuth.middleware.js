@@ -84,7 +84,7 @@ export const verifyVerifaction = async (req, res, next) => {
     return next();
 };
 
-export const verifedTwoFaUser = async (req, res, next) => {
+export const verifedMfaUser = async (req, res, next) => {
     if (!req.query?.rpat) {
         return sendResponse(res, 400, "Send a valid rpat id");
     }
@@ -100,7 +100,7 @@ export const verifedTwoFaUser = async (req, res, next) => {
         getIpInfo(req.realIp)
     );
 
-    const data = await getSession(`verify:2fa:${hashedToken}`);
+    const data = await getSession(`verify:mfa:${hashedToken}`);
     const savedDeviceInfo = await getSession(`verify:device:${hashedToken}`);
 
     if (!data?.verified || !savedDeviceInfo?.verified) {
@@ -111,7 +111,6 @@ export const verifedTwoFaUser = async (req, res, next) => {
     }
 
     const riskScore = await getRiskScore(getDeviceInfo, savedDeviceInfo);
-
 
     if (riskScore > 10) {
         await cleanupMfa(hashedToken);

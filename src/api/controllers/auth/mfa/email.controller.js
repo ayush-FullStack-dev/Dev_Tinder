@@ -116,6 +116,14 @@ export const addNewMailHandler = async (req, res) => {
         "EX",
         180
     );
+    await setSession(
+        {
+            verified: false,
+            value: req.body?.email
+        },
+        req.body?.email,
+        "verified:email"
+    );
     await sendOtp(req.body?.email, otp, device);
 
     await updateUser(
@@ -182,7 +190,7 @@ export const verifyMailHandler = async (req, res) => {
         }
     );
 
-    await cleanupMfa(hashedToken);
+    await cleanupMfa(hashedToken,req.body?.email);
 
     return sendResponse(res, 201, "Email verified successfully");
 };
@@ -223,6 +231,14 @@ export const revokeMailHandler = async (req, res) => {
                 "email:verified",
                 "EX",
                 300
+            );
+            await setSession(
+                {
+                    verified: false,
+                    value: req.body?.email
+                },
+                req.body?.email,
+                "verified:email"
             );
             await sendOtp(req.body?.email, otp, device);
 
@@ -282,14 +298,14 @@ export const revokeMailHandler = async (req, res) => {
         }
     );
 
-    await cleanupMfa(hashedToken);
+    await cleanupMfa(hashedToken,req.body?.email);
 
     return sendResponse(res, 200, "Email removed successfully");
 };
 
 export const resendOtpMfaHandler = async (req, res) => {
     const { user, device, hashedToken } = req.auth;
-    const info = await getSession(`email:verified:${hashedToken}`);
+    const info = await getSession(`verified:email:${req.body?.email}`);
 
     if (!info) {
         return sendResponse(res, 401, {
@@ -304,7 +320,7 @@ export const resendOtpMfaHandler = async (req, res) => {
     await setSession(
         {
             otp: await generateHash(otp.toString()),
-            value: req.body?.email
+            value: info?.email
         },
         hashedToken,
         "email:verified",

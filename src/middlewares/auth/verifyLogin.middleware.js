@@ -1,7 +1,13 @@
-import sendResponse from "../../helpers/sendResponse.js";
+import crypto from "crypto";
 
-import { getSession, cleanupLogin } from "../../services/session.service.js";
+import sendResponse from "../../helpers/sendResponse.js";
+import {
+    getSession,
+    cleanupLogin,
+    runRedisLua
+} from "../../services/session.service.js";
 import { findUser, updateUser } from "../../services/user.service.js";
+import { securitycodeLua } from "../../constants/redis.contants.js";
 
 import { verifyToken } from "../../helpers/jwt.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
@@ -89,8 +95,8 @@ export const verifyLoginValidation = async (req, res, next) => {
     }
 
     if (
-        savedInfo?.allowedMethod &&
-        !savedInfo?.allowedMethod?.includes(validate.value.method)
+        savedInfo.allowedMethod &&
+        !savedInfo.allowedMethod?.includes(validate.value.method)
     ) {
         await cleanupLogin(ctxId);
         return sendResponse(
@@ -153,7 +159,10 @@ export const verifyLoginPasskey = async (req, res, next) => {
         return next();
     }
 
-    if (!["low", "mid"].includes(info.risk) || values.method !== "passkey") {
+    if (
+        !["low", "mid", "high"].includes(info.risk) ||
+        values.method !== "passkey"
+    ) {
         return next();
     }
 
@@ -166,11 +175,11 @@ export const verifyLoginPasskey = async (req, res, next) => {
         });
     }
 
-    const passkey = user.passkeys.find(k =>
+    const passkeyIndex = user.loginMethods.passkeys.findIndex(k =>
         k.credentialId.equals(incomingCredentialId)
     );
 
-    if (!passkey) {
+    if (passkeyIndex === -1) {
         req.auth.verify = {
             success: false,
             method: "passkey",
@@ -178,10 +187,6 @@ export const verifyLoginPasskey = async (req, res, next) => {
         };
         return next();
     }
-
-    user.passkeys = user.passkeys.filter(
-        n => !n.credentialId.equals(passkey.credentialId)
-    );
 
     const verification = await verifyKey(values, saved, passkey);
 
@@ -194,15 +199,15 @@ export const verifyLoginPasskey = async (req, res, next) => {
         return next();
     }
 
-    passkey.counter = verification.authenticationInfo.newCounter;
-    user.passkeys.push(passkey);
+    user.loginMethod.passkeys[passkeyIndex].counter =
+        verification.authenticationInfo.newCounter;
 
     await updateUser(
         {
             _id: user._id
         },
         {
-            passkeys: user.passkeys
+            "loginMethod.passkeys": user.loginMethod.passkeys
         }
     );
 
@@ -230,7 +235,7 @@ export const verifyLoginPassword = async (req, res, next) => {
 
     if (!values.code) {
         return sendResponse(res, 400, {
-            message: "Password is invalid"
+            message: "Password is required to verify"
         });
     }
 
@@ -285,74 +290,49 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
     return next();
 };
 
-export const verifyLoginSecurityKey = async (req, res, next) => {
-    const { user, info, ctxId, values, verify, incomingCredentialId } =
-        req.auth;
+export const verifyLoginSecurityCode = async (req, res, next) => {
+    const { user, info, ctxId, values, verify } = req.auth;
 
     if (verify?.success !== undefined) {
         return next();
     }
 
     if (
-        !["high", "veryhigh"].includes(info.risk) ||
-        values.method !== "security_key"
+        !["mid", "high", "veryhigh"].includes(info.risk) ||
+        values?.method !== "security_code"
     ) {
         return next();
     }
 
-    const saved = await getSession(`securitykey:login:${ctxId}`);
-
-    if (!saved?.challenge) {
-        return sendResponse(res, 401, {
-            message: "Your login session has expired. Please start again.",
-            action: "RESTART_LOGIN"
+    if (!values?.code) {
+        return sendResponse(res, 400, {
+            message: "security code is required to verify"
         });
     }
 
-    const securityKey = user.securityKeys.find(k =>
-        k.credentialId.equals(incomingCredentialId)
+    const hashedCode = crypto
+        .createHash("sha256")
+        .update(values.code)
+        .digest("hex");
+
+    const saved = await runRedisLua(
+        securitycodeLua,
+        `securitycode:login:${hashedCode}`
     );
 
-    if (!securityKey) {
+    if (!saved?.verified) {
         req.auth.verify = {
             success: false,
-            method: "security_key",
-            message: "Invalid security Key credentialId!"
+            method: "security_code",
+            message: "Your security code  is inavlid or expired. try again.",
+            action: "RESTRY_LOGIN"
         };
         return next();
     }
-
-    user.securityKeys = user.securityKeys.filter(
-        n => !n.credentialId.equals(securityKey.credentialId)
-    );
-
-    const verification = await verifyKey(values, saved, securityKey);
-
-    if (!verification?.success) {
-        req.auth.verify = {
-            success: false,
-            method: "security_key",
-            message: verification.message
-        };
-        return next();
-    }
-
-    securityKey.counter = verification.authenticationInfo.newCounter;
-
-    user.securityKeys.push(securityKey);
-
-    await updateUser(
-        {
-            _id: user._id
-        },
-        {
-            securityKeys: user.securityKeys
-        }
-    );
 
     req.auth.verify = {
         success: true,
-        method: "security_key"
+        method: "security_code"
     };
 
     return next();

@@ -1,9 +1,9 @@
-import sendResponse  from "../../helpers/sendResponse.js";
+import sendResponse from "../../helpers/sendResponse.js";
 
 import { sendSuspiciousAlert } from "../../helpers/mail.js";
 import { getRiskLevel, getRiskScore } from "./riskEngine.js";
 
-import { getPasskey, getSecurityKey } from "../../helpers/web.autn.js";
+import { getPasskey } from "../../helpers/web.autn.js";
 
 import { setSession } from "../../services/session.service.js";
 
@@ -49,7 +49,7 @@ export const sendSecurityUpgrade = (user, res, deviceInfo) => {
 
 export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
     const passkey = await getPasskey(user);
-    const securityKey = await getSecurityKey(user);
+
     if (riskLevel === "verylow") {
         return {
             action: "AUTO_LOGIN",
@@ -84,46 +84,51 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
             action: "REQUIRED_METHOD",
             risk: riskLevel,
             loginCtx: ctxId,
-            allowedMethod: ["passkey", "password", "session_approval"],
+            allowedMethod: [
+                "passkey",
+                "password",
+                "session_approval",
+                "security_code"
+            ],
             primaryMethod: "passkey",
             passkey
         };
     }
     if (riskLevel === "high") {
         await setSession(
-            { challenge: securityKey.challenge },
+            { challenge: passkey.challenge },
             ctxId,
-            "securitykey:login"
+            "passkey:login"
         );
         return {
             action: "REQUIRED_METHOD",
             risk: riskLevel,
             loginCtx: ctxId,
-            primaryMethod: "securty_key",
-            allowedMethod: ["password", "securty_key"],
+            primaryMethod: "security_code",
+            allowedMethod: [
+                "password",
+                "security_code",
+                "session_approval",
+                "passkey"
+            ],
             stepUp: ["2fa"],
-            securitykey: securityKey
+            passkey
         };
     }
-    await setSession(
-        { challenge: securityKey.challenge },
-        ctxId,
-        "securitykey:login"
-    );
+
     return {
         action: "REQUIRED_METHOD",
         risk: riskLevel,
         loginCtx: ctxId,
-        allowedMethod: ["securty_key"],
-        primaryMethod: "securty_key",
-        stepUp: ["2fa"],
-        securitykey: securityKey
+        allowedMethod: ["security_code", "session_approval"],
+        primaryMethod: "security_code",
+        stepUp: ["2fa"]
     };
 };
 
 export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
     const passkey = await getPasskey(user);
-    const securityKey = await getSecurityKey(user);
+
     if (riskLevel === "verylow" || riskLevel === "low") {
         await setSession(
             { challenge: passkey.challenge },
@@ -152,33 +157,54 @@ export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
             passkey
         };
     }
-    if (riskLevel === "high") {
+    if (riskLevel === "mid") {
         await setSession(
-            { challenge: securityKey.challenge },
+            { challenge: passkey.challenge },
             ctxId,
-            "securitykey:login"
+            "passkey:login"
         );
         return {
             action: "REQUIRED_METHOD",
             risk: riskLevel,
             loginCtx: ctxId,
-            allowedMethod: ["password", "securty_key"],
-            stepUp: ["2fa"],
-            securitykey: securityKey
+            allowedMethod: [
+                "passkey",
+                "password",
+                "session_approval",
+                "security_code"
+            ],
+            primaryMethod: "passkey",
+            passkey
         };
     }
-    await setSession(
-        { challenge: securityKey.challenge },
-        ctxId,
-        "securitykey:login"
-    );
+    if (riskLevel === "high") {
+        await setSession(
+            { challenge: passkey.challenge },
+            ctxId,
+            "passkey:login"
+        );
+        return {
+            action: "REQUIRED_METHOD",
+            risk: riskLevel,
+            loginCtx: ctxId,
+            primaryMethod: "security_code",
+            allowedMethod: [
+                "password",
+                "security_code",
+                "session_approval",
+                "passkey"
+            ],
+            stepUp: ["2fa"],
+            passkey
+        };
+    }
 
     return {
         action: "REQUIRED_METHOD",
         risk: riskLevel,
         loginCtx: ctxId,
-        allowedMethod: ["securty_key"],
-        stepUp: ["2fa"],
-        securitykey: securityKey
+        allowedMethod: ["security_code", "session_approval"],
+        primaryMethod: "security_code",
+        stepUp: ["2fa"]
     };
 };

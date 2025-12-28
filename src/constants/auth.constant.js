@@ -10,7 +10,7 @@ export const twoFaMethods = ["EMAIL", "TOTP", "BACKUPCODE"];
 export const loginMethods = [
     "trusted_session",
     "passkey",
-    "security_key",
+    "security_code",
     "password",
     "session_approval"
 ];

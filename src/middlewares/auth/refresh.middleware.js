@@ -2,7 +2,6 @@ import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyRefreshToken } from "../../helpers/token.js";
 import {
-    
     collectOnMethod,
     getTime,
     setRefreshExpiry
@@ -216,7 +215,8 @@ export const rotateRefreshToken = async (req, res, next) => {
     );
 
     tokenInfo.token = refreshToken;
-    tokenInfo.lastActive = new Date()
+    tokenInfo.lastActive = new Date();
+    console.log("test");
     user.refreshToken.splice(tokenIndex, 1, tokenBuilder(tokenInfo));
     req.auth.refreshToken = refreshToken;
     req.auth.accessToken = accessToken;

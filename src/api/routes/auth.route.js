@@ -53,6 +53,13 @@ import {
     revokeMailHandler,
     resendOtpMfaHandler
 } from "../controllers/auth/mfa/email.controller.js";
+import { createSecurtyCode } from "../controllers/auth/securityCode.controller.js";
+import {
+    activePasskeysHandler,
+    addNewPasskeyHandler,
+    editPasskeyHandler,
+    deletePasskeyHandler
+} from "../controllers/auth/passkey.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -64,7 +71,7 @@ import {
     verifyLoginPasskey,
     verifyLoginPassword,
     verifyLoginSessionApproval,
-    verifyLoginSecurityKey
+    verifyLoginSecurityCode
 } from "../../middlewares/auth/verifyLogin.middleware.js";
 import {
     verifyTwoFAValidation,
@@ -93,7 +100,7 @@ import {
 } from "../../middlewares/auth/auth.middleware.js";
 import {
     verifyVerifaction,
-    verifedTwoFaUser
+    verifedMfaUser
 } from "../../middlewares/auth/verifyAuth.middleware.js";
 
 const router = express.Router();
@@ -114,10 +121,10 @@ router.post(
     validateBasicInfo,
     verifyLoginValidation, // context + risk
     verifyLoginTrustDevice, // verylow auto-login
-    verifyLoginPasskey, // low / mid
+    verifyLoginPasskey, // low / mid // high
     verifyLoginPassword, // low / mid / high
-    verifyLoginSessionApproval, // mid / high / veryhigh
-    verifyLoginSecurityKey, // high / veryhigh
+    verifyLoginSessionApproval, // mid / high // veryhigh
+    verifyLoginSecurityCode, // mid // high / veryhigh
     verifyLoginHandler // final decision
 );
 
@@ -188,10 +195,10 @@ router.post(
     findLoginData,
     verifyVerifaction,
     changePasswordHandler, // chnage password
-    verifyLoginPasskey, // low / mid
+    verifyLoginPasskey, // low / mid // high
     verifyLoginPassword, // low / mid / high
-    verifyLoginSessionApproval, // mid / high / veryhigh
-    verifyLoginSecurityKey, // high / veryhigh
+    verifyLoginSessionApproval, // mid / high / /veryhigh
+    verifyLoginSecurityCode, // mid // high / veryhigh
     verifyVerifactionHandler("change:password", "submit_new_password") // check verified
 );
 router.post("/forgot-password/", forgotPasswordHandler);
@@ -208,17 +215,23 @@ router.post(
     isLogin,
     findLoginData,
     verifyVerifaction,
-    verifyLoginPasskey, // low / mid
+    verifyLoginPasskey, // low / mid // high
     verifyLoginPassword, // low / mid / high
-    verifyLoginSessionApproval, // mid / high / veryhigh
-    verifyLoginSecurityKey, // high / veryhigh
-    verifyVerifactionHandler("verify:2fa", "/mfa/manage?rpat=", {
+    verifyLoginSessionApproval, // mid / high / /veryhigh
+    verifyLoginSecurityCode, // mid // high / veryhigh
+    verifyVerifactionHandler("verify:mfa", "/mfa/manage?rpat=", {
         verified: true,
         expiresIn: Date.now() + 300000
     }) // check verified
 );
 
-router.use("/mfa/manage/", validateBasicInfo,isLogin, findLoginData, verifedTwoFaUser);
+router.use(
+    "/mfa/manage/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifedMfaUser
+);
 
 router.route("/mfa/manage/").get(manageMfaHandler).post(enableTwoFA);
 
@@ -244,5 +257,23 @@ router
 
 router.post("/mfa/manage/email/verify/", verifyMailHandler);
 router.post("/mfa/manage/email/resend/", resendOtpMfaHandler);
+
+// login methods
+
+router.use(
+    "/manage/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifedMfaUser
+);
+
+router.post("/manage/securitycode/", createSecurtyCode);
+router
+    .route("/manage/passkey/")
+    .get(activePasskeysHandler)
+    .post(addNewPasskeyHandler)
+    .patch(editPasskeyHandler)
+    .delete(deletePasskeyHandler);
 
 export default router;

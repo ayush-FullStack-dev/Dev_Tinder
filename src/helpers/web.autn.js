@@ -3,31 +3,21 @@ import {
     verifyAuthenticationResponse
 } from "@simplewebauthn/server";
 
-export const getSecurityKey = async user => {
-    const options = await generateAuthenticationOptions({
-        rpID: process.extra.DOMAIN,
-        allowCredentials: user.securityKeys.map(k => ({
-            id: Buffer.from(k.credentialId, "base64url"),
-            type: "public-key",
-            transports: ["usb", "nfc", "ble"]
-        })),
-        userVerification: "required",
-        authenticatorSelection: {
-            authenticatorAttachment: "cross-platform",
-            userVerification: "required"
-        }
-    });
-    return options;
-};
-
 export const getPasskey = async user => {
     const options = await generateAuthenticationOptions({
-        rpID: process.extra.DOMAIN,
-        allowCredentials: user.passkeys.map(k => ({
-            id: Buffer.from(k.credentialId, "base64url"),
+        rpID: "localhost",
+        allowCredentials: user.loginMethods.passkeys.keys.map(k => ({
+            id: k.credentialId, 
             type: "public-key"
         })),
-        userVerification: "required"
+        userName: user.email,
+        userDisplayName: user.name,
+        timeout: 60000,
+        attestationType: "none",
+        userVerification: "required",
+        authenticatorSelection: {
+            userVerification: "required"
+        }
     });
     return options;
 };
@@ -47,8 +37,8 @@ export const verifyKey = async (auth, saved, passkey) => {
     if (!verification?.verified) {
         return {
             success: false,
-            message: "We couldn’t verify this sign-in. Please try again.",
-            action: "RESTART_LOGIN"
+            message: "We couldn’t verify this psskey. Please try again.",
+            action: "RESTRT_LOGIN"
         };
     }
 

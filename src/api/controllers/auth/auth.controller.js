@@ -27,6 +27,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     const score = await calculateLoginRisk(user, deviceInfo, time);
     let riskLevel = await resolveRiskLevel(score, user.twoFA.enabled);
     riskLevel = riskLevel === "verylow" ? "low" : riskLevel;
+
     const response = await buildVerifyDecisionResponse(riskLevel, ctxId, user);
 
     if (riskLevel === "veryhigh" && !user.twoFA.enabled) {

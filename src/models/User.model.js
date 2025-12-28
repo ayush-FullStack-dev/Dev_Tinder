@@ -45,17 +45,39 @@ export const userSchema = new mongoose.Schema({
         default:
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRs1fzJizYJbxmeZhwoQdq9ocGyT1dGjAhLq_ZCsJ56g&s=10"
     },
-    passkeys: [Object],
-    securityKeys: [
-        {
-            credentialId: Buffer,
-            publicKey: Buffer,
-            counter: Number,
-            transports: [String],
-            createdAt: Date
-        }
-    ],
-    trustedSession: [],
+    loginMethods: {
+        passkeys: {
+            enabled: {
+                type: Boolean,
+                default: false
+            },
+            keys: [
+                {
+                    credentialId: String,
+                    publicKey: String,
+                    counter: Number,
+                    transports: [String],
+                    name: String,
+                    platform: String,
+                    deviceType: String,
+                    browser: String,
+                    addedAt: {
+                        type: Date,
+                        default: Date.now()
+                    },
+                    lastUsedAt: {
+                        type: Date,
+                        default: null
+                    }
+                }
+            ],
+            createdAt: {
+                type: Date,
+                default: Date.now()
+            }
+        },
+        trustedSession: []
+    },
     logout: [
         {
             reason: {
@@ -74,6 +96,7 @@ export const userSchema = new mongoose.Schema({
             }
         }
     ],
+
     refreshToken: [userRefreshTokenSchema],
     twoFA: {
         enabled: {
