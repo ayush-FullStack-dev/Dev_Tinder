@@ -234,11 +234,3 @@ export const getMaskMail = mail => {
     }
 };
 
-export const getMaskedMails = emails => {
-    const allowedEmail = [];
-    for (const email of emails) {
-        const maskedMail = getMaskMail(email);
-        allowedEmail.push(maskedMail);
-    }
-    return allowedEmail
-};

@@ -3,8 +3,10 @@ import verifyTwoFAValidators from "../../validators/auth/verifyTwoFA.validator.j
 import sendResponse from "../../helpers/sendResponse.js";
 
 import redis from "../../config/redis.js";
+import crypto from "crypto";
 
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
+import { decryptData } from "../../helpers/encryption.js";
 import { verifyHash } from "../../helpers/hash.js";
 import {
     getTime,
@@ -14,7 +16,7 @@ import {
 import { getIpInfo } from "../../helpers/ip.js";
 
 import { isDeviceTrusted } from "../../services/auth.service.js";
-import { findUser } from "../../services/user.service.js";
+import { findUser, updateUser } from "../../services/user.service.js";
 import { cleanup2fa, getSession } from "../../services/session.service.js";
 
 import { getRiskScore } from "../../utils/security/riskEngine.js";
@@ -24,8 +26,10 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     req.auth = {};
     const time = getTime(req);
     const trustedDeviceId = req.signedCookies.trustedDeviceId;
-    const loginMethod = req.body.method.toLocaleLowerCase();
+    const loginMethod = req.body?.method?.toUpperCase();
+
     const ctxId = req.signedCookies?.twoFA_ctx;
+
     const validate = checkValidation(
         verifyTwoFAValidators,
         req,
@@ -93,10 +97,19 @@ export const verifyTwoFAValidation = async (req, res, next) => {
             req.auth.verify = await isDeviceTrusted({
                 ctxId,
                 trustedId: trustedDeviceId,
+                user,
                 fingerprint: savedFp
             });
         }
+    } else {
+        req.auth.verify = await isDeviceTrusted({
+            ctxId,
+            user,
+            trustedId: trustedDeviceId,
+            fingerprint: savedFp
+        });
     }
+
     req.auth.refreshExpiry = setRefreshExpiry(validate.value);
     req.auth.user = user;
     req.auth.ctxId = ctxId;
@@ -106,33 +119,37 @@ export const verifyTwoFAValidation = async (req, res, next) => {
     req.auth.code = validate.value.code;
     req.auth.method = user.twoFA.twoFAMethods;
     req.auth.deviceInfo = getDeviceInfo;
+    req.auth.hashedToken = crypto
+        .createHash("sha256")
+        .update(ctxId)
+        .digest("hex");
     req.auth.userInfo = {
         userId: user._id,
         fingerprintHash: savedFp,
         deviceName: `${getDeviceInfo.browser} on ${getDeviceInfo.os}`,
-        createdAt: Date.now(),
+        createdAt: new Date(),
         expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
     };
     next();
 };
 
 export const verifyTwoFAEmail = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
+    let { user, loginMethod, hashedToken, code, method, verify, ctxId } =
+        req.auth;
 
     if (verify?.success !== undefined) {
         return next();
     }
 
-    if (loginMethod === "email" && !method.email.on) {
-        await cleanup2fa(ctxId);
+    if (loginMethod === "EMAIL" && !method.email.enabled) {
+        await cleanup2fa(ctxId, hashedToken);
         return sendResponse(res, 401, {
             message: "email is disabled!"
         });
     }
 
-    if (loginMethod === "email" && method.email.enabled) {
-        const key = `otp:${ctxId}`;
-        const getOtp = await getSession(key, "string");
+    if (loginMethod === "EMAIL" && method.email.enabled) {
+        const getOtp = await getSession(`otp:${hashedToken}`, "string");
         if (!getOtp) {
             await cleanup2fa(ctxId);
             return sendResponse(res, 401, {
@@ -147,8 +164,7 @@ export const verifyTwoFAEmail = async (req, res, next) => {
                 method: "email_otp"
             };
         } else {
-            await redis.del(key);
-            await cleanup2fa(ctxId);
+            await redis.del(`otp:${hashedToken}`);
             req.auth.verify = { success: true, method: "email_otp" };
         }
     }
@@ -157,21 +173,25 @@ export const verifyTwoFAEmail = async (req, res, next) => {
 };
 
 export const verifyTwoFATotp = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
+    let { user, loginMethod, hashedToken, code, method, verify, ctxId } =
+        req.auth;
     if (verify?.success) return next();
 
-    if (loginMethod === "totp" && !method.totp.enabled) {
-        await cleanup2fa(ctxId);
-        return sendResponse(res, 401, {
+    if (loginMethod === "TOTP" && !method.totp.enabled) {
+        await cleanup2fa(ctxId, hashedToken);
+        return sendResponse(res, 403, {
             message: "totp in disabled!"
         });
     }
 
-    if (loginMethod === "totp" && method.totp.enabled) {
-        const isCodeValid = await getSession(`totp:last:${ctxId}`, "string");
+    if (loginMethod === "TOTP" && method.totp.enabled) {
+        const isCodeValid = await getSession(
+            `totp:last:${hashedToken}`,
+            "string"
+        );
 
         if (isCodeValid === code) {
-            await cleanup2fa(ctxId);
+            await cleanup2fa(ctxId, hashedToken);
             return sendResponse(res, 401, {
                 message: "replay attack detected"
             });
@@ -179,8 +199,17 @@ export const verifyTwoFATotp = async (req, res, next) => {
 
         req.auth.verify = verifyTotpCode(code, method.totp.secret);
 
-        if (!verify?.success) {
-            await redis.set(`totp:last:${ctxId}`, code, "EX", 60);
+        if (req.auth.verify?.success) {
+            await redis.set(`totp:last:${hashedToken}`, code, "EX", 60);
+            await updateUser(
+                { _id: user._id },
+                {
+                    $set: {
+                        [`${method}.totp.verified`]: true,
+                        [`${method}.totp.lastUsedAt`]: new Date()
+                    }
+                }
+            );
         }
     }
 
@@ -188,40 +217,54 @@ export const verifyTwoFATotp = async (req, res, next) => {
 };
 
 export const verifyTwoFABackupcode = async (req, res, next) => {
-    let { user, loginMethod, code, method, verify, ctxId } = req.auth;
+    let { user, loginMethod, code, hashedToken, method, verify, ctxId } =
+        req.auth;
 
     if (verify?.success) return next();
 
-    if (loginMethod === "backupcode" && !method.backupCodes.enabled) {
-        await cleanup2fa(ctxId);
+    if (loginMethod === "BACKUPCODE" && !method.backupCodes.enabled) {
+        await cleanup2fa(ctxId, hashedToken);
         return sendResponse(res, 401, {
             message: "BackupCode is disabled!"
         });
     }
 
-    if (loginMethod === "backupcode" && method.backupCodes.enabled) {
+    if (loginMethod === "BACKUPCODE" && method.backupCodes.enabled) {
         let existsCode = null;
         for (const backupcode of method.backupCodes.codes) {
-            const verifyCode = await verifyHash(code, backupcode);
-            if (verifyCode) {
-                existsCode = backupcode;
+            const verifyCode = await decryptData(
+                backupcode.iv,
+                backupcode.content,
+                backupcode.tag
+            );
+            if (verifyCode === code) {
+                existsCode = {
+                    success: true,
+                    id: backupcode._id
+                };
                 break;
             }
         }
-        if (!existsCode) {
+
+        if (!existsCode?.success) {
             req.auth.verify = {
                 success: false,
                 message: "Backup code is invalid!",
                 method: "backup_code"
             };
         } else {
-            method.backupCodes.codes = method.backupCodes.codes.filter(
-                backupcode => backupcode !== existsCode
-            );
-            await updateUser(user._id, {
-                twoFA: user.twoFA
-            });
             req.auth.verify = { success: true, method: "backup_code" };
+
+            await updateUser(
+                { _id: user._id },
+                {
+                    "twoFA.twoFAMethods.backupCodes.codes":
+                        method.backupCodes.codes.filter(
+                            backupcode => backupcode._id !== existsCode.id
+                        ),
+                    "twoFA.twoFAMethods.backupCodes.lastUsedAt": new Date()
+                }
+            );
         }
 
         return next();

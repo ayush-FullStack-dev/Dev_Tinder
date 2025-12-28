@@ -18,15 +18,11 @@ const verifyTwoFAValidators = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
-    
-    code: joi
-        .string()
-        .pattern(/^\d{6,}$/)
-        .required()
-        .messages({
-            "string.pattern.base": "Code must be minimum 6 digits.",
-            "any.required": "Code is required."
-        }),
+
+    code: joi.string().min(6).required().messages({
+        "string.min": "Code must be minimum 6 digits.",
+        "any.required": "Code is required."
+    }),
     clientTime: joi.number(),
     trustDevice: joi.boolean().valid(true, false).messages({
         "any.only": "Invalid trustDevice type only allowed true or false."

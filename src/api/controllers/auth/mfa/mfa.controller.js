@@ -33,3 +33,26 @@ export const manageMfaHandler = (req, res) => {
         }
     });
 };
+
+export const enableTwoFA = async (req, res) => {
+    const { user } = req.auth;
+
+    if (user.twoFA.enabled) {
+        return sendResponse(
+            res,
+            200,
+            "TwoFactorAuthentication Already enabled on your account"
+        );
+    }
+
+    await updateUser(
+        {
+            _id: user._id
+        },
+        {
+            "twoFA.enabled": true
+        }
+    );
+
+    return sendResponse(res, 200, "TwoFA enabled successfully");
+};

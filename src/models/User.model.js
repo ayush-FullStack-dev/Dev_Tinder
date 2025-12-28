@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { userRefreshTokenSchema } from "../constants/auth.constant.js";
+
 export const userSchema = new mongoose.Schema({
     googleId: {
         type: String,
@@ -64,7 +66,7 @@ export const userSchema = new mongoose.Schema({
             },
             at: {
                 type: Date,
-                default: Date.now()
+                default: new Date()
             },
             action: {
                 type: String,
@@ -72,90 +74,13 @@ export const userSchema = new mongoose.Schema({
             }
         }
     ],
-    refreshToken: [
-        {
-            token: { type: String, required: true },
-            used: {
-                type: Boolean,
-                default: false
-            },
-            ip: String,
-            country: String,
-            ctxId: String,
-            city: String,
-            deviceId: String,
-            browser: String,
-            os: String,
-            deviceType: String,
-            deviceSize: String,
-            deviceModel: String,
-            timezone: String,
-            fingerprint: String,
-            deviceName: String,
-            version: { type: Number, default: 1 },
-            loginContext: {
-                primary: {
-                    method: {
-                        type: String,
-                        enum: [
-                            "trusted_session",
-                            "passkey",
-                            "security_key",
-                            "password",
-                            "session_approval"
-                        ],
-                        required: true
-                    },
-                    timestamp: {
-                        type: Date,
-                        default: Date.now
-                    }
-                },
-
-                mfa: {
-                    required: {
-                        type: Boolean,
-                        default: false
-                    },
-                    complete: {
-                        type: Boolean,
-                        default: false
-                    },
-                    methodsUsed: {
-                        type: String,
-                        enum: ["totp", "email_otp", "backup_code", "none"],
-                        default: "none"
-                    }
-                },
-
-                trust: {
-                    deviceTrusted: {
-                        type: Boolean,
-                        default: false
-                    },
-                    sessionLevel: {
-                        type: String,
-                        enum: ["verylow", "low", "mid", "high", "veryhigh"],
-                        default: "low"
-                    }
-                }
-            },
-
-            createdAt: {
-                type: Date,
-                default: Date.now
-            },
-            lastActive: {
-                type: Date,
-                default: Date.now
-            }
-        }
-    ],
+    refreshToken: [userRefreshTokenSchema],
     twoFA: {
         enabled: {
             type: Boolean,
             default: false
         },
+        tokenInfo: [userRefreshTokenSchema],
         twoFAMethods: {
             email: {
                 type: {
@@ -186,7 +111,7 @@ export const userSchema = new mongoose.Schema({
                         },
                         addedAt: {
                             type: Date,
-                            default: Date.now()
+                            default: new Date()
                         },
                         lastUsedAt: {
                             type: Date,
@@ -195,7 +120,7 @@ export const userSchema = new mongoose.Schema({
                     }
                 ],
 
-                createdAt: { type: Date, default: Date.now() }
+                createdAt: { type: Date, default: new Date() }
             },
             totp: {
                 type: {
@@ -216,10 +141,15 @@ export const userSchema = new mongoose.Schema({
                     type: String,
                     default: null
                 },
-                createdAt: { type: Date, default: Date.now() },
+                createdAt: { type: Date, default: new Date() },
                 lastUsedAt: { type: Date, default: null }
             },
             backupCodes: {
+                type: {
+                    type: String,
+                    enum: ["BACKUPCODE"],
+                    default: "BACKUPCODE"
+                },
                 enabled: { type: Boolean, default: false },
 
                 codes: [
@@ -239,7 +169,7 @@ export const userSchema = new mongoose.Schema({
                     }
                 ],
                 renew: { type: Boolean, default: false },
-                createdAt: { type: Date, default: Date.now() },
+                createdAt: { type: Date, default: new Date() },
                 lastUsedAt: { type: Date, default: null }
             }
         }

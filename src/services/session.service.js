@@ -25,7 +25,7 @@ export const setSession = async (
     return true;
 };
 
-export const cleanup2fa = async user => {
+export const cleanup2fa = async (user, hash) => {
     let id = user._id;
     if (user !== "object") {
         id = user;
@@ -34,6 +34,7 @@ export const cleanup2fa = async user => {
     await redis.del(`2fa:session:${id}`);
     await redis.del(`2fa:data:${id}`);
     await redis.del(`2fa:fp:start:${id}`);
+    await redis.del(`otp:email:${hash}`);
     return true;
 };
 
@@ -55,8 +56,9 @@ export const getSession = async (link, option) => {
     return data;
 };
 
-export const cleanupMfa = async ( hash) => {
+export const cleanupMfa = async hash => {
     await redis.del(`verify:2fa:${hash}`);
+    await redis.del(`verify:device:${hash}`);
     await redis.del(`email:verified:${hash}`);
     return true;
 };

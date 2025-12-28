@@ -50,23 +50,44 @@ export const findLoginData = async (req, res, next) => {
 };
 
 export const validateBasicInfo = (req, res, next) => {
-    if (!req?.body) {
-        return sendResponse(res, 400, "provide a valid body");
+    if (req?.body) {
+        const { clientTime = Date.now(), deviceId, deviceSize } = req.body;
+
+        if (!clientTime) {
+            return sendResponse(res, 400, "provide current client timestamp");
+        }
+
+        if (!deviceId || deviceId?.length !== 32) {
+            return sendResponse(res, 400, "provide valid  deviceId");
+        }
+
+        if (!deviceSize) {
+            return sendResponse(
+                res,
+                400,
+                "provide device size mix of width + height"
+            );
+        }
+
+        if (deviceSize >= 170 && deviceSize <= 3000) {
+            return sendResponse(res, 400, "provide valid device size");
+        }
+
+        req.body.clientTime = clientTime;
+        return next();
     }
 
-    const { clientTime = Date.now(), deviceId, deviceSize } = req.body;
+    const { clienttime = Date.now(), deviceid, devicesize } = req.headers;
 
-    req.body.clientTime = clientTime;
-
-    if (!clientTime) {
+    if (!clienttime) {
         return sendResponse(res, 400, "provide current client timestamp");
     }
 
-    if (!deviceId || deviceId?.length !== 32) {
+    if (!deviceid || deviceid?.length !== 32) {
         return sendResponse(res, 400, "provide valid  deviceId");
     }
 
-    if (!deviceSize) {
+    if (!devicesize) {
         return sendResponse(
             res,
             400,
@@ -74,9 +95,16 @@ export const validateBasicInfo = (req, res, next) => {
         );
     }
 
-    if (deviceSize >= 170 && deviceSize <= 3000) {
+    if (devicesize >= 170 && devicesize <= 3000) {
         return sendResponse(res, 400, "provide valid device size");
     }
+    
+    req.body = {
+        ...req.body,
+        clientTime: clienttime,
+        deviceId: deviceid,
+        deviceSize: devicesize
+    };
 
-    next();
+    return next();
 };

@@ -61,7 +61,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
 
 export const verifyVerifactionHandler = (link, nextStep, others) => {
     return async (req, res, next) => {
-        const { verify, ctxId } = req.auth;
+        const { verify, ctxId, deviceInfo } = req.auth;
 
         if (!verify?.success) {
             await cleanupLogin(ctxId);
@@ -73,8 +73,6 @@ export const verifyVerifactionHandler = (link, nextStep, others) => {
                 .createHash("sha256")
                 .update(ctxId)
                 .digest("hex");
-
-            
             await setSession(
                 {
                     verified: true,
@@ -82,6 +80,16 @@ export const verifyVerifactionHandler = (link, nextStep, others) => {
                 },
                 hashedToken,
                 link,
+                "EX",
+                300
+            );
+            await setSession(
+                {
+                    verified: true,
+                    ...deviceInfo
+                },
+                hashedToken,
+                "verify:device",
                 "EX",
                 300
             );

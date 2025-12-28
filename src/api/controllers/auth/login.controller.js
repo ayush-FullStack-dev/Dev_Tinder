@@ -28,7 +28,7 @@ import {
 export const loginIdentifyHandler = async (req, res) => {
     const { user, deviceInfo, time } = req.auth;
     const ctxId = crypto.randomBytes(16).toString("hex");
-    const score = await calculateLoginRisk(user, deviceInfo, time);
+    const score = 80; // await calculateLoginRisk(user, deviceInfo, time);
     const riskLevel = await resolveRiskLevel(score, user.twoFA.enabled);
 
     if (riskLevel === "veryhigh" && !user.twoFA.enabled) {
@@ -74,7 +74,7 @@ export const verifyLoginHandler = async (req, res) => {
         }
     };
 
-    const methods = collectOnMethod(user.twoFA.loginMethods);
+    const methods = collectOnMethod(user.twoFA.twoFAMethods);
 
     if (!verify?.success) {
         await cleanupLogin(ctxId);
@@ -83,11 +83,16 @@ export const verifyLoginHandler = async (req, res) => {
 
     if (verify?.stepup) {
         const data = await setTwoFa(ctxId, userInfo, methods);
-        user.refreshToken.push(data.info);
+        user.twoFA.tokenInfo.push(data.info);
+
+        if (user.twoFA.token?.length > 10) {
+            user.twoFA.token.shift();
+        }
+
         await updateUser(
             user._id,
             {
-                refreshToken: user.refreshToken
+                "twoFA.tokenInfo": user.twoFA.tokenInfo
             },
             {
                 id: true
@@ -97,7 +102,7 @@ export const verifyLoginHandler = async (req, res) => {
         return res
             .status(401)
             .clearCookie("login_ctx", cookieOption)
-            .cookie("twoFA_ctx", ctxId, cookieOption)
+            .cookie("twoFA_ctx", data.ctxId, cookieOption)
             .json(data.response);
     }
 
@@ -116,8 +121,6 @@ export const verifyLoginHandler = async (req, res) => {
     userInfo.fingerprint = await fingerprintBuilder(userInfo);
     userInfo.token = refreshToken;
 
-    
-    
     user.refreshToken.push(tokenBuilder(userInfo));
 
     if (user.refreshToken.length > process.env.ALLOWED_TOKEN) {

@@ -41,7 +41,7 @@ export const addTotpHandler = async (req, res) => {
                 enabled: true,
                 verified: false,
                 secret,
-                createdAt: Date.now()
+                createdAt: new Date()
             }
         },
         {
@@ -86,7 +86,7 @@ export const renewTotpHandler = async (req, res) => {
                 enabled: true,
                 verified: false,
                 secret,
-                createdAt: Date.now()
+                createdAt: new Date()
             }
         },
         {

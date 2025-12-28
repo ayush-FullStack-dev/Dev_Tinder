@@ -8,7 +8,11 @@ import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 
 import { verifyAuthValidator } from "../../validators/auth/verifyAuth.validator.js";
 
-import { getSession, cleanupLogin } from "../../services/session.service.js";
+import {
+    getSession,
+    cleanupLogin,
+    cleanupMfa
+} from "../../services/session.service.js";
 
 import { getRiskScore } from "../../utils/security/riskEngine.js";
 
@@ -45,9 +49,7 @@ export const verifyVerifaction = async (req, res, next) => {
         });
     }
 
-    const riskScore = await getRiskScore(getDeviceInfo, savedDeviceInfo, {
-        time
-    });
+    const riskScore = await getRiskScore(getDeviceInfo, savedDeviceInfo);
 
     if (riskScore > 0) {
         await cleanupLogin(ctxId);
@@ -99,12 +101,25 @@ export const verifedTwoFaUser = async (req, res, next) => {
     );
 
     const data = await getSession(`verify:2fa:${hashedToken}`);
+    const savedDeviceInfo = await getSession(`verify:device:${hashedToken}`);
 
-    if (!data?.verified) {
+    if (!data?.verified || !savedDeviceInfo?.verified) {
         return sendResponse(res, 401, {
             message: "Your TwoFa session has expired. Please start again.",
             action: "RESTART_VERIFACTION"
         });
+    }
+
+    const riskScore = await getRiskScore(getDeviceInfo, savedDeviceInfo);
+
+
+    if (riskScore > 10) {
+        await cleanupMfa(hashedToken);
+        return sendResponse(
+            res,
+            401,
+            "We detected unusual activity. This request has been stopped for your security"
+        );
     }
 
     req.auth = {

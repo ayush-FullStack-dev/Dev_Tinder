@@ -31,7 +31,7 @@ export const addBackupCodeHandler = async (req, res) => {
     const rawCodes = [];
     const backupCodes = {
         enabled: true,
-        createdAt: Date.now(),
+        createdAt: new Date(),
         codes: []
     };
 

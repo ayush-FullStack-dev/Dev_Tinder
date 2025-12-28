@@ -216,7 +216,7 @@ export const rotateRefreshToken = async (req, res, next) => {
     );
 
     tokenInfo.token = refreshToken;
-    tokenInfo.lastActive = Date.now()
+    tokenInfo.lastActive = new Date()
     user.refreshToken.splice(tokenIndex, 1, tokenBuilder(tokenInfo));
     req.auth.refreshToken = refreshToken;
     req.auth.accessToken = accessToken;

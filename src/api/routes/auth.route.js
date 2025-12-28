@@ -30,7 +30,10 @@ import {
     resetPasswordValidation,
     resetPasswordHandler
 } from "../controllers/auth/password.controller.js";
-import { manageMfaHandler } from "../controllers/auth/mfa/mfa.controller.js";
+import {
+    manageMfaHandler,
+    enableTwoFA
+} from "../controllers/auth/mfa/mfa.controller.js";
 import {
     renewBackupCodeHandler,
     addBackupCodeHandler,
@@ -47,7 +50,8 @@ import {
     activeMailsHandler,
     addNewMailHandler,
     verifyMailHandler,
-    revokeMailHandler
+    revokeMailHandler,
+    resendOtpMfaHandler
 } from "../controllers/auth/mfa/email.controller.js";
 
 // importing middleware
@@ -214,9 +218,9 @@ router.post(
     }) // check verified
 );
 
-router.use("/mfa/manage/", isLogin, findLoginData, verifedTwoFaUser);
+router.use("/mfa/manage/", validateBasicInfo,isLogin, findLoginData, verifedTwoFaUser);
 
-router.get("/mfa/manage/", manageMfaHandler);
+router.route("/mfa/manage/").get(manageMfaHandler).post(enableTwoFA);
 
 router
     .route("/mfa/manage/backupcode/")
@@ -239,5 +243,6 @@ router
     .delete(revokeMailHandler);
 
 router.post("/mfa/manage/email/verify/", verifyMailHandler);
+router.post("/mfa/manage/email/resend/", resendOtpMfaHandler);
 
 export default router;

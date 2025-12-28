@@ -21,12 +21,19 @@ export function encryptData(text) {
 }
 
 export const decryptData = (iv, content, tag) => {
-    const decipher = crypto.createDecipheriv(ALGO, KEY, Buffer.from(iv, "hex"));
-    decipher.setAuthTag(Buffer.from(tag, "hex"));
-    const decrypted = Buffer.concat([
-        decipher.update(Buffer.from(content, "hex")),
-        decipher.final()
-    ]);
-
-    return decrypted.toString("utf8");
+    try {
+        const decipher = crypto.createDecipheriv(
+            ALGO,
+            KEY,
+            Buffer.from(iv, "hex")
+        );
+        decipher.setAuthTag(Buffer.from(tag, "hex"));
+        const decrypted = Buffer.concat([
+            decipher.update(Buffer.from(content, "hex")),
+            decipher.final()
+        ]);
+        return decrypted.toString("utf8");
+    } catch (error) {
+        return null;
+    }
 };

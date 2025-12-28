@@ -37,12 +37,14 @@ export const getTime = req => {
     };
 };
 
-export const collectOnMethod = loginMethods => {
+export const collectOnMethod = twoFAMethods => {
+    
     const methods = [];
 
-    for (const method in loginMethods) {
-        if (loginMethods[method].on || loginMethods[method]?.code?.length) {
-            methods.push(loginMethods[method].type);
+    for (const method in twoFAMethods) {
+        
+        if (twoFAMethods[method].enabled) {
+            methods.push(twoFAMethods[method].type);
         }
     }
 

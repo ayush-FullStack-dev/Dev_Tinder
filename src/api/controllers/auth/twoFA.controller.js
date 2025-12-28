@@ -12,6 +12,7 @@ import {
     sendLoginAlert
 } from "../../../helpers/mail.js";
 import { getRefreshToken, getAccesToken } from "../../../helpers/token.js";
+import { setOtpMail } from "../../../helpers/twoFa.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
 import {
@@ -24,8 +25,6 @@ import {
     getOtpSetOtp,
     cleanup2fa
 } from "../../../services/session.service.js";
-
-import { getMaskedMails } from "../../../helpers/mail.js";
 
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
 import { tokenBuilder } from "../../../utils/cron.js";
@@ -52,7 +51,7 @@ export const resendOtpHandler = async (req, res) => {
 
     if (isValid.method !== "email") {
         return sendResponse(res, 401, {
-            message: "otp is only allowed for other method"
+            message: "otp is only allowed for email method"
         });
     }
 
@@ -83,6 +82,7 @@ export const resendOtpHandler = async (req, res) => {
 
 export const startTwoFAHandler = async (req, res) => {
     const { loginMethod, email, password, ip } = req.auth;
+
     const ctxId = req.signedCookies.twoFA_ctx;
     const deviceInfo = {
         ...req.auth.deviceInfo,
@@ -90,10 +90,6 @@ export const startTwoFAHandler = async (req, res) => {
     };
 
     const fingerprint = await fingerprintBuilder(req.auth.deviceInfo);
-
-    if (!loginMethod) {
-        return sendResponse(res, 400, "2Fa login method is undefined");
-    }
 
     const user = await findUser({
         email
@@ -109,7 +105,7 @@ export const startTwoFAHandler = async (req, res) => {
         sendSuspiciousAlert(user.email, deviceInfo);
     }
 
-    if (isValid?.risk === "veryhigh" && loginMethod === "backupcode") {
+    if (isValid?.risk === "veryhigh" && loginMethod === "BACKUPCODE") {
         return clearCtxId(
             res,
             401,
@@ -134,44 +130,34 @@ export const startTwoFAHandler = async (req, res) => {
     await setSession(fingerprint, ctxId, "2fa:fp:start");
 
     const method = user.twoFA.twoFAMethods;
+
     if (loginMethod === "EMAIL" && method.email.enabled) {
         let message = "Trusted device detected. Completing secure sign-in…";
         let requireCode = false;
         const deviceTrust = await isDeviceTrusted({
             ctxId,
             trustedId: req.signedCookies.trustedDeviceId,
+            user,
             fingerprint
         });
 
         if (!deviceTrust?.success) {
-            const getData = await getSession(`otp:email:${ctxId}`);
-            if (!getData) {
-                const allowedEmail = getMaskedMails(method.email.emails);
-                await setSession(
-                    {
-                        verified: true,
-                        allowedEmail
-                    },
-                    ctxId,
-                    "otp:email"
-                );
-                return sendResponse(res, 200, {
-                    message:
-                        "Select an email address to receive the verification code.",
-                    allowedEmail,
-                    next: "submit_email"
-                });
+            const info = await setOtpMail(ctxId, method.email);
+
+            if (!info?.success) {
+                return sendResponse(res, 200, info);
             }
 
-            if (!getData?.allowedEmail?.includes(req.body?.otpMail)) {
+            if (!info.allowedEmail?.includes(req.body?.mail)) {
                 return sendResponse(
                     res,
                     401,
                     "Selected email is not allowed for this verification."
                 );
             }
-            const otp = await getOtpSetOtp(ctxId);
-            const otpInfo = sendOtp(req.body?.otpMail, otp, deviceInfo);
+
+            const otp = await getOtpSetOtp(info.hashedToken);
+            const otpInfo = sendOtp(req.body?.mail, otp, deviceInfo);
             message = "Otp send Succesfull";
             requireCode = true;
         }
@@ -179,7 +165,7 @@ export const startTwoFAHandler = async (req, res) => {
         await setSession(
             {
                 start: true,
-                method: "email",
+                method: "EMAIL",
                 email: req.body?.otpMail || false
             },
             ctxId
@@ -196,7 +182,7 @@ export const startTwoFAHandler = async (req, res) => {
         await setSession(
             {
                 start: true,
-                method: "totp"
+                method: "TOTP"
             },
             ctxId
         );
@@ -211,7 +197,7 @@ export const startTwoFAHandler = async (req, res) => {
         await setSession(
             {
                 start: true,
-                method: "backupcode"
+                method: "BACKUPCODE"
             },
             ctxId
         );
@@ -263,9 +249,7 @@ export const verifyTwoFAHandler = async (req, res) => {
         refreshExpiry
     );
 
-    const tokenInfo = user.refreshToken.find(k => k.ctxId.equals(ctxId));
-
-    user.refreshToken = user.refreshToken.filter(k => !k.ctxId.equals(ctxId));
+    const tokenInfo = user.twoFA.tokenInfo.find(k => k.ctxId === ctxId);
 
     tokenInfo.fingerprint = await fingerprintBuilder(tokenInfo);
     tokenInfo.token = refreshToken;
@@ -284,7 +268,10 @@ export const verifyTwoFAHandler = async (req, res) => {
     const updatedUser = await updateUser(
         user._id,
         {
-            refreshToken: user.refreshToken
+            refreshToken: user.refreshToken,
+            "twoFA.tokenInfo": user.twoFA.tokenInfo.filter(
+                k => !k.ctxId !== ctxId
+            )
         },
         {
             id: true

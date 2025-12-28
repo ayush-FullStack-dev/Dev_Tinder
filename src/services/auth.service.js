@@ -22,9 +22,10 @@ export const cleanupDbId = setInterval(
 
 export const isDeviceTrusted = async trust => {
     let isTrustedDevice = await redis.get(`trustedDevice:${trust.trustedId}`);
+    
     isTrustedDevice = JSON.parse(isTrustedDevice);
 
-    if (trust.user.id === isTrustedDevice.userId) {
+    if (trust.user?._id === isTrustedDevice?.userId) {
         return {
             success: true,
             method: "trusted_device"

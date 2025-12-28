@@ -41,6 +41,7 @@ export const activeMailsHandler = (req, res) => {
 
 export const addNewMailHandler = async (req, res) => {
     const { user, device, hashedToken } = req.auth;
+    let method = user.twoFA.twoFAMethods.email;
     const isMail =
         /^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63}){1,3}$/.test(
             req.body?.email
@@ -65,8 +66,8 @@ export const addNewMailHandler = async (req, res) => {
         return sendResponse(res, 401, "Email already exists.");
     }
 
-    if (!user.twoFA.twoFAMethods.email.enabled) {
-        user.twoFA.twoFAMethods.email = {
+    if (!method.enabled) {
+        method = {
             enabled: true,
             primary: req.body?.email,
             emails: [
@@ -74,17 +75,32 @@ export const addNewMailHandler = async (req, res) => {
                     primary: true,
                     verified: false,
                     value: req.body?.email,
-                    addedAt: Date.now()
+                    addedAt: new Date()
                 }
             ],
-            createdAt: Date.now()
+            createdAt: new Date()
         };
     } else {
-        user.twoFA.twoFAMethods.email.emails.push({
-            value: req.body?.email,
-            verified: false,
-            addedAt: Date.now()
-        });
+        if (method.primary) {
+            method.emails.push({
+                value: req.body?.email,
+                verified: false,
+                addedAt: new Date()
+            });
+        } else {
+            method = {
+                enabled: true,
+                primary: req.body?.email,
+                emails: [...user.twoFA.twoFAMethods.email.emails],
+                createdAt: user.twoFA.twoFAMethods.email.createdAt
+            };
+            method.emails.push({
+                value: req.body?.email,
+                verified: false,
+                primary: true,
+                addedAt: new Date()
+            });
+        }
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
@@ -107,20 +123,20 @@ export const addNewMailHandler = async (req, res) => {
             _id: user._id
         },
         {
-            "twoFA.twoFAMethods.email": user.twoFA.twoFAMethods.email
+            "twoFA.twoFAMethods.email": method
         }
     );
 
     return sendResponse(res, 200, {
-        message: "Email added successfully",
-        next: "sumbit_otp",
+        message: "Email added successfully Please verify to continue.",
+        next: "VERIFY_OTP",
         route: "/auth/mfa/mange/email/verify/",
         request: "post"
     });
 };
 
 export const verifyMailHandler = async (req, res) => {
-    const { user, deviceInfo, hashedToken } = req.auth;
+    const { user, hashedToken } = req.auth;
     const info = await getSession(`email:verified:${hashedToken}`);
 
     if (!info) {
@@ -269,4 +285,37 @@ export const revokeMailHandler = async (req, res) => {
     await cleanupMfa(hashedToken);
 
     return sendResponse(res, 200, "Email removed successfully");
+};
+
+export const resendOtpMfaHandler = async (req, res) => {
+    const { user, device, hashedToken } = req.auth;
+    const info = await getSession(`email:verified:${hashedToken}`);
+
+    if (!info) {
+        return sendResponse(res, 401, {
+            message:
+                "Your verify email session has expired. Please start again.",
+            action: "RESTART_VERIFACTION"
+        });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    await setSession(
+        {
+            otp: await generateHash(otp.toString()),
+            value: req.body?.email
+        },
+        hashedToken,
+        "email:verified",
+        "EX",
+        300
+    );
+    await sendOtp(info.email, otp, device);
+
+    return sendResponse(res, 202, {
+        message: "OTP resend successfully. Please verify to continue.",
+        next: "VERIFY_OTP",
+        expiresIn: 300
+    });
 };
