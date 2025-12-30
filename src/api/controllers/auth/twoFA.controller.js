@@ -306,7 +306,11 @@ export const verifyTwoFAHandler = async (req, res) => {
         if (alreadyTrust) {
             trustedDevices.push({
                 deviceIdHash,
-                platform: "web"
+                name: userInfo.deviceName,
+                country: userInfo.country,
+                model: userInfo.model,
+                location: userInfo.location,
+                trustScore: trustInfo.score
             });
         }
     }

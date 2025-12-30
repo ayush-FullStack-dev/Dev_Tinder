@@ -25,6 +25,7 @@ export const sendSessionApproval = async (deviceInfo, user) => {
         const pushSubscription = await findPushSubscription({
             deviceIdHash: trustedDevice?.deviceIdHash
         });
+
         await sendNotification(pushSubscription, {
             type: "LOGIN_APPROVAL",
             title: "New sign-in attempt",

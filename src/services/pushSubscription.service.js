@@ -59,3 +59,16 @@ export const updatePushSubscription = async (
         ...extra
     });
 };
+
+export const deletePushSubscription = async (
+    filter,
+    option = { ...options }
+) => {
+    checkCondition(filter, "filter is required to delete Pending User!");
+    if (option.many) {
+        return PushSubscription.deleteMany(filter);
+    } else if (option.id) {
+        return PushSubscription.findByIdAndDelete(filter);
+    }
+    return PushSubscription.deleteOne(filter);
+};

@@ -85,6 +85,11 @@ export const userSchema = new mongoose.Schema({
                 required: true,
                 index: true
             },
+            name: String,
+            country: String,
+            model: String,
+            location: String,
+            trustScore: Number,
             platform: {
                 type: String,
                 enum: ["web", "android", "ios"],

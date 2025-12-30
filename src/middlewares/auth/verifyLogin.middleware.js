@@ -288,7 +288,7 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
             .status(200)
             .cookie("approvalId", response.approvalId, {
                 ...cookieOption,
-                maxAge: 2.3 * 60 * 1000
+                maxAge: 2 * 60 * 1000
             })
             .json({
                 message: "session approval request send successfully",

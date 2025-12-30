@@ -171,15 +171,21 @@ export const verifyLoginHandler = async (req, res) => {
 
     const trustedDevices = user.trustedDevices || [];
 
+    
     if (trustInfo.trusted) {
         const deviceIdHash = getNoSaltHash(deviceInfo.deviceId);
         const alreadyTrust = trustedDevices?.some(
             k => k.deviceIdHash !== deviceIdHash
         );
+
         if (alreadyTrust) {
             trustedDevices.push({
                 deviceIdHash,
-                platform: "web"
+                name: deviceInfo.deviceName,
+                country: deviceInfo.country,
+                model: deviceInfo.model,
+                location: deviceInfo.location,
+                trustScore: trustInfo.score
             });
         }
     }

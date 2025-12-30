@@ -64,6 +64,10 @@ import {
     sessionApprovealHandler,
     sessionApprovealInfo
 } from "../controllers/auth/sessionApproval.controller.js";
+import {
+    revokeTrustedDevice,
+    getAllTrustedDevice
+} from "../controllers/auth/trusted.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -280,8 +284,15 @@ router
     .delete(deletePasskeyHandler);
 
 router
+    .route("/manage/trusted-devices/")
+    .get(getAllTrustedDevice)
+    .delete(revokeTrustedDevice)
+    .patch(revokeTrustedDevice)
+    .post(revokeTrustedDevice);
+
+router
     .route("/approve-login/:id")
-    .get(isLogin, findLoginData,sessionApprovealInfo)
+    .get(isLogin, findLoginData, sessionApprovealInfo)
     .post(isLogin, findLoginData, sessionApprovealHandler);
 
 export default router;
