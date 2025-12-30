@@ -1,5 +1,6 @@
 import express from "express";
 import authRouter from "./api/routes/auth.route.js";
+import pushRouter from "./api/routes/push.route.js"
 import cookieParser from "cookie-parser";
 import { getPath } from "./utilities/index.js";
 // configure appp
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 });
 
 // routes
+app.use("/", pushRouter);
 app.use("/auth", authRouter);
 
 // error handers
@@ -44,7 +46,6 @@ app.use("/", (req, res) => {
 });
 
 app.use((error, req, res, next) => {
-	console.log(error.stack)
     res.status(error.statusCode || 500).json({
         success: false,
         type: error.name || "InternalServerError",

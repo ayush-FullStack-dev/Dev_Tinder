@@ -5,7 +5,11 @@ import redis from "../../../config/redis.js";
 import sendResponse, { clearCtxId } from "../../../helpers/sendResponse.js";
 
 import { cookieOption } from "../../../constants/auth.constant.js";
-
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
+import {
+    createAuthEvent,
+    findAuthEvent
+} from "../../../services/authEvent.service.js";
 import {
     sendOtp,
     sendSuspiciousAlert,
@@ -13,6 +17,7 @@ import {
 } from "../../../helpers/mail.js";
 import { getRefreshToken, getAccesToken } from "../../../helpers/token.js";
 import { setOtpMail } from "../../../helpers/twoFa.js";
+import { getNoSaltHash } from "../../../helpers/hash.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
 import {
@@ -27,6 +32,7 @@ import {
 } from "../../../services/session.service.js";
 
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
+import { getTrustedScore } from "../../../utils/security/riskEngine.js";
 import { tokenBuilder } from "../../../utils/cron.js";
 
 export const resendOtpHandler = async (req, res) => {
@@ -222,12 +228,25 @@ export const verifyTwoFAHandler = async (req, res) => {
     const { user, verify, userInfo, refreshExpiry, riskLevel, ctxId } =
         req.auth;
 
+    const tokenInfo = user.twoFA.tokenInfo.find(k => k.ctxId === ctxId);
+
     if (riskLevel === "high" && !verify?.success) {
         sendSuspiciousAlert(user.email, req.auth.deviceInfo);
     }
 
     if (!verify?.success) {
         await cleanup2fa(ctxId);
+        await createAuthEvent(
+            buildAuthInfo(userInfo, verify, {
+                _id: user._id,
+                eventType: "login",
+                mfaUsed: verify?.method,
+                loginMethod: tokenInfo?.loginContext?.primary?.method,
+                success: false,
+                action: "login_failed",
+                risk: info.risk
+            })
+        );
         return clearCtxId(res, 401, verify?.message, "twoFA_ctx");
     }
 
@@ -249,8 +268,6 @@ export const verifyTwoFAHandler = async (req, res) => {
         refreshExpiry
     );
 
-    const tokenInfo = user.twoFA.tokenInfo.find(k => k.ctxId === ctxId);
-
     tokenInfo.fingerprint = await fingerprintBuilder(tokenInfo);
     tokenInfo.token = refreshToken;
     tokenInfo.loginContext.mfa = {
@@ -265,17 +282,59 @@ export const verifyTwoFAHandler = async (req, res) => {
         user.refreshToken.shift();
     }
 
+    const lastInfos = await findAuthEvent(
+        {
+            userId: user._id,
+            eventType: "login",
+            success: true,
+            createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        },
+        {
+            many: true
+        },
+        { createdAt: -1 }
+    );
+
+    const trustInfo = await getTrustedScore(userInfo, lastInfos);
+    const trustedDevices = user.trustedDevices || [];
+
+    if (trustInfo.trusted) {
+        const deviceIdHash = getNoSaltHash(deviceInfo.deviceId);
+        const alreadyTrust = trustedDevices?.some(
+            k => k.deviceIdHash !== deviceIdHash
+        );
+        if (alreadyTrust) {
+            trustedDevices.push({
+                deviceIdHash,
+                platform: "web"
+            });
+        }
+    }
+
     const updatedUser = await updateUser(
         user._id,
         {
             refreshToken: user.refreshToken,
             "twoFA.tokenInfo": user.twoFA.tokenInfo.filter(
                 k => !k.ctxId !== ctxId
-            )
+            ),
+            trustedDevices
         },
         {
             id: true
         }
+    );
+
+    await createAuthEvent(
+        buildAuthInfo(userInfo, verify, {
+            _id: user._id,
+            eventType: "login",
+            mfaUsed: verify?.method,
+            loginMethod: tokenInfo?.loginContext?.primary?.method,
+            success: true,
+            trusted: trustInfo.score >= 70,
+            risk: info.risk
+        })
     );
 
     sendLoginAlert(user.email, {

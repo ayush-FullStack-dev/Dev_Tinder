@@ -1,6 +1,7 @@
 node_modules
 .env
 env/**
+public/
 !env/help.md
 dump.rdb
 .env.bak

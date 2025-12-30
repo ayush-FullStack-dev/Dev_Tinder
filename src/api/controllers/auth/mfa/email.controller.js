@@ -9,9 +9,11 @@ import {
     cleanupMfa
 } from "../../../../services/session.service.js";
 import { updateUser } from "../../../../services/user.service.js";
+import { createAuthEvent } from "../../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../../helpers/authEvent.js";
 
-export const activeMailsHandler = (req, res) => {
-    const { user } = req.auth;
+export const activeMailsHandler = async (req, res) => {
+    const { user, risk, device, verifyInfo } = req.auth;
     const response = {
         enabled: user.twoFA.twoFAMethods.email.enabled,
         emails: [],
@@ -35,6 +37,16 @@ export const activeMailsHandler = (req, res) => {
             });
         }
     }
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "get_email",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, response);
 };
@@ -144,7 +156,7 @@ export const addNewMailHandler = async (req, res) => {
 };
 
 export const verifyMailHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const info = await getSession(`email:verified:${hashedToken}`);
 
     if (!info) {
@@ -190,13 +202,23 @@ export const verifyMailHandler = async (req, res) => {
         }
     );
 
-    await cleanupMfa(hashedToken,req.body?.email);
+    await cleanupMfa(hashedToken, req.body?.email);
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "added_email",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 201, "Email verified successfully");
 };
 
 export const revokeMailHandler = async (req, res) => {
-    const { user, device, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const method = user.twoFA.twoFAMethods.email;
     let emailInfo = null;
     if (!method.enabled) {
@@ -298,8 +320,16 @@ export const revokeMailHandler = async (req, res) => {
         }
     );
 
-    await cleanupMfa(hashedToken,req.body?.email);
-
+    await cleanupMfa(hashedToken, req.body?.email);
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "delete_email",
+            risk: risk
+        })
+    );
     return sendResponse(res, 200, "Email removed successfully");
 };
 

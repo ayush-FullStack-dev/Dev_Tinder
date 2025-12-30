@@ -39,7 +39,7 @@ export const updateUser = async (filter, data, option = { ...options }) => {
     } else if (option.id) {
         return User.findByIdAndUpdate(filter, data, { new: true });
     }
-    return User.updateOne(filter, data, { runValidators: true });
+    return User.findOneAndUpdate(filter, data, { runValidators: true });
 };
 
 // ----- Temp User Services ----

@@ -2,6 +2,8 @@ import epochify from "epochify";
 import { compareFingerprint } from "../fingerprint.js";
 import { checkTimeManipulation } from "./timeManipulation.js";
 
+import { compareNoSaltHash } from "../../helpers/hash.js";
+
 export const getRiskLevel = score => {
     if (score <= 20) return "verylow";
     if (score <= 40) return "low";
@@ -84,4 +86,43 @@ export const getRiskScore = async (current, last, others) => {
     }
 
     return Math.min(score, 100);
+};
+
+export const getTrustedScore = async (current, lastInfos) => {
+    let score = 0;
+    if (!lastInfos.length) return 0;
+
+    const lastLogin = lastInfos[0];
+
+    const sameDevice = compareNoSaltHash(current.deviceId, lastLogin.deviceId);
+    if (!sameDevice) return 0;
+
+    if (lastLogin.risk === "high" || lastLogin.risk === "veryHigh") {
+        return 0;
+    }
+
+    const diffMs = Date.now() - lastLogin.createdAt.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours < 6) return 0;
+
+    const validLogins = lastInfos.filter(l => {
+        return (
+            l.deviceId === lastLogin.deviceId &&
+            (l.risk === "low" || l.risk === "verylow" || l.risk === "mid")
+        );
+    }).length;
+
+    if (validLogins === 1) score += 10;
+    else if (validLogins === 2) score += 20;
+    else if (validLogins === 3) score += 35;
+    else if (validLogins === 4) score += 50;
+    else if (validLogins >= 5) score += 60;
+
+    score += 20;
+    score = Math.min(score, 100);
+
+    return {
+        trusted: score >= 70,
+        score
+    };
 };

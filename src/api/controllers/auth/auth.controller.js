@@ -2,6 +2,8 @@ import crypto from "crypto";
 import sendResponse, { setCtxId } from "../../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
+import { createAuthEvent } from "../../../services/authEvent.service.js";
 import { getIpInfo } from "../../../helpers/ip.js";
 
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
@@ -62,10 +64,19 @@ export const verifyIdentifyHandler = async (req, res, next) => {
 
 export const verifyVerifactionHandler = (link, nextStep, others) => {
     return async (req, res, next) => {
-        const { verify, ctxId, deviceInfo } = req.auth;
+        const { verify, ctxId, deviceInfo, info } = req.auth;
 
         if (!verify?.success) {
             await cleanupLogin(ctxId);
+            await createAuthEvent(
+                buildAuthInfo(deviceInfo, verify, {
+                    _id: user._id,
+                    eventType: "step_up",
+                    success: false,
+                    action: verify?.message || "verifaction_failed",
+                    risk: info?.risk
+                })
+            );
             return sendResponse(res, 401, verify?.message || "Unauthorized");
         }
 
@@ -77,7 +88,8 @@ export const verifyVerifactionHandler = (link, nextStep, others) => {
             await setSession(
                 {
                     verified: true,
-                    ...verify
+                    ...verify,
+                    risk: info?.risk
                 },
                 hashedToken,
                 link,

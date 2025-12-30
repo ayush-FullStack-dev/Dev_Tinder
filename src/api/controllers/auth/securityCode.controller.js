@@ -1,11 +1,12 @@
 import crypto from "crypto";
-
-import { setSession, cleanupMfa } from "../../../services/session.service.js";
-
 import sendResponse from "../../../helpers/sendResponse.js";
 
+import { setSession, cleanupMfa } from "../../../services/session.service.js";
+import { createAuthEvent } from "../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
+
 export const createSecurtyCode = async (req, res) => {
-    const { user } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const keyInfo = {
         userId: user._id,
         issuedByDevice: req.body.deviceId,
@@ -21,11 +22,7 @@ export const createSecurtyCode = async (req, res) => {
         .digest("hex");
     const secondHash = crypto
         .createHash("sha256")
-        .update(firstCode)
-        .digest("hex");
-    const hashedToken = crypto
-        .createHash("sha256")
-        .update(req.query?.rpat)
+        .update(secondCode)
         .digest("hex");
 
     await setSession(
@@ -38,7 +35,7 @@ export const createSecurtyCode = async (req, res) => {
         "EX",
         keyInfo.expiresAt
     );
-    
+
     await setSession(
         {
             ...keyInfo,
@@ -49,7 +46,17 @@ export const createSecurtyCode = async (req, res) => {
         "EX",
         keyInfo.expiresAt
     );
-    await cleanupMfa(hashedToken);
+     await cleanupMfa(hashedToken);
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "create_securtycode",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         message: "Security Code created successfully",

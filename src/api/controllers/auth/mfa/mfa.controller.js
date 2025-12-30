@@ -1,7 +1,20 @@
 import sendResponse from "../../../../helpers/sendResponse.js";
 
-export const manageMfaHandler = (req, res) => {
-    const { user } = req.auth;
+import { createAuthEvent } from "../../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../../helpers/authEvent.js";
+
+export const manageMfaHandler = async (req, res) => {
+    const { user, risk, device, verifyInfo } = req.auth;
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "get_mfa",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         message: "all mfa methods fetched successfully",
@@ -35,7 +48,7 @@ export const manageMfaHandler = (req, res) => {
 };
 
 export const enableTwoFA = async (req, res) => {
-    const { user } = req.auth;
+    const { user, risk, device, verifyInfo } = req.auth;
 
     if (user.twoFA.enabled) {
         return sendResponse(
@@ -52,6 +65,16 @@ export const enableTwoFA = async (req, res) => {
         {
             "twoFA.enabled": true
         }
+    );
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "enable_twoFA",
+            risk: risk
+        })
     );
 
     return sendResponse(res, 200, "TwoFA enabled successfully");

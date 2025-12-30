@@ -4,6 +4,7 @@ import sendResponse, { clearCtxId } from "../../../helpers/sendResponse.js";
 import redis from "../../../config/redis.js";
 import { getLogoutInfo, getInvalidateToken } from "../../../helpers/logout.js";
 import { verifyHash, generateHash } from "../../../helpers/hash.js";
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
 import { getIpInfo } from "../../../helpers/ip.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 
@@ -73,6 +74,16 @@ export const changePasswordHandler = async (req, res, next) => {
         {
             id: true
         }
+    );
+
+    await createAuthEvent(
+        await buildAuthInfo(deviceInfo, getData, {
+            _id: user._id,
+            eventType: "stepup",
+            success: true,
+            action: "change_password",
+            risk: getData.risk
+        })
     );
 
     sendPasswordChangedAlert(user.email, deviceInfo);

@@ -27,6 +27,7 @@ export const parseUA = userAgent => {
         browserVersion: result.browser.version,
         os: result.os.name,
         deviceType,
+        userAgent,
         deviceName: `${result.browser.name} on ${result.os.name}`,
         osVersion: result.os.version,
         deviceModel: result.device.model

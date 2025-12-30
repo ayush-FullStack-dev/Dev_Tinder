@@ -63,7 +63,7 @@ export const userSchema = new mongoose.Schema({
                     browser: String,
                     addedAt: {
                         type: Date,
-                        default: Date.now()
+                        default: () => new Date()
                     },
                     lastUsedAt: {
                         type: Date,
@@ -73,11 +73,29 @@ export const userSchema = new mongoose.Schema({
             ],
             createdAt: {
                 type: Date,
-                default: Date.now()
+                default: () => new Date()
             }
-        },
-        trustedSession: []
+        }
     },
+
+    trustedDevices: [
+        {
+            deviceIdHash: {
+                type: String,
+                required: true,
+                index: true
+            },
+            platform: {
+                type: String,
+                enum: ["web", "android", "ios"],
+                default: "web"
+            },
+            createdAt: {
+                type: Date,
+                default: () => new Date()
+            }
+        }
+    ],
     logout: [
         {
             reason: {
@@ -88,7 +106,7 @@ export const userSchema = new mongoose.Schema({
             },
             at: {
                 type: Date,
-                default: new Date()
+                default: () => new Date()
             },
             action: {
                 type: String,
@@ -134,7 +152,7 @@ export const userSchema = new mongoose.Schema({
                         },
                         addedAt: {
                             type: Date,
-                            default: new Date()
+                            default: () => new Date()
                         },
                         lastUsedAt: {
                             type: Date,
@@ -143,7 +161,7 @@ export const userSchema = new mongoose.Schema({
                     }
                 ],
 
-                createdAt: { type: Date, default: new Date() }
+                createdAt: { type: Date, default: () => new Date() }
             },
             totp: {
                 type: {
@@ -164,7 +182,7 @@ export const userSchema = new mongoose.Schema({
                     type: String,
                     default: null
                 },
-                createdAt: { type: Date, default: new Date() },
+                createdAt: { type: Date, default: () => new Date() },
                 lastUsedAt: { type: Date, default: null }
             },
             backupCodes: {
@@ -192,7 +210,7 @@ export const userSchema = new mongoose.Schema({
                     }
                 ],
                 renew: { type: Boolean, default: false },
-                createdAt: { type: Date, default: new Date() },
+                createdAt: { type: Date, default: () => new Date() },
                 lastUsedAt: { type: Date, default: null }
             }
         }

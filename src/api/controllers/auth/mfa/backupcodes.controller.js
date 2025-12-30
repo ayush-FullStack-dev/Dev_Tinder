@@ -2,11 +2,13 @@ import crypto from "crypto";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 import { encryptData, decryptData } from "../../../../helpers/encryption.js";
+import { createAuthEvent } from "../../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../../helpers/authEvent.js";
 import { updateUser } from "../../../../services/user.service.js";
 import { cleanupMfa } from "../../../../services/session.service.js";
 
-export const activeBackupCodeHandler = (req, res) => {
-    const { user } = req.auth;
+export const activeBackupCodeHandler = async (req, res) => {
+    const { user, risk, device, verifyInfo } = req.auth;
     const backupCodes = [];
 
     if (user.twoFA.twoFAMethods.backupCodes.codes?.length) {
@@ -16,6 +18,16 @@ export const activeBackupCodeHandler = (req, res) => {
             );
         }
     }
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "get_backupcode",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         enabled: user.twoFA.twoFAMethods.backupCodes.enabled,
@@ -27,7 +39,7 @@ export const activeBackupCodeHandler = (req, res) => {
 };
 
 export const addBackupCodeHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const rawCodes = [];
     const backupCodes = {
         enabled: true,
@@ -59,6 +71,17 @@ export const addBackupCodeHandler = async (req, res) => {
     );
 
     await cleanupMfa(hashedToken);
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "enable_backupcode",
+            risk: risk
+        })
+    );
+
     return sendResponse(res, 200, {
         message: "Backup code is generated",
         info: { enabled: true, createdAt: Date.now(), codes: rawCodes }
@@ -66,7 +89,7 @@ export const addBackupCodeHandler = async (req, res) => {
 };
 
 export const renewBackupCodeHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const rawCodes = [];
     const backupCodes = {
         enabled: true,
@@ -100,6 +123,16 @@ export const renewBackupCodeHandler = async (req, res) => {
 
     await cleanupMfa(hashedToken);
 
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "renew_backupcode",
+            risk: risk
+        })
+    );
+
     return sendResponse(res, 200, {
         message: "Backup code is regenerated",
         info: {
@@ -112,7 +145,7 @@ export const renewBackupCodeHandler = async (req, res) => {
 };
 
 export const deleteBackupCodeHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
     const backupCodes = {
         enabled: false,
         codes: []
@@ -136,6 +169,16 @@ export const deleteBackupCodeHandler = async (req, res) => {
     );
 
     await cleanupMfa(hashedToken);
+
+    await createAuthEvent(
+        await buildAuthInfo(deviceInfo, verify, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "delete_backupcode",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         message: "Backup code is deleted",

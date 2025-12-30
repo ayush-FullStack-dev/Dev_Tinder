@@ -5,9 +5,20 @@ import fs from "fs";
 import sendResponse from "../../../../helpers/sendResponse.js";
 import { updateUser } from "../../../../services/user.service.js";
 import { cleanupMfa } from "../../../../services/session.service.js";
+import { createAuthEvent } from "../../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../../helpers/authEvent.js";
 
-export const activeTotpHandler = (req, res) => {
-    const { user } = req.auth;
+export const activeTotpHandler = async (req, res) => {
+    const { user, risk, device, verifyInfo } = req.auth;
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "get_totp",
+            risk: risk
+        })
+    );
     return sendResponse(res, 200, {
         enabled: user.twoFA.twoFAMethods.totp.enabled,
         verified: !!user.twoFA.twoFAMethods.totp?.verified,
@@ -18,7 +29,7 @@ export const activeTotpHandler = (req, res) => {
 };
 
 export const addTotpHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
 
     if (user.twoFA.twoFAMethods.totp?.enabled) {
         return sendResponse(res, 401, "Authenticator Already setup");
@@ -49,6 +60,16 @@ export const addTotpHandler = async (req, res) => {
         }
     );
 
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "enable_totp",
+            risk: risk
+        })
+    );
+
     await cleanupMfa(hashedToken);
 
     return sendResponse(res, 200, {
@@ -59,7 +80,7 @@ export const addTotpHandler = async (req, res) => {
 };
 
 export const renewTotpHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
 
     if (!user.twoFA.twoFAMethods.totp?.enabled) {
         return sendResponse(
@@ -95,6 +116,15 @@ export const renewTotpHandler = async (req, res) => {
     );
 
     await cleanupMfa(hashedToken);
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "renew_totp",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         message: "Totp authenticator renew successfully",
@@ -104,7 +134,7 @@ export const renewTotpHandler = async (req, res) => {
 };
 
 export const deleteTotpHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
 
     if (!user.twoFA.twoFAMethods.totp?.enabled) {
         return sendResponse(
@@ -128,6 +158,15 @@ export const deleteTotpHandler = async (req, res) => {
     );
 
     await cleanupMfa(hashedToken);
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "delete_totp",
+            risk: risk
+        })
+    );
 
     return sendResponse(res, 200, {
         message: "Totp authenticator deleted successfully"

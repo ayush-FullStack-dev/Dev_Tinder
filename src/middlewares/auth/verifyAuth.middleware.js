@@ -125,6 +125,7 @@ export const verifedMfaUser = async (req, res, next) => {
         ...req.auth,
         verifyInfo: data,
         device: getDeviceInfo,
+        risk: data.risk,
         hashedToken
     };
 

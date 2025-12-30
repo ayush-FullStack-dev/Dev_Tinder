@@ -60,6 +60,10 @@ import {
     editPasskeyHandler,
     deletePasskeyHandler
 } from "../controllers/auth/passkey.controller.js";
+import {
+    sessionApprovealHandler,
+    sessionApprovealInfo
+} from "../controllers/auth/sessionApproval.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -259,7 +263,6 @@ router.post("/mfa/manage/email/verify/", verifyMailHandler);
 router.post("/mfa/manage/email/resend/", resendOtpMfaHandler);
 
 // login methods
-
 router.use(
     "/manage/",
     validateBasicInfo,
@@ -275,5 +278,10 @@ router
     .post(addNewPasskeyHandler)
     .patch(editPasskeyHandler)
     .delete(deletePasskeyHandler);
+
+router
+    .route("/approve-login/:id")
+    .get(isLogin, findLoginData,sessionApprovealInfo)
+    .post(isLogin, findLoginData, sessionApprovealHandler);
 
 export default router;

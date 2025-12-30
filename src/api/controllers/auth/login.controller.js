@@ -4,10 +4,16 @@ import crypto from "crypto";
 import { cookieOption } from "../../../constants/auth.constant.js";
 
 import { findUser, updateUser } from "../../../services/user.service.js";
-
+import {
+    createAuthEvent,
+    findAuthEvent
+} from "../../../services/authEvent.service.js";
 import { setSession, cleanupLogin } from "../../../services/session.service.js";
+
 import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
+import { getNoSaltHash } from "../../../helpers/hash.js";
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
 import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
 import { collectOnMethod } from "../../../helpers/helpers.js";
 import { setTwoFa } from "../../../helpers/twoFa.js";
@@ -22,7 +28,8 @@ import {
 } from "../../../utils/security/loginRisk.js";
 import {
     getRiskScore,
-    getRiskLevel
+    getRiskLevel,
+    getTrustedScore
 } from "../../../utils/security/riskEngine.js";
 
 export const loginIdentifyHandler = async (req, res) => {
@@ -78,10 +85,30 @@ export const verifyLoginHandler = async (req, res) => {
 
     if (!verify?.success) {
         await cleanupLogin(ctxId);
+
+        await createAuthEvent(
+            await buildAuthInfo(deviceInfo, verify, {
+                _id: user._id,
+                eventType: "login",
+                action: "login_failed",
+                mfaUsed: "none",
+                success: false,
+                risk: info.risk
+            })
+        );
         return sendResponse(res, 401, verify?.message || "Unauthorized");
     }
 
     if (verify?.stepup) {
+        if (!user.twoFA.enabled) {
+            return sendResponse(res, 401, {
+                status: "BLOCKED",
+                risk: info.risk,
+                message:
+                    "Login request blocked due to security risk. Two-Factor Authentication is not enabled on your account.",
+                action: ["ENABLE_2FA", "ACCOUNT_RECOVER"]
+            });
+        }
         const data = await setTwoFa(ctxId, userInfo, methods);
         user.twoFA.tokenInfo.push(data.info);
 
@@ -127,14 +154,56 @@ export const verifyLoginHandler = async (req, res) => {
         user.refreshToken.shift();
     }
 
+    const lastInfos = await findAuthEvent(
+        {
+            userId: user._id,
+            eventType: "login",
+            success: true,
+            createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        },
+        {
+            many: true
+        },
+        { createdAt: -1 }
+    );
+
+    const trustInfo = await getTrustedScore(userInfo, lastInfos);
+
+    const trustedDevices = user.trustedDevices || [];
+
+    if (trustInfo.trusted) {
+        const deviceIdHash = getNoSaltHash(deviceInfo.deviceId);
+        const alreadyTrust = trustedDevices?.some(
+            k => k.deviceIdHash !== deviceIdHash
+        );
+        if (alreadyTrust) {
+            trustedDevices.push({
+                deviceIdHash,
+                platform: "web"
+            });
+        }
+    }
+
     const updatedUser = await updateUser(
         user._id,
         {
-            refreshToken: user.refreshToken
+            refreshToken: user.refreshToken,
+            trustedDevices
         },
         {
             id: true
         }
+    );
+
+    await createAuthEvent(
+        await buildAuthInfo(deviceInfo, verify, {
+            _id: user._id,
+            eventType: "login",
+            mfaUsed: "none",
+            success: true,
+            trusted: trustInfo.score >= 70,
+            risk: info.risk
+        })
     );
 
     res.status(200)

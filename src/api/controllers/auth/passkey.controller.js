@@ -5,6 +5,8 @@ import {
     verifyRegistrationResponse
 } from "@simplewebauthn/server";
 import { isoUint8Array } from "@simplewebauthn/server/helpers";
+import { createAuthEvent } from "../../../services/authEvent.service.js";
+import { buildAuthInfo } from "../../../helpers/authEvent.js";
 
 import { updateUser } from "../../../services/user.service.js";
 import {
@@ -28,10 +30,10 @@ function detectDeviceType(transports = []) {
     return null;
 }
 
-export const activePasskeysHandler = (req, res) => {
-    const { user } = req.auth;
+export const activePasskeysHandler = async (req, res) => {
+    const { user, risk, device, verifyInfo } = req.auth;
     const passkeyMethod = user.loginMethods.passkeys;
-    console.log(passkeyMethod);
+
     const passkeys = [];
 
     for (const keyInfo of passkeyMethod.keys) {
@@ -46,6 +48,16 @@ export const activePasskeysHandler = (req, res) => {
         });
     }
 
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "get_passkey",
+            risk: risk
+        })
+    );
+
     return sendResponse(res, 200, {
         enabled: passkeyMethod.enabled,
         count: passkeyMethod.keys?.length,
@@ -58,7 +70,7 @@ export const activePasskeysHandler = (req, res) => {
 };
 
 export const addNewPasskeyHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
 
     const info = await getSession(`passkey:challenge:${hashedToken}`);
     const passkeys = {
@@ -110,12 +122,6 @@ export const addNewPasskeyHandler = async (req, res) => {
         });
     }
 
-    const deviceInfo = buildDeviceInfo(
-        req.headers["user-agent"],
-        req.body,
-        getIpInfo(req.realIp)
-    );
-
     const verification = await verifyRegistrationResponse({
         response: req.body,
         expectedChallenge: info.challenge,
@@ -135,18 +141,18 @@ export const addNewPasskeyHandler = async (req, res) => {
     passkeys.keys.push({
         credentialId: verification.registrationInfo.credential.id,
         publicKey: Buffer.from(
-            verification.registrationInfo.credential.publicKey
-        ).toString("base64url"),
-
+            verification.registrationInfo.credential.publicKey,
+            "base64url"
+        ),
         counter: verification.registrationInfo.credential.counter,
         transports: [verification.registrationInfo.credential.transports],
-        name: deviceInfo.deviceName,
-        platform: deviceInfo.os,
+        name: device.deviceName,
+        platform: device.os,
         deviceType:
             detectDeviceType(
                 verification.registrationInfo.credential.transports
-            ) || deviceInfo.deviceType,
-        browser: deviceInfo.browser
+            ) || device.deviceType,
+        browser: device.browser
     });
 
     await updateUser(
@@ -158,13 +164,23 @@ export const addNewPasskeyHandler = async (req, res) => {
         }
     );
 
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "add_passkey",
+            risk: risk
+        })
+    );
+
     await cleanupMfa(hashedToken);
 
     return sendResponse(res, 201, "Passkey added successfully");
 };
 
 export const editPasskeyHandler = async (req, res) => {
-    const { user } = req.auth;
+    const { user, risk, device, verifyInfo } = req.auth;
 
     if (!user.loginMethods.passkeys?.enabled) {
         return sendResponse(
@@ -193,7 +209,7 @@ export const editPasskeyHandler = async (req, res) => {
             "Add a name to this passkey so you can recognize it."
         );
     }
-    
+
     user.loginMethods.passkeys.keys[index].name = req.body?.name;
 
     await updateUser(
@@ -205,11 +221,21 @@ export const editPasskeyHandler = async (req, res) => {
         }
     );
 
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "edit_passkey",
+            risk: risk
+        })
+    );
+
     return sendResponse(res, 200, "Passkey renamed successfully");
 };
 
 export const deletePasskeyHandler = async (req, res) => {
-    const { user, hashedToken } = req.auth;
+    const { user, hashedToken, risk, device, verifyInfo } = req.auth;
 
     if (!user.loginMethods.passkeys?.enabled) {
         return sendResponse(
@@ -244,6 +270,16 @@ export const deletePasskeyHandler = async (req, res) => {
         {
             "loginMethods.passkeys": user.loginMethods.passkeys
         }
+    );
+
+    await createAuthEvent(
+        await buildAuthInfo(device, verifyInfo, {
+            _id: user._id,
+            eventType: "mfa_manage",
+            success: true,
+            action: "delete_passkey",
+            risk: risk
+        })
     );
 
     await cleanupMfa(hashedToken);

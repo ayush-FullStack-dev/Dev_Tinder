@@ -3,7 +3,7 @@ import sendResponse from "../../helpers/sendResponse.js";
 import { sendSuspiciousAlert } from "../../helpers/mail.js";
 import { getRiskLevel, getRiskScore } from "./riskEngine.js";
 
-import { getPasskey } from "../../helpers/web.autn.js";
+import { getPasskey } from "../../helpers/passkey.js";
 
 import { setSession } from "../../services/session.service.js";
 
@@ -48,8 +48,7 @@ export const sendSecurityUpgrade = (user, res, deviceInfo) => {
 };
 
 export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
-    const passkey = await getPasskey(user);
-
+    const options = await getPasskey(user);
     if (riskLevel === "verylow") {
         return {
             action: "AUTO_LOGIN",
@@ -61,7 +60,7 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
     }
     if (riskLevel === "low") {
         await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -71,12 +70,12 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
             loginCtx: ctxId,
             allowedMethod: ["passkey", "password"],
             primaryMethod: "passkey",
-            passkey
+            passkey: options
         };
     }
     if (riskLevel === "mid") {
         await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -91,12 +90,12 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
                 "security_code"
             ],
             primaryMethod: "passkey",
-            passkey
+            passkey: options
         };
     }
     if (riskLevel === "high") {
         await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -112,7 +111,7 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
                 "passkey"
             ],
             stepUp: ["2fa"],
-            passkey
+            passkey: options
         };
     }
 
@@ -127,11 +126,11 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
 };
 
 export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
-    const passkey = await getPasskey(user);
+    const options = await getPasskey(user);
 
     if (riskLevel === "verylow" || riskLevel === "low") {
         await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -140,26 +139,12 @@ export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
             risk: riskLevel,
             loginCtx: ctxId,
             allowedMethod: ["passkey", "password"],
-            passkey
+            passkey: options
         };
     }
     if (riskLevel === "mid") {
         await setSession(
-            { challenge: passkey.challenge },
-            ctxId,
-            "passkey:login"
-        );
-        return {
-            action: "REQUIRED_METHOD",
-            risk: riskLevel,
-            loginCtx: ctxId,
-            allowedMethod: ["passkey", "password"],
-            passkey
-        };
-    }
-    if (riskLevel === "mid") {
-        await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -174,12 +159,12 @@ export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
                 "security_code"
             ],
             primaryMethod: "passkey",
-            passkey
+            passkey: options
         };
     }
     if (riskLevel === "high") {
         await setSession(
-            { challenge: passkey.challenge },
+            { challenge: options.challenge },
             ctxId,
             "passkey:login"
         );
@@ -195,7 +180,7 @@ export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
                 "passkey"
             ],
             stepUp: ["2fa"],
-            passkey
+            passkey: options
         };
     }
 

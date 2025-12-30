@@ -37,18 +37,25 @@ export const createPushSubscription = async (data, option = { ...options }) => {
 export const updatePushSubscription = async (
     filter,
     data,
-    option = { ...options }
+    option = { ...options },
+    extra = {}
 ) => {
     checkCondition(
         data,
         "Data && filter is required to update PushSubscription!"
     );
-    if (option.many) {
+    if (option?.many) {
         return PushSubscription.updateMany(filter, data, {
             runValidators: true
         });
-    } else if (option.id) {
-        return PushSubscription.findByIdAndUpdate(filter, data, { new: true });
+    } else if (option?.id) {
+        return PushSubscription.findByIdAndUpdate(filter, data, {
+            new: true,
+            ...extra
+        });
     }
-    return PushSubscription.updateOne(filter, data, { runValidators: true });
+    return PushSubscription.findOneAndUpdate(filter, data, {
+        runValidators: true,
+        ...extra
+    });
 };

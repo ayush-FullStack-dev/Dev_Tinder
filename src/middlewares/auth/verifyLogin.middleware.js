@@ -6,6 +6,7 @@ import {
     cleanupLogin,
     runRedisLua
 } from "../../services/session.service.js";
+import { cookieOption } from "../../constants/auth.constant.js";
 import { findUser, updateUser } from "../../services/user.service.js";
 import { securitycodeLua } from "../../constants/redis.contants.js";
 
@@ -26,7 +27,7 @@ import {
     checkSessionApproval
 } from "../../utils/security/sessionApproveal.js";
 
-import { verifyKey } from "../../helpers/web.autn.js";
+import { verifyKey } from "../../helpers/passkey.js";
 
 import { verifyHash } from "../../helpers/hash.js";
 
@@ -112,11 +113,7 @@ export const verifyLoginValidation = async (req, res, next) => {
         values: validate.value,
         info: savedInfo,
         ctxId,
-        deviceInfo: getDeviceInfo,
-        incomingCredentialId: Buffer.from(
-            validate.value.id || "test",
-            "base64url"
-        )
+        deviceInfo: getDeviceInfo
     };
 
     return next();
@@ -152,8 +149,7 @@ export const verifyLoginTrustDevice = (req, res, next) => {
 };
 
 export const verifyLoginPasskey = async (req, res, next) => {
-    const { user, info, ctxId, values, verify, incomingCredentialId } =
-        req.auth;
+    const { user, info, ctxId, values, verify } = req.auth;
 
     if (verify?.success !== undefined) {
         return next();
@@ -175,8 +171,8 @@ export const verifyLoginPasskey = async (req, res, next) => {
         });
     }
 
-    const passkeyIndex = user.loginMethods.passkeys.findIndex(k =>
-        k.credentialId.equals(incomingCredentialId)
+    const passkeyIndex = user.loginMethods.passkeys.keys.findIndex(
+        k => k.credentialId === req.body?.id
     );
 
     if (passkeyIndex === -1) {
@@ -188,26 +184,34 @@ export const verifyLoginPasskey = async (req, res, next) => {
         return next();
     }
 
-    const verification = await verifyKey(values, saved, passkey);
+    const verification = await verifyKey(
+        values,
+        saved,
+        user.loginMethods.passkeys.keys[passkeyIndex]
+    );
 
-    if (!verification?.success) {
+    if (!verification?.verified) {
         req.auth.verify = {
             success: false,
             method: "passkey",
-            message: verification.message
+            stepup: info.risk === "high",
+            message: "We couldn’t verify this psskey. Please try again.",
+            action: "RESTRT_LOGIN"
         };
+
         return next();
     }
 
-    user.loginMethod.passkeys[passkeyIndex].counter =
+    user.loginMethods.passkeys.keys[passkeyIndex].counter =
         verification.authenticationInfo.newCounter;
+    user.loginMethods.passkeys.keys[passkeyIndex].lastUsedAt = new Date();
 
     await updateUser(
         {
             _id: user._id
         },
         {
-            "loginMethod.passkeys": user.loginMethod.passkeys
+            "loginMethods.passkeys": user.loginMethods.passkeys
         }
     );
 
@@ -274,18 +278,30 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
         return next();
     }
 
-    const approval = await getSession(`approval:${values.code}`);
+    const approval = await getSession(
+        `session:approval:${req.signedCookies?.approvalId}`
+    );
 
     if (!approval) {
         const response = await sendSessionApproval(deviceInfo, user);
-        return sendResponse(res, 200, response);
+        return res
+            .status(200)
+            .cookie("approvalId", response.approvalId, {
+                ...cookieOption,
+                maxAge: 2.3 * 60 * 1000
+            })
+            .json({
+                message: "session approval request send successfully",
+                approvalId: response.approvalId,
+                route: req.originalUrl
+            });
     }
 
     if (approval?.status === "pending") {
         return sendResponse(res, 202, "waiting for approval...");
     }
 
-    req.auth.verify = checkSessionApproval(approval);
+    req.auth.verify = checkSessionApproval(approval, info);
 
     return next();
 };
@@ -332,6 +348,7 @@ export const verifyLoginSecurityCode = async (req, res, next) => {
 
     req.auth.verify = {
         success: true,
+        stepup: info.risk === "high" || info.risk === "veryhigh",
         method: "security_code"
     };
 

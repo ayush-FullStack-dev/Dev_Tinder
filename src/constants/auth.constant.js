@@ -5,7 +5,8 @@ export const cookieOption = {
 };
 
 export const riskLevel = ["verylow", "low", "mid", "high", "veryhigh"];
-
+export const platform = ["web", "android", "os"];
+export const eventType = ["login", "step_up", "mfa_manage"];
 export const twoFaMethods = ["EMAIL", "TOTP", "BACKUPCODE"];
 export const loginMethods = [
     "trusted_session",
@@ -79,10 +80,10 @@ export const userRefreshTokenSchema = {
 
     createdAt: {
         type: Date,
-        default: new Date()
+        default: () => new Date()
     },
     lastActive: {
         type: Date,
-        default: new Date()
+        default: () => new Date()
     }
 };
