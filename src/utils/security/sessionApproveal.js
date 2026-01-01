@@ -20,19 +20,19 @@ export const sendSessionApproval = async (deviceInfo, user) => {
         120
     );
 
-    const alreadySent = [];
     for (const trustedDevice of user.trustedDevices) {
         const pushSubscription = await findPushSubscription({
             deviceIdHash: trustedDevice?.deviceIdHash
         });
 
-        await sendNotification(pushSubscription, {
+        const isSendFcm = await sendNotification(pushSubscription, {
             type: "LOGIN_APPROVAL",
             title: "New sign-in attempt",
             body: `${deviceInfo.deviceName} • ${deviceInfo.location}`,
-            url: `${process.extra.DOMAIN_LINK}/auth/approve-login/${approvalId}`
+            tag: "login-alert",
+            userId: user.id,
+            url: `${process.extra.DOMAIN_LINK}/auth/account/approve-login/${approvalId}`
         });
-        alreadySent.push(pushSubscription);
     }
 
     return {

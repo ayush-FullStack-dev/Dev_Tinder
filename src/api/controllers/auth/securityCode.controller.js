@@ -35,7 +35,6 @@ export const createSecurtyCode = async (req, res) => {
         "EX",
         keyInfo.expiresAt
     );
-
     await setSession(
         {
             ...keyInfo,
@@ -46,7 +45,8 @@ export const createSecurtyCode = async (req, res) => {
         "EX",
         keyInfo.expiresAt
     );
-     await cleanupMfa(hashedToken);
+    
+    await cleanupMfa(hashedToken);
 
     await createAuthEvent(
         await buildAuthInfo(device, verifyInfo, {

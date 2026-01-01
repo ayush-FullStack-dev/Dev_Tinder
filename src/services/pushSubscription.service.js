@@ -64,7 +64,7 @@ export const deletePushSubscription = async (
     filter,
     option = { ...options }
 ) => {
-    checkCondition(filter, "filter is required to delete Pending User!");
+    checkCondition(filter, "filter is required to delete PushSubscription");
     if (option.many) {
         return PushSubscription.deleteMany(filter);
     } else if (option.id) {

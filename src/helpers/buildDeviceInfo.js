@@ -5,16 +5,15 @@ export const buildDeviceInfo = (ua, validateValues, info) => {
     const time = getTime(validateValues?.clientTime);
     return {
         ...parseUA(ua),
-        deviceId: validateValues?.deviceId || "test",
+        deviceId: validateValues?.deviceId || "UNKNOWN",
         userAgent: ua,
-        ip: info.ip,
-        city: info.city || "test",
-        location: info.location,
-        country: info.country,
-        deviceSize: validateValues?.deviceSize,
-        timezone: info.timezone || "test",
-        time: time.clientTime,
-        fullTime: time.fullTime,
-        
+        ip: info?.ip || "UNKNOWN",
+        city: info?.city || "test",
+        location: info?.location || "UNKNOWN",
+        country: info?.country || "UNKNOWN",
+        deviceSize: validateValues?.deviceSize || "UNKNOWN",
+        timezone: info?.timezone || "UNKNOWN",
+        time: time.clientTime || "UNKNOWN",
+        fullTime: time.fullTime || "UNKNOWN"
     };
 };

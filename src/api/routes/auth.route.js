@@ -68,6 +68,7 @@ import {
     revokeTrustedDevice,
     getAllTrustedDevice
 } from "../controllers/auth/trusted.controller.js";
+import { securityEventHandler } from "../controllers/auth/account.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -112,6 +113,23 @@ import {
 } from "../../middlewares/auth/verifyAuth.middleware.js";
 
 const router = express.Router();
+
+// all route where need to authenticate
+router.use(
+    "/manage/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifedMfaUser
+);
+router.use(
+    "/mfa/manage/",
+    validateBasicInfo,
+    isLogin,
+    findLoginData,
+    verifedMfaUser
+);
+router.use("/account/", isLogin, findLoginData);
 
 // Create new user
 router.post("/signup/", signupValidation, signupHandler);
@@ -233,14 +251,6 @@ router.post(
     }) // check verified
 );
 
-router.use(
-    "/mfa/manage/",
-    validateBasicInfo,
-    isLogin,
-    findLoginData,
-    verifedMfaUser
-);
-
 router.route("/mfa/manage/").get(manageMfaHandler).post(enableTwoFA);
 
 router
@@ -267,13 +277,6 @@ router.post("/mfa/manage/email/verify/", verifyMailHandler);
 router.post("/mfa/manage/email/resend/", resendOtpMfaHandler);
 
 // login methods
-router.use(
-    "/manage/",
-    validateBasicInfo,
-    isLogin,
-    findLoginData,
-    verifedMfaUser
-);
 
 router.post("/manage/securitycode/", createSecurtyCode);
 router
@@ -286,13 +289,13 @@ router
 router
     .route("/manage/trusted-devices/")
     .get(getAllTrustedDevice)
-    .delete(revokeTrustedDevice)
-    .patch(revokeTrustedDevice)
-    .post(revokeTrustedDevice);
+    .delete(revokeTrustedDevice);
 
 router
-    .route("/approve-login/:id")
-    .get(isLogin, findLoginData, sessionApprovealInfo)
-    .post(isLogin, findLoginData, sessionApprovealHandler);
+    .route("/account/approve-login/:id")
+    .get(sessionApprovealInfo)
+    .post(sessionApprovealHandler);
+
+router.get("/account/security-events/", securityEventHandler);
 
 export default router;
