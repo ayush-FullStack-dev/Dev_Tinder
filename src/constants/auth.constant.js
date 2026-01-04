@@ -16,6 +16,8 @@ export const loginMethods = [
     "session_approval"
 ];
 
+export const recommendedActions = ["review_login", "change_password"];
+
 export const userRefreshTokenSchema = {
     token: { type: String, required: true },
     used: {

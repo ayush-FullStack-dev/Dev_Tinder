@@ -46,7 +46,7 @@ export const findLoginData = async (req, res, next) => {
 
     req.auth.findedCurrent = findedToken;
     req.auth.user = user;
-    next();
+    return next();
 };
 
 export const validateBasicInfo = (req, res, next) => {

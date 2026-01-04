@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { setSession } from "../../services/session.service.js";
+import { setSession, getSession } from "../../services/session.service.js";
 import { findPushSubscription } from "../../services/pushSubscription.service.js";
 import { sendNotification } from "../../helpers/sendNotification.js";
 

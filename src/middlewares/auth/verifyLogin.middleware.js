@@ -282,27 +282,26 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
         `session:approval:${req.signedCookies?.approvalId}`
     );
 
-        if (!approval) {
-    const response = await sendSessionApproval(deviceInfo, user);
-    return res
-        .status(200)
-        .cookie("approvalId", response.approvalId, {
-            ...cookieOption,
-            maxAge: 2 * 60 * 1000
-        })
-        .json({
-            message: "session approval request send successfully",
-            approvalId: response.approvalId,
-            route: req.originalUrl
-        });
-     }
+    if (!approval) {
+        const response = await sendSessionApproval(deviceInfo, user);
+        return res
+            .status(200)
+            .cookie("approvalId", response.approvalId, {
+                ...cookieOption,
+                maxAge: 2 * 60 * 1000
+            })
+            .json({
+                message: "session approval request send successfully",
+                approvalId: response.approvalId,
+                route: req.originalUrl
+            });
+    }
 
     if (approval?.status === "pending") {
         return sendResponse(res, 202, "waiting for approval...");
     }
 
     req.auth.verify = checkSessionApproval(approval, info);
-
     return next();
 };
 

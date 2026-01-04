@@ -68,7 +68,10 @@ import {
     revokeTrustedDevice,
     getAllTrustedDevice
 } from "../controllers/auth/trusted.controller.js";
-import { securityEventHandler } from "../controllers/auth/account.controller.js";
+import {
+    securityEventHandler,
+    activeRiskHandler
+} from "../controllers/auth/account.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -297,5 +300,6 @@ router
     .post(sessionApprovealHandler);
 
 router.get("/account/security-events/", securityEventHandler);
+router.get("/account/active-risks/", activeRiskHandler);
 
 export default router;

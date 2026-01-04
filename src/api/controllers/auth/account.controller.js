@@ -3,13 +3,18 @@ import sendResponse from "../../../helpers/sendResponse.js";
 import { findAuthEvent } from "../../../services/authEvent.service.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 import AuthEvent from "../../../models/AuthEvent.model.js";
+import { recommendedActions } from "../../../constants/auth.constant.js";
+import {
+    isValidWindow,
+    riskSignals,
+    evaluateSignals
+} from "../../../helpers/account.helper.js";
 
 export const securityEventHandler = async (req, res) => {
     const { user } = req.auth;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(50, Number(req.query.limit) || 20);
 
-    
     const query = {
         userId: user._id
     };
@@ -63,4 +68,39 @@ export const securityEventHandler = async (req, res) => {
         },
         events
     });
+};
+
+export const activeRiskHandler = async (req, res) => {
+    const { user, findedCurrent } = req.auth;
+    const { window = "24h" } = req.query;
+
+    const time = isValidWindow(window);
+
+    if (time?.success !== undefined) {
+        return sendResponse(res, 400, time?.message);
+    }
+
+    const infos = await AuthEvent.find({
+        userId: user._id,
+        eventType: "login",
+        createdAt: {
+            $gte: time
+        }
+    }).sort({ createdAt: -1 });
+
+    const signals = riskSignals(window, infos, findedCurrent);
+
+    const { risk, reasons } = evaluateSignals(signals);
+    const reponse = {
+        risk,
+        reasons,
+        actionRequired: false
+    };
+
+    if (risk === "high") {
+        reponse.recommendedActions = recommendedActions;
+        reponse.actionRequired = true;
+    }
+
+    return sendResponse(res, 200, reponse);
 };
