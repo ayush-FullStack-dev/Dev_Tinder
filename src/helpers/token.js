@@ -1,7 +1,7 @@
 import { signToken } from "./jwt.js";
 import { verifyToken } from "./jwt.js";
 
-export function getAccesToken(user) {
+export function getAccessToken(user) {
     return signToken(
         {
             _id: user._id,

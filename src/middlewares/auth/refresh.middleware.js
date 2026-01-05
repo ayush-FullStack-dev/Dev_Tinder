@@ -8,7 +8,7 @@ import {
 } from "../../helpers/helpers.js";
 import { getIpInfo } from "../../helpers/ip.js";
 import { setTwoFa } from "../../helpers/twoFa.js";
-import { getAccesToken, getRefreshToken } from "../../helpers/token.js";
+import { getAccessToken, getRefreshToken } from "../../helpers/token.js";
 
 import { findUser, updateUser } from "../../services/user.service.js";
 import { getSession } from "../../services/session.service.js";
@@ -206,7 +206,7 @@ export const handleStepUpIfNeeded = async (req, res, next) => {
 export const rotateRefreshToken = async (req, res, next) => {
     const { token, user, tokenIndex, tokenInfo } = req.auth;
     const refreshExpiry = setRefreshExpiry(req.body);
-    const accessToken = getAccesToken(user);
+    const accessToken = getAccessToken(user);
     const refreshToken = getRefreshToken(
         {
             _id: user._id

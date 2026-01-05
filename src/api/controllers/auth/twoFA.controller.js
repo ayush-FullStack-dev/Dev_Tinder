@@ -15,7 +15,7 @@ import {
     sendSuspiciousAlert,
     sendLoginAlert
 } from "../../../helpers/mail.js";
-import { getRefreshToken, getAccesToken } from "../../../helpers/token.js";
+import { getRefreshToken, getAccessToken } from "../../../helpers/token.js";
 import { setOtpMail } from "../../../helpers/twoFa.js";
 import { getNoSaltHash } from "../../../helpers/hash.js";
 
@@ -51,7 +51,7 @@ export const resendOtpHandler = async (req, res) => {
 
     if (!isValid.start) {
         return sendResponse(res, 401, {
-            message: "2fa session not fount first hit /start 2fa route"
+            message: "2fa session not found first hit /start 2fa route"
         });
     }
 
@@ -259,7 +259,7 @@ export const verifyTwoFAHandler = async (req, res) => {
         userInfo
     });
 
-    const accessToken = getAccesToken(user);
+    const accessToken = getAccessToken(user);
 
     const refreshToken = getRefreshToken(
         {

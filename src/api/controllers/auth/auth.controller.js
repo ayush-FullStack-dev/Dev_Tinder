@@ -62,7 +62,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     );
 };
 
-export const verifyVerifactionHandler = (link, nextStep, others) => {
+export const verifyVerificationHandler = (link, nextStep, others) => {
     return async (req, res, next) => {
         const { verify, ctxId, deviceInfo, info } = req.auth;
 

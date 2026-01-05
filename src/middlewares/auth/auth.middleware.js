@@ -38,7 +38,7 @@ export const findLoginData = async (req, res, next) => {
 
     if (!user) {
         return sendResponse(res, 401, {
-            message: "AccessToken is inavlid please login again."
+            message: "AccessToken is invalid please login again."
         });
     }
 
@@ -51,52 +51,64 @@ export const findLoginData = async (req, res, next) => {
 
 export const validateBasicInfo = (req, res, next) => {
     if (req?.body) {
-        const { clientTime = Date.now(), deviceId, deviceSize } = req.body;
+        const { clientTime/* = Date.now()*/, deviceId, deviceSize } = req.body;
 
         if (!clientTime) {
-            return sendResponse(res, 400, "provide current client timestamp");
+            return sendResponse(res, 400, "Client timestamp is required");
         }
 
-        if (!deviceId || deviceId?.length !== 32) {
-            return sendResponse(res, 400, "provide valid  deviceId");
+        if (!deviceId || deviceId.length !== 32) {
+            return sendResponse(
+                res,
+                400,
+                "Invalid deviceId. Must be exactly 32 characters"
+            );
         }
 
         if (!deviceSize) {
             return sendResponse(
                 res,
                 400,
-                "provide device size mix of width + height"
+                "Device size is required (width + height)"
             );
         }
 
         if (deviceSize >= 170 && deviceSize <= 3000) {
-            return sendResponse(res, 400, "provide valid device size");
+            return sendResponse(
+                res,
+                400,
+                "Device size is out of allowed range"
+            );
         }
 
-        req.body.clientTime = clientTime;
+        //  req.body.clientTime = clientTime;
         return next();
     }
 
-    const { clienttime = Date.now(), deviceid, devicesize } = req.headers;
+    const { clientTime = Date.now(), deviceid, devicesize } = req.headers;
 
-    if (!clienttime) {
-        return sendResponse(res, 400, "provide current client timestamp");
+    if (!clientTime) {
+        return sendResponse(res, 400, "Client timestamp is required");
     }
 
-    if (!deviceid || deviceid?.length !== 32) {
-        return sendResponse(res, 400, "provide valid  deviceId");
-    }
-
-    if (!devicesize) {
+    if (!deviceId || deviceId.length !== 32) {
         return sendResponse(
             res,
             400,
-            "provide device size mix of width + height"
+            "Invalid deviceId. Must be exactly 32 characters"
         );
     }
 
-    if (devicesize >= 170 && devicesize <= 3000) {
-        return sendResponse(res, 400, "provide valid device size");
+    if (!deviceSize) {
+        return sendResponse(
+            res,
+            400,
+            "Device size is required (width + height)"
+        );
+    }
+
+    if (deviceSize >= 170 && deviceSize <= 3000) {
+        return sendResponse(res, 400, "Device size is out of allowed range");
     }
 
     req.body = {

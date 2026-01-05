@@ -22,7 +22,7 @@ import {
 } from "../controllers/auth/session.controller.js";
 import {
     verifyIdentifyHandler,
-    verifyVerifactionHandler
+    verifyVerificationHandler
 } from "../controllers/auth/auth.controller.js";
 import {
     changePasswordHandler,
@@ -115,6 +115,7 @@ import {
     verifyVerifaction,
     verifedMfaUser
 } from "../../middlewares/auth/verifyAuth.middleware.js";
+import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
 const router = express.Router();
 
@@ -124,31 +125,68 @@ router.use(
     validateBasicInfo,
     isLogin,
     findLoginData,
+    rateLimiter({
+        limit: 60,
+        window: 10,
+        block: 5,
+        route: "manage:base"
+    }),
     verifedMfaUser
 );
+
 router.use(
     "/mfa/manage/",
     validateBasicInfo,
     isLogin,
     findLoginData,
+    rateLimiter({
+        limit: 60,
+        window: 10,
+        block: 5,
+        route: "mfa:manage:base"
+    }),
     verifedMfaUser
 );
-router.use("/account/", isLogin, findLoginData);
+
+router.use(
+    "/account/",
+    isLogin,
+    findLoginData,
+    rateLimiter({
+        limit: 40,
+        window: 5,
+        block: 5,
+        route: "account"
+    })
+);
 
 // Create new user
-router.post("/signup/", signupValidation, signupHandler);
-router.get("/verify/", verifyEvl);
+router.post(
+    "/signup/",
+    rateLimiter({ limit: 10, window: 60, block: 10, route: "signup" }),
+    signupValidation,
+    signupHandler
+);
+
+router.get(
+    "/verify/",
+    rateLimiter({ limit: 20, window: 60, block: 5, route: "verify" }),
+    verifyEvl
+);
 
 // login to exting info
 router.post(
     "/login/identify/",
     validateBasicInfo,
+    rateLimiter({ limit: 20, window: 60, block: 10, route: "login:identify" }),
     loginIdentifyValidation,
     loginIdentifyHandler
 );
+
 router.post(
     "/login/confirm/",
     validateBasicInfo,
+    rateLimiter({ limit: 15, window: 60, block: 15, route: "login:confirm" }),
     verifyLoginValidation, // context + risk
     verifyLoginTrustDevice, // verylow auto-login
     verifyLoginPasskey, // low / mid // high
@@ -159,10 +197,23 @@ router.post(
 );
 
 // verify-2fa
-router.post("/verify-2fa/start/", twoFAValidation, startTwoFAHandler);
-router.post("/verify-2fa/resend/", twoFAValidation, resendOtpHandler);
+router.post(
+    "/verify-2fa/start/",
+    rateLimiter({ limit: 10, window: 60, block: 10, route: "2fa:start" }),
+    twoFAValidation,
+    startTwoFAHandler
+);
+
+router.post(
+    "/verify-2fa/resend/",
+    rateLimiter({ limit: 5, window: 60, block: 15, route: "2fa:resend" }),
+    twoFAValidation,
+    resendOtpHandler
+);
+
 router.post(
     "/verify-2fa/confirm/",
+    rateLimiter({ limit: 10, window: 60, block: 15, route: "2fa:confirm" }),
     verifyTwoFAValidation,
     verifyTwoFAEmail,
     verifyTwoFATotp,
@@ -175,6 +226,7 @@ router.post(
     "/refresh/",
     validateBasicInfo,
     extractRefreshToken,
+    rateLimiter({ limit: 20, window: 60, block: 10, route: "refresh" }),
     validateRefreshToken,
     bindTokenToDevice,
     reEvaluateRisk,
@@ -187,14 +239,21 @@ router.post(
 router.post(
     "/logout/",
     validateBasicInfo,
+    isLogin,
+    findLoginData,
+    rateLimiter({ limit: 10, window: 60, block: 5, route: "logout" }),
     extractLogoutInfo,
     validateLogout,
     logoutCurrentSession,
     sendLogoutResponse
 );
+
 router.post(
     "/logout-all/",
     validateBasicInfo,
+    isLogin,
+    findLoginData,
+    rateLimiter({ limit: 5, window: 60, block: 10, route: "logout:all" }),
     extractLogoutInfo,
     validateLogout,
     logoutAllSession,
@@ -202,11 +261,19 @@ router.post(
 );
 
 // see all active session & revoke it
-router.get("/session/", isLogin, findLoginData, sessionHandler);
+router.get(
+    "/session/",
+    isLogin,
+    findLoginData,
+    rateLimiter({ limit: 20, window: 60, block: 5, route: "session:list" }),
+    sessionHandler
+);
+
 router.post(
     "/session/revoke/:id/",
     isLogin,
     findLoginData,
+    rateLimiter({ limit: 10, window: 60, block: 10, route: "session:revoke" }),
     sessionRevokeHandler
 );
 
@@ -216,43 +283,75 @@ router.post(
     validateBasicInfo,
     isLogin,
     findLoginData,
+    rateLimiter({ limit: 5, window: 60, block: 15, route: "password:start" }),
     verifyIdentifyHandler
 );
+
 router.post(
     "/change-password/confirm/",
     validateBasicInfo,
     isLogin,
     findLoginData,
+    rateLimiter({ limit: 5, window: 60, block: 20, route: "password:confirm" }),
     verifyVerifaction,
     changePasswordHandler, // chnage password
     verifyLoginPasskey, // low / mid // high
     verifyLoginPassword, // low / mid / high
     verifyLoginSessionApproval, // mid / high / /veryhigh
     verifyLoginSecurityCode, // mid // high / veryhigh
-    verifyVerifactionHandler("change:password", "submit_new_password") // check verified
+    verifyVerificationHandler("change:password", "submit_new_password")
 );
-router.post("/forgot-password/", forgotPasswordHandler);
+
+router.post(
+    "/forgot-password/",
+    rateLimiter({ limit: 5, window: 300, block: 30, route: "password:forgot" }),
+    forgotPasswordHandler
+);
+
 router
     .route("/reset-password/:token/")
-    .get(resetPasswordValidation)
-    .post(resetPasswordHandler);
+    .get(
+        rateLimiter({
+            limit: 10,
+            window: 60,
+            block: 10,
+            route: "password:reset:get"
+        }),
+        resetPasswordValidation
+    )
+    .post(
+        rateLimiter({
+            limit: 5,
+            window: 60,
+            block: 20,
+            route: "password:reset:post"
+        }),
+        resetPasswordHandler
+    );
 
 // twoFA releted routes
-router.post("/mfa/start/", isLogin, findLoginData, verifyIdentifyHandler);
+router.post(
+    "/mfa/start/",
+    isLogin,
+    findLoginData,
+    rateLimiter({ limit: 5, window: 60, block: 10, route: "mfa:start" }),
+    verifyIdentifyHandler
+);
 
 router.post(
     "/mfa/verify/",
     isLogin,
     findLoginData,
+    rateLimiter({ limit: 5, window: 60, block: 15, route: "mfa:verify" }),
     verifyVerifaction,
-    verifyLoginPasskey, // low / mid // high
-    verifyLoginPassword, // low / mid / high
-    verifyLoginSessionApproval, // mid / high / /veryhigh
-    verifyLoginSecurityCode, // mid // high / veryhigh
-    verifyVerifactionHandler("verify:mfa", "/mfa/manage?rpat=", {
+    verifyLoginPasskey,
+    verifyLoginPassword,
+    verifyLoginSessionApproval,
+    verifyLoginSecurityCode,
+    verifyVerificationHandler("verify:mfa", "/mfa/manage?rpat=", {
         verified: true,
         expiresIn: Date.now() + 300000
-    }) // check verified
+    })
 );
 
 router.route("/mfa/manage/").get(manageMfaHandler).post(enableTwoFA);
@@ -280,8 +379,7 @@ router
 router.post("/mfa/manage/email/verify/", verifyMailHandler);
 router.post("/mfa/manage/email/resend/", resendOtpMfaHandler);
 
-// login methods
-
+// mange login methods
 router.post("/manage/securitycode/", createSecurtyCode);
 router
     .route("/manage/passkey/")
@@ -298,12 +396,29 @@ router
 router
     .route("/account/approve-login/:id")
     .get(sessionApprovealInfo)
-    .post(sessionApprovealHandler);
+    .post(
+        rateLimiter({
+            limit: 3,
+            window: 5,
+            block: 30,
+            route: "approve_login"
+        }),
+        sessionApprovealHandler
+    );
 
 router.get("/account/security-events/", securityEventHandler);
 router.get("/account/active-risks/", activeRiskHandler);
 
 // public routes
-router.get("/health/", systemHealth);
+router.get(
+    "/health/",
+    rateLimiter({
+        limit: 20,
+        window: 1,
+        block: 2,
+        route: "health"
+    }),
+    systemHealth
+);
 
 export default router;

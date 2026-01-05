@@ -41,7 +41,7 @@ async function init() {
     connectRedis();
     connectDB();
     webPushStart();
-    printASCII("SERVER BY AYUSH");
+    printASCII("DEVLOPEMNT");
 }
 
 init();

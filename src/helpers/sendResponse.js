@@ -73,5 +73,4 @@ export function clearCtxId(response, code, message, cookieName = "ctxId") {
         });
 }
 
-
 export default sendResponse;

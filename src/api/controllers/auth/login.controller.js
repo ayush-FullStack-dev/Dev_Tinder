@@ -14,7 +14,7 @@ import { signToken } from "../../../helpers/jwt.js";
 import { sendSuspiciousAlert } from "../../../helpers/mail.js";
 import { getNoSaltHash } from "../../../helpers/hash.js";
 import { buildAuthInfo } from "../../../helpers/authEvent.js";
-import { getAccesToken, getRefreshToken } from "../../../helpers/token.js";
+import { getAccessToken, getRefreshToken } from "../../../helpers/token.js";
 import { collectOnMethod } from "../../../helpers/helpers.js";
 import { setTwoFa } from "../../../helpers/twoFa.js";
 
@@ -133,7 +133,7 @@ export const verifyLoginHandler = async (req, res) => {
             .json(data.response);
     }
 
-    const accessToken = getAccesToken(user);
+    const accessToken = getAccessToken(user);
     const trustedSession = signToken({
         sub: user._id, // user identity
         did: deviceInfo.deviceId // trusted device
@@ -171,7 +171,6 @@ export const verifyLoginHandler = async (req, res) => {
 
     const trustedDevices = user.trustedDevices || [];
 
-    
     if (trustInfo.trusted) {
         const deviceIdHash = getNoSaltHash(deviceInfo.deviceId);
         const alreadyTrust = trustedDevices?.some(
