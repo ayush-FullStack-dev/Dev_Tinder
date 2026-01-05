@@ -29,7 +29,7 @@ async function init() {
             connectRedis();
             startServer();
             webPushStart();
-            printASCII("WELCOME");
+            printASCII("PRODUCTION");
         } catch (err) {
             errorLog("BOOT FAILED ❌");
             console.error(err);
@@ -39,9 +39,7 @@ async function init() {
 
     startServer();
     connectRedis();
-    connectDB().catch(err => {
-        errorLog("Database Connected failed! Error is:", error);
-    });
+    connectDB();
     webPushStart();
     printASCII("SERVER BY AYUSH");
 }

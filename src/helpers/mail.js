@@ -15,7 +15,7 @@ import {
     resetPasswordAlertTemplate
 } from "../templates/mail/password.template.js";
 
-const transporter = mailer.createTransport({
+export const transporter = mailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false,
@@ -233,4 +233,3 @@ export const getMaskMail = mail => {
         }${maskMail[maskMail.length - 1]}@${username[1]}`;
     }
 };
-

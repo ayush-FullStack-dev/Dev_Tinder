@@ -72,6 +72,7 @@ import {
     securityEventHandler,
     activeRiskHandler
 } from "../controllers/auth/account.controller.js";
+import { systemHealth } from "../controllers/auth/system.controller.js";
 
 // importing middleware
 import { signupValidation } from "../../middlewares/auth/signup.middleware.js";
@@ -301,5 +302,8 @@ router
 
 router.get("/account/security-events/", securityEventHandler);
 router.get("/account/active-risks/", activeRiskHandler);
+
+// public routes
+router.get("/health/", systemHealth);
 
 export default router;
