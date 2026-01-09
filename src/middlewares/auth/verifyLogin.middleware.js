@@ -17,7 +17,7 @@ import {
     getTime,
     setRefreshExpiry
 } from "../../helpers/helpers.js";
-import { getIpInfo } from "../../helpers/ip.js";
+import { getIpDetails } from "../../helpers/ip.js";
 
 import { verifyLoginValidator } from "../../validators/auth/verifyLogin.validator.js";
 
@@ -48,7 +48,7 @@ export const verifyLoginValidation = async (req, res, next) => {
     const getDeviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         validate.value,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     const savedDeviceInfo = await getSession(`login:info:${ctxId}`);

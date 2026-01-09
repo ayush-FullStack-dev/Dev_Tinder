@@ -3,7 +3,7 @@ import crypto from "crypto";
 import sendResponse, { clearCtxId } from "../../helpers/sendResponse.js";
 
 import { getTime, checkValidation } from "../../helpers/helpers.js";
-import { getIpInfo } from "../../helpers/ip.js";
+import { getIpDetails } from "../../helpers/ip.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 
 import { verifyAuthValidator } from "../../validators/auth/verifyAuth.validator.js";
@@ -35,7 +35,7 @@ export const verifyVerifaction = async (req, res, next) => {
     const getDeviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     const savedDeviceInfo = await getSession(`verify:info:${ctxId}`);
@@ -97,7 +97,7 @@ export const verifedMfaUser = async (req, res, next) => {
     const getDeviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     const data = await getSession(`verify:mfa:${hashedToken}`);

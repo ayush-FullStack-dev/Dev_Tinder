@@ -8,7 +8,7 @@ const deviceInfoSchema = new mongoose.Schema(
             default: "web"
         },
 
-        // 🧠 Parsed user agent info (display + audit)
+
         browser: {
             type: String
         },
@@ -19,7 +19,6 @@ const deviceInfoSchema = new mongoose.Schema(
             type: String
         },
 
-        // 🌍 Geo (risk context only, NOT tracking)
         ipCountry: {
             type: String
         },
@@ -44,7 +43,7 @@ const pushSubscriptionSchema = mongoose.Schema({
     },
     endpoint: {
         type: String,
-        required: true,
+        required: true
     },
     keys: {
         p256dh: {

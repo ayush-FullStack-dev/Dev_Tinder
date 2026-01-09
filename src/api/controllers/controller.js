@@ -1,9 +1,11 @@
+import { defaultIp } from "../../helpers/ip.js";
+
 export const getInfo = (req, res, next) => {
     let ip = req.ip;
     if (ip.startsWith("::ffff:")) {
         ip = ip.replace("::ffff:", "");
     } else if (ip === "::1") {
-        ip = "127.0.0.1";
+        ip = defaultIp
     }
     req.realIp = ip;
     if (!process.extra?.DOMAIN) {

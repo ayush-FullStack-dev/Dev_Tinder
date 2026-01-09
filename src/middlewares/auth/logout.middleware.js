@@ -2,20 +2,20 @@ import { verifyRefreshToken } from "../../helpers/token.js";
 import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { findUser, updateUser } from "../../services/user.service.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
-import { getIpInfo } from "../../helpers/ip.js";
+import { getIpDetails } from "../../helpers/ip.js";
 
 import crypto from "crypto";
 
 import { sendLogoutAllAlert } from "../../helpers/mail.js";
 import { getLogoutInfo } from "../../helpers/logout.js";
 
-export const extractLogoutInfo = (req, res, next) => {
+export const extractLogoutInfo = async (req, res, next) => {
     const refreshToken = req.signedCookies.refreshToken;
 
     const device = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     if (!refreshToken) {

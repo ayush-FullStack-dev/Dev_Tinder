@@ -16,7 +16,7 @@ import {
 } from "../../../services/session.service.js";
 
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
-import { getIpInfo } from "../../../helpers/ip.js";
+
 
 function detectDeviceType(transports = []) {
     if (

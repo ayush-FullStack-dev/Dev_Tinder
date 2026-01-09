@@ -51,9 +51,9 @@ export const findLoginData = async (req, res, next) => {
 
 export const validateBasicInfo = (req, res, next) => {
     if (req?.body) {
-        const { clientTime/* = Date.now()*/, deviceId, deviceSize } = req.body;
+        const { clientTimestamp = Date.now(), deviceId, deviceSize } = req.body;
 
-        if (!clientTime) {
+        if (!clientTimestamp) {
             return sendResponse(res, 400, "Client timestamp is required");
         }
 
@@ -81,13 +81,13 @@ export const validateBasicInfo = (req, res, next) => {
             );
         }
 
-        //  req.body.clientTime = clientTime;
+        req.body.clientTime = clientTimestamp;
         return next();
     }
 
-    const { clientTime = Date.now(), deviceid, devicesize } = req.headers;
+    const { clientTimestamp = Date.now(), deviceid, devicesize } = req.headers;
 
-    if (!clientTime) {
+    if (!clientTimestamp) {
         return sendResponse(res, 400, "Client timestamp is required");
     }
 
@@ -113,7 +113,7 @@ export const validateBasicInfo = (req, res, next) => {
 
     req.body = {
         ...req.body,
-        clientTime: clienttime,
+        clientTime: clientTimestamp,
         deviceId: deviceid,
         deviceSize: devicesize
     };

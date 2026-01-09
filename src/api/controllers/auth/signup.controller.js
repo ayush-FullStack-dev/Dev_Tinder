@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import epochify from "epochify";
 
 import ApiError from "../../../helpers/ApiError.js";
 import sendResponse from "../../../helpers/sendResponse.js";
@@ -63,16 +62,7 @@ export const verifyEvl = async (req, res) => {
             401
         );
     }
-    const diff = epochify.getDiff(Date.now(), findData.expireAt, "minutes");
-
-    if (diff > 15) {
-        await deletePendingUser(findData._id, {
-            id: true
-        });
-        return sendResponse(res, 410, {
-            message: "Verify Token is expired!"
-        });
-    }
+    
 
     const userData = await createUser({
         name: findData.name,

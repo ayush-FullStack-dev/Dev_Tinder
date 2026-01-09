@@ -4,7 +4,7 @@ import sendResponse, { setCtxId } from "../../../helpers/sendResponse.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 import { buildAuthInfo } from "../../../helpers/authEvent.js";
 import { createAuthEvent } from "../../../services/authEvent.service.js";
-import { getIpInfo } from "../../../helpers/ip.js";
+import { getIpDetails } from "../../../helpers/ip.js";
 
 import { fingerprintBuilder } from "../../../utils/fingerprint.js";
 import {
@@ -23,7 +23,7 @@ export const verifyIdentifyHandler = async (req, res, next) => {
     const deviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+       await getIpDetails(req.realIp)
     );
     deviceInfo.fingerprint = await fingerprintBuilder(deviceInfo);
     const score = await calculateLoginRisk(user, deviceInfo, time);

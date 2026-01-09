@@ -6,7 +6,7 @@ import {
     getTime,
     setRefreshExpiry
 } from "../../helpers/helpers.js";
-import { getIpInfo } from "../../helpers/ip.js";
+import { getIpDetails } from "../../helpers/ip.js";
 import { setTwoFa } from "../../helpers/twoFa.js";
 import { getAccessToken, getRefreshToken } from "../../helpers/token.js";
 
@@ -87,7 +87,7 @@ export const bindTokenToDevice = async (req, res, next) => {
     const tokenInfo = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     tokenInfo.loginContext = token.loginContext;

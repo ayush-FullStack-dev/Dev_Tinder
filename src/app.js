@@ -1,15 +1,21 @@
 import express from "express";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 
+// routes
 import authRouter from "./api/routes/auth.route.js";
 import pushRouter from "./api/routes/push.route.js";
-import cookieParser from "cookie-parser";
-import { getPath } from "./utilities/index.js";
+import profileRouter from "./api/routes/profile.route.js";
+
+// global routes
 import {
     getInfo,
     handleError,
     handleNotFound
 } from "./api/controllers/controller.js";
+
+// others import
+import { getPath } from "./utilities/index.js";
 
 // configure appp
 const app = express();
@@ -25,8 +31,9 @@ app.use(helmet());
 app.use(getInfo);
 
 // routes
-app.use("/", pushRouter);
+app.use("/push", pushRouter);
 app.use("/auth", authRouter);
+app.use("/profile", profileRouter);
 
 // error handers
 app.use("/", handleNotFound);

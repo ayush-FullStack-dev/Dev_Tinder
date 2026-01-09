@@ -5,7 +5,7 @@ import redis from "../../../config/redis.js";
 import { getLogoutInfo, getInvalidateToken } from "../../../helpers/logout.js";
 import { verifyHash, generateHash } from "../../../helpers/hash.js";
 import { buildAuthInfo } from "../../../helpers/authEvent.js";
-import { getIpInfo } from "../../../helpers/ip.js";
+import { getIpDetails } from "../../../helpers/ip.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 
 import { getSession, setSession } from "../../../services/session.service.js";
@@ -143,7 +143,7 @@ export const resetPasswordValidation = async (req, res) => {
     const device = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     if (rawToken?.length !== Number(process.env.BYTE) * 2) {
@@ -194,7 +194,7 @@ export const resetPasswordHandler = async (req, res) => {
     const device = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
 
     if (req.params?.token?.length !== Number(process.env.BYTE) * 2) {

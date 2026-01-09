@@ -10,7 +10,7 @@ import { subscribeValidator } from "../../../validators/push/subscribe.validator
 
 import { checkValidation } from "../../../helpers/helpers.js";
 import { sendNotification } from "../../../helpers/sendNotification.js";
-import { getIpInfo } from "../../../helpers/ip.js";
+import { getIpDetails } from "../../../helpers/ip.js";
 import { getNoSaltHash } from "../../../helpers/hash.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 
@@ -32,8 +32,20 @@ export const subscribePush = async (req, res) => {
     const deviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         req.body,
-        getIpInfo(req.realIp)
+        await getIpDetails(req.realIp)
     );
+
+    const info = await findPushSubscription({
+        endpoint: req.body.subscription.endpoint
+    });
+
+    if (info && info.deviceIdHash !== deviceIdHash) {
+        return sendResponse(
+            res,
+            400,
+            "This endpoint already registered with different deviceId"
+        );
+    }
 
     const pushSubInfo = await updatePushSubscription(
         {
@@ -66,4 +78,3 @@ export const subscribePush = async (req, res) => {
         }
     });
 };
-
