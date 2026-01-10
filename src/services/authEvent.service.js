@@ -42,9 +42,18 @@ export const updateAuthEvent = async (
 ) => {
     checkCondition(data, "Data && filter is required to update AuthEvent!");
     if (option.many) {
-        return AuthEvent.updateMany(filter, data, { runValidators: true });
+        return AuthEvent.updateMany(filter, data, {
+            runValidators: true,
+            new: true
+        });
     } else if (option.id) {
-        return AuthEvent.findByIdAndUpdate(filter, data, { new: true });
+        return AuthEvent.findByIdAndUpdate(filter, data, {
+            new: true,
+            runValidators: true
+        });
     }
-    return AuthEvent.findOneAndUpdate(filter, data, { runValidators: true });
+    return AuthEvent.findOneAndUpdate(filter, data, {
+        runValidators: true,
+        new: true
+    });
 };

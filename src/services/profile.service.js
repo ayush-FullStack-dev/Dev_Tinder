@@ -34,9 +34,15 @@ export const createProfile = async (data, option = { ...options }) => {
 export const updateProfile = async (filter, data, option = { ...options }) => {
     checkCondition(data, "Data && filter is required to update Profile!");
     if (option.many) {
-        return Profile.updateMany(filter, data, { runValidators: true });
+        return Profile.updateMany(filter, data, {
+            runValidators: true,
+            new: true
+        });
     } else if (option.id) {
         return Profile.findByIdAndUpdate(filter, data, { new: true });
     }
-    return Profile.findOneAndUpdate(filter, data, { runValidators: true });
+    return Profile.findOneAndUpdate(filter, data, {
+        runValidators: true,
+        new: true
+    });
 };

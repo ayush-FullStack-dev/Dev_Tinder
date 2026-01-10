@@ -35,11 +35,17 @@ export const createUser = async (data, option = { ...options }) => {
 export const updateUser = async (filter, data, option = { ...options }) => {
     checkCondition(data, "Data && filter is required to update User!");
     if (option.many) {
-        return User.updateMany(filter, data, { runValidators: true });
+        return User.updateMany(filter, data, {
+            runValidators: true,
+            new: true
+        });
     } else if (option.id) {
-        return User.findByIdAndUpdate(filter, data, { new: true });
+        return User.findByIdAndUpdate(filter, data, {runValidators: true, new: true });
     }
-    return User.findOneAndUpdate(filter, data, { runValidators: true });
+    return User.findOneAndUpdate(filter, data, {
+        runValidators: true,
+        new: true
+    });
 };
 
 // ----- Temp User Services ----

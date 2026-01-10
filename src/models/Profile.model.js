@@ -84,6 +84,36 @@ const profileSchema = new mongoose.Schema(
             max: 100,
             default: 0,
             index: true
+        },
+        stats: {
+            likes: {
+                type: Number,
+                default: 0
+            },
+            views: {
+                type: Number,
+                default: 0
+            }
+        },
+        premium: {
+            type: {
+                type: String,
+                enum: ["free", "silver", "gold"],
+                default: "free"
+            },
+            since: {
+                type: Date,
+                default: null
+            },
+            isLifetime: {
+                type: Boolean,
+                default: false
+            },
+            expiresAt: {
+                type: Date,
+                default: null,
+                expires: 0
+            }
         }
     },
     {

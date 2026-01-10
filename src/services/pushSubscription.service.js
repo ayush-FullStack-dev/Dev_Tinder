@@ -46,16 +46,19 @@ export const updatePushSubscription = async (
     );
     if (option?.many) {
         return PushSubscription.updateMany(filter, data, {
-            runValidators: true
+            runValidators: true,
+            new: true
         });
     } else if (option?.id) {
         return PushSubscription.findByIdAndUpdate(filter, data, {
             new: true,
+            runValidators: true,
             ...extra
         });
     }
     return PushSubscription.findOneAndUpdate(filter, data, {
         runValidators: true,
+        new: true,
         ...extra
     });
 };

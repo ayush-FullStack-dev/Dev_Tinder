@@ -1,25 +1,41 @@
+
 import sendResponse from "../../../../helpers/sendResponse.js";
 
+import {
+    isGoldActive,
+    isSilverActive,
+    buildSubscriptionInfo,
+    getBadges
+} from "../../../../helpers/premium.helper.js";
+
 export const loginProfileInfo = async (req, res) => {
-    const { profileInfo } = req.auth;
+    const { currentProfile } = req.auth;
 
     return sendResponse(res, 200, {
         data: {
-            username: profileInfo.username,
-            displayName: profileInfo.displayName,
-            bio: profileInfo.bio,
-            role: profileInfo.role,
-            tech_stack: profileInfo.tech_stack,
-            looking_for: profileInfo.looking_for,
-            experience_years: profileInfo.experience_years,
+            username: currentProfile.username,
+            displayName: currentProfile.displayName,
+            bio: currentProfile.bio,
+            role: currentProfile.role,
+            tech_stack: currentProfile.tech_stack,
+            looking_for: currentProfile.looking_for,
+            experience_years: currentProfile.experience_years,
             location: {
-                city: profileInfo.location.city,
-                country: profileInfo.location.country
+                city: currentProfile.location.city,
+                country: currentProfile.location.country
             },
-            visibility: profileInfo.visibility,
-            profileScore: profileInfo.profileScore,
-            createdAt: profileInfo.createdAt,
-            updatedAt: profileInfo.updatedAt
+            visibility: currentProfile.visibility,
+            profileScore: currentProfile.profileScore,
+            badges: getBadges(currentProfile.premium)
+,
+            subscription: buildSubscriptionInfo(currentProfile.premium),
+            stats: {
+                likes: currentProfile.stats.likes,
+                views: currentProfile.stats.views
+            },
+            createdAt: currentProfile.createdAt,
+            updatedAt: currentProfile.updatedAt
         }
     });
 };
+
