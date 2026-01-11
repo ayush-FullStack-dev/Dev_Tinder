@@ -16,8 +16,8 @@ export const profileSetupHandler = async (req, res) => {
     });
 
     if (isExists) {
-            return sendResponse(res, 409, "Profile already exists");
-        }
+        return sendResponse(res, 409, "Profile already exists");
+    }
 
     const isValidInfo = checkValidation(
         profileSetupValidator,
@@ -31,7 +31,6 @@ export const profileSetupHandler = async (req, res) => {
 
     const { latitude, longitude } = await getCoordinates(req.realIp);
     const info = await getIpDetails(req.realIp);
-    
 
     const data = await createProfile({
         userId: user._id,

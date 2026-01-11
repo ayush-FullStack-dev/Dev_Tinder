@@ -8,11 +8,13 @@ This folder stores all sensitive RSA key files used for JWT (RS256).
 - RSA private key
 - Used for **signing** JWT tokens
 - Must always remain secret
+- path **AsymmetricCryptography/jwt.private.key**
 
 ### 2. public.key
 - RSA public key
 - Used for **verifying** JWT tokens
 - Safe to share with other services, but still kept in env/ for consistency
+-  path **AsymmetricCryptography/jwt.public.key**
 
 ### 3. help.md (optional)
 - Notes about how keys were generated

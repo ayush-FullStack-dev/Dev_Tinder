@@ -1,5 +1,5 @@
 import { parseUA } from "./parseUA.js";
-import { getTime } from "./helpers.js";
+import { getTime } from "./time.js"
 
 export const buildDeviceInfo = (ua, validateValues, info) => {
     const time = getTime(validateValues?.clientTime);

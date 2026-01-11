@@ -8,11 +8,8 @@ import crypto from "crypto";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { decryptData } from "../../helpers/encryption.js";
 import { verifyHash } from "../../helpers/hash.js";
-import {
-    getTime,
-    setRefreshExpiry,
-    checkValidation
-} from "../../helpers/helpers.js";
+import { setRefreshExpiry, checkValidation } from "../../helpers/helpers.js";
+import { getTime } from "../../helpers/time.js";
 import { getIpDetails } from "../../helpers/ip.js";
 
 import { isDeviceTrusted } from "../../services/auth.service.js";

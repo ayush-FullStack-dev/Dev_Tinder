@@ -1,20 +1,19 @@
 import mongoose from "mongoose";
 
-const profileLikeSchema = new mongoose.Schema({
-    likedByUserId: {
+const blockSchema = new mongoose.Schema({
+    blockerUserId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Profile",
         index: true,
         required: true
     },
-    likedProfileUserId: {
+    blockedUserId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Profile",
         index: true,
         required: true
     },
-
-    likedAt: {
+    createdAt: {
         type: Date,
         default: () => new Date()
     },
@@ -25,4 +24,4 @@ const profileLikeSchema = new mongoose.Schema({
     }
 });
 
-export default mongoose.model("ProfileLike", profileLikeSchema);
+export default mongoose.model("Block", blockSchema);

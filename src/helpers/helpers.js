@@ -1,5 +1,4 @@
-import geoip from "geoip-lite";
-import epochify from "epochify";
+
 
 import { prettyErrorResponse } from "./ApiError.js";
 
@@ -21,28 +20,10 @@ export const checkValidation = (validateSchema, req, msg) => {
     return { success: true, value: validate.value };
 };
 
-export const getTime = req => {
-    const time = epochify.getFullDateTime();
-    let clientTime = null;
-    if (req?.body) {
-        clientTime = new Date(req?.body?.clientTime || Date.now()).getTime();
-    } else {
-        clientTime = new Date(req);
-    }
-
-    return {
-        serverTime: time.timestamp,
-        clientTime,
-        fullTime: time
-    };
-};
-
 export const collectOnMethod = twoFAMethods => {
-    
     const methods = [];
 
     for (const method in twoFAMethods) {
-        
         if (twoFAMethods[method].enabled) {
             methods.push(twoFAMethods[method].type);
         }

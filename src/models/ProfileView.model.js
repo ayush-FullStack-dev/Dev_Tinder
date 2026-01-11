@@ -16,6 +16,11 @@ const profileViewSchema = new mongoose.Schema({
     viewedAt: {
         type: Date,
         default: () => new Date()
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+        expires: 0
     }
 });
 

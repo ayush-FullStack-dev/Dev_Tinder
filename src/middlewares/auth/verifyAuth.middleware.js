@@ -2,7 +2,8 @@ import crypto from "crypto";
 
 import sendResponse, { clearCtxId } from "../../helpers/sendResponse.js";
 
-import { getTime, checkValidation } from "../../helpers/helpers.js";
+import { checkValidation } from "../../helpers/helpers.js";
+import { getTime } from "../../helpers/time.js";
 import { getIpDetails } from "../../helpers/ip.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 

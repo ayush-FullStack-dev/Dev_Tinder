@@ -158,6 +158,15 @@ export const roleJoiMessage = {
     "string.empty": "role cannot be empty."
 };
 
+export const cityJoiMessage = {
+    "any.required": "city is required.",
+    "string.empty": "city cannot be empty."
+};
+export const countryJoiMessage = {
+    "any.required": "country is required.",
+    "string.empty": "country cannot be empty."
+};
+
 export const displayNameJoiMessage = {
     "any.required": "displayName is required.",
     "string.base": "displayName must be a valid string.",

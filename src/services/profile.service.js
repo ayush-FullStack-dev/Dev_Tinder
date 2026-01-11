@@ -31,7 +31,12 @@ export const createProfile = async (data, option = { ...options }) => {
     return Profile.create(data);
 };
 
-export const updateProfile = async (filter, data, option = { ...options }) => {
+export const updateProfile = async (
+    filter,
+    data,
+    option = { ...options },
+    extra
+) => {
     checkCondition(data, "Data && filter is required to update Profile!");
     if (option.many) {
         return Profile.updateMany(filter, data, {

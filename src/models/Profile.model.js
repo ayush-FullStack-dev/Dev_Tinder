@@ -114,6 +114,11 @@ const profileSchema = new mongoose.Schema(
                 default: null,
                 expires: 0
             }
+        },
+        deletedAt: {
+            type: Date,
+            default: null,
+            expires: 0
         }
     },
     {

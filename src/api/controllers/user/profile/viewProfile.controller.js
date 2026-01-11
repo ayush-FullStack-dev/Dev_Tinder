@@ -12,30 +12,25 @@ import {
     getBadges
 } from "../../../../helpers/premium.helper.js";
 
+import { isValidDate } from "../../../../helpers/time.js";
+
 export const viewPublicProfile = async (req, res) => {
-    const { logged, currentProfile } = req.auth;
+    const { logged, profile, currentProfile } = req.auth;
 
-    const profileInfo = await findProfile({
-        username: req.params?.username
-    });
-
-    if (!profileInfo || profileInfo.visibility !== "public") {
-        return sendResponse(res, 404, "Profile not found");
-    }
-
+    
     const basicInfo = {
-        username: profileInfo.username,
-        displayName: profileInfo.displayName,
-        bio: profileInfo.bio || "",
-        role: profileInfo.role,
-        tech_stack: profileInfo.tech_stack,
-        looking_for: profileInfo.looking_for,
-        experience_years: profileInfo.experience_years,
+        username: profile.username,
+        displayName: profile.displayName,
+        bio: profile.bio || "",
+        role: profile.role,
+        tech_stack: profile.tech_stack,
+        looking_for: profile.looking_for,
+        experience_years: profile.experience_years,
         location: {
-            city: profileInfo.location.city,
-            country: profileInfo.location.country
+            city: profile.location.city,
+            country: profile.location.country
         },
-        badges: getBadges(profileInfo.premium)
+        badges: getBadges(profile.premium)
     };
 
     if (!logged) {
@@ -52,13 +47,13 @@ export const viewPublicProfile = async (req, res) => {
         });
     }
 
-    if (currentProfile.id === profileInfo.id) {
+    if (currentProfile.id === profile.id) {
         return sendResponse(res, 200, {
             data: {
                 ...basicInfo,
                 stats: {
-                    likes: profileInfo.stats.likes,
-                    views: profileInfo.stats.views
+                    likes: profile.stats.likes,
+                    views: profile.stats.views
                 },
                 meta: {
                     isSelf: true
@@ -67,16 +62,16 @@ export const viewPublicProfile = async (req, res) => {
         });
     }
 
-    if (isGoldActive(profileInfo?.premium)) {
+    if (isGoldActive(profile?.premium)) {
         await ProfileView.create({
             viewerUserId: currentProfile.id,
-            viewedUserId: profileInfo.id
+            viewedUserId: profile.id
         });
     }
 
     const updateInfo = await updateProfile(
         {
-            _id: profileInfo._id
+            _id: profile._id
         },
         {
             $inc: {
@@ -98,6 +93,7 @@ export const viewPublicProfile = async (req, res) => {
 
 export const getWhoViewdMe = async (req, res) => {
     const { currentProfile } = req.auth;
+    let hasMore = false;
 
     if (!isGoldActive(currentProfile.premium)) {
         return sendResponse(res, 403, {
@@ -106,21 +102,60 @@ export const getWhoViewdMe = async (req, res) => {
         });
     }
 
-    const viewsInfo = await ProfileView.find({
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+    const query = {
         viewedUserId: currentProfile._id
-    }).populate(
-        "viewerUserId",
-        "username displayName role tech_stack location premium"
-    );
+    };
+
+    if (req.query?.cursor) {
+        if (!isValidDate(req.query.cursor)) {
+            return sendResponse(res, 400, {
+                success: false,
+                message: "Invalid cursor"
+            });
+        }
+        query.viewedAt = { $lt: new Date(req.query.cursor) };
+    }
+
+    const viewsInfo = await ProfileView.find(query)
+        .sort({ viewedAt: -1, _id: -1 })
+        .limit(limit + 1)
+        .populate(
+            "viewerUserId",
+            "username displayName role tech_stack location premium"
+        );
+
+    if (viewsInfo.length > limit) {
+        hasMore = true;
+        viewsInfo.pop();
+    }
+
+    const nextCursor =
+        viewsInfo.length > 0 && hasMore
+            ? viewsInfo[viewsInfo.length - 1].viewedAt
+            : null;
 
     const response = {
-        total: 0,
-        views: []
+        views: [],
+        pagination: {
+            total: currentProfile.stats.views,
+            limit,
+            hasMore,
+            nextCursor
+        }
     };
 
     for (const pepole of viewsInfo) {
-        const { username, displayName, role, tech_stack, location, premium } =
-            pepole.viewerUserId;
+        const alreadyWatch = response.views.findIndex(
+            k => k.username === pepole.viewerUserId.username
+        );
+
+        if (alreadyWatch !== -1) {
+            response.views[alreadyWatch].viewCount += 1;
+            continue;
+        }
+
         response.views.push({
             username: pepole.viewerUserId.username,
             displayName: pepole.viewerUserId.displayName,
@@ -131,11 +166,10 @@ export const getWhoViewdMe = async (req, res) => {
                 country: pepole.viewerUserId.location.country
             },
             badges: getBadges(pepole.viewerUserId.premium),
-            viewedAt: viewsInfo.viewedAt
+            lastViewedAt: pepole.viewedAt,
+            viewCount: 1
         });
-        response.total += 1;
     }
 
-    
     return sendResponse(res, 200, response);
 };

@@ -1,6 +1,6 @@
 import sendResponse from "../../../helpers/sendResponse.js";
 
-import { getTime } from "../../../helpers/helpers.js";
+import { getTime } from "../../../helpers/time.js";
 
 import { logoutCurrentSession } from "../../../middlewares/auth/logout.middleware.js";
 

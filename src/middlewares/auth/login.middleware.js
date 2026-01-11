@@ -7,7 +7,8 @@ import sendResponse from "../../helpers/sendResponse.js";
 
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { verifyToken } from "../../helpers/jwt.js";
-import { getTime, checkValidation } from "../../helpers/helpers.js";
+import { checkValidation } from "../../helpers/helpers.js";
+import { getTime } from "../../helpers/time.js";
 import { getIpDetails } from "../../helpers/ip.js";
 
 import { fingerprintBuilder } from "../../utils/fingerprint.js";
@@ -44,7 +45,6 @@ export const loginIdentifyValidation = async (req, res, next) => {
         });
     }
 
-    
     const deviceInfo = buildDeviceInfo(
         req.headers["user-agent"],
         validate.value,

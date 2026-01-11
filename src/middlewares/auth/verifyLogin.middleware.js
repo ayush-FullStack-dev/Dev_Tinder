@@ -14,9 +14,10 @@ import { verifyToken } from "../../helpers/jwt.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import {
     checkValidation,
-    getTime,
+    
     setRefreshExpiry
 } from "../../helpers/helpers.js";
+import { getTime } from "../../helpers/time.js";
 import { getIpDetails } from "../../helpers/ip.js";
 
 import { verifyLoginValidator } from "../../validators/auth/verifyLogin.validator.js";

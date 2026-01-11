@@ -215,6 +215,11 @@ export const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: () => new Date()
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+        expires: 0
     }
 });
 

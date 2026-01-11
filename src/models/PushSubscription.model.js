@@ -8,7 +8,6 @@ const deviceInfoSchema = new mongoose.Schema(
             default: "web"
         },
 
-
         browser: {
             type: String
         },
@@ -66,6 +65,11 @@ const pushSubscriptionSchema = mongoose.Schema({
     lastUsedAt: {
         type: Date,
         default: () => new Date()
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+        expires: 0
     }
 });
 
