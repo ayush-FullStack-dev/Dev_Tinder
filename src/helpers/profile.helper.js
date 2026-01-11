@@ -5,6 +5,7 @@ import { updateProfile } from "../services/profile.service.js";
 import ProfileLike from "../models/ProfileLike.model.js";
 import ProfileView from "../models/ProfileView.model.js";
 import Block from "../models/Block.model.js";
+import Report from "../models/Report.model.js";
 
 export const updateProfileDeleteInfo = async (
     currentProfile,
@@ -51,6 +52,13 @@ export const updateProfileDeleteInfo = async (
     await Block.updateMany(
         {
             blockerUserId: currentProfile._id
+        },
+        updateInfo
+    );
+    
+    await Report.updateMany(
+        {
+            reporterUserId: currentProfile._id
         },
         updateInfo
     );

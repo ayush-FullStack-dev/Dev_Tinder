@@ -9,6 +9,7 @@ import {
     isProfileBlocked
 } from "../../middlewares/user/profile.middleware.js";
 import { optionalLogin } from "../../middlewares/auth/optional.middleware.js";
+import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
 import { profileSetupHandler } from "../controllers/user/profile/setupProfile.controller.js";
 import {
@@ -33,14 +34,18 @@ import {
     unblockUser,
     blockedUser
 } from "../controllers/user/profile/blockProfile.controller.js";
-import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
+import {
+    reportProfile,
+    reportedProfiles
+} from "../controllers/user/profile/reportProfile.controller.js";
 
 const router = express.Router();
+
 router.use(
     rateLimiter({
         limit: 120,
-        window: 10,
-        block: 10,
+        window: 5,
+        block: 5,
         route: "profile:base"
     })
 );
@@ -65,6 +70,7 @@ router
     );
 
 router.get("/views", isLogin, findLoginData, isProfileExists, getWhoViewdMe);
+
 router.get(
     "/likes",
     isLogin,
@@ -80,6 +86,7 @@ router.get(
 );
 
 router.get("/stats", isLogin, findLoginData, isProfileExists, getProfileStats);
+
 router.patch(
     "/visibility",
     isLogin,
@@ -109,6 +116,7 @@ router.get(
     isProfileBlocked,
     viewPublicProfile
 );
+
 router
     .route("/public/:username/like")
     .post(
@@ -135,9 +143,9 @@ router
         findLoginData,
         isProfileExists,
         rateLimiter({
-            limit: 10,
-            window: 10,
-            block: 5,
+            limit: 5,
+            window: 5,
+            block: 2,
             route: "profile:block"
         }),
         blockUser
@@ -147,12 +155,35 @@ router
         findLoginData,
         isProfileExists,
         rateLimiter({
-            limit: 10,
-            window: 10,
-            block: 5,
+            limit: 5,
+            window: 5,
+            block: 2,
             route: "profile:unblock"
         }),
         unblockUser
     );
+
+router.post(
+    "/report/:username",
+    isLogin,
+    findLoginData,
+    isProfileExists,
+    isProfileBlocked,
+    rateLimiter({
+        limit: 3,
+        window: 5,
+        block: 5,
+        route: "profile:report"
+    }),
+    reportProfile
+);
+
+router.get(
+    "/report/",
+    isLogin,
+    findLoginData,
+    isProfileExists,
+    reportedProfiles
+);
 
 export default router;

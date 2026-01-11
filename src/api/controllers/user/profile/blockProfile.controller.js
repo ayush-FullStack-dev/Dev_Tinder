@@ -2,6 +2,7 @@ import Block from "../../../../models/Block.model.js";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 
+
 import { findProfile } from "../../../../services/profile.service.js";
 
 export const blockUser = async (req, res) => {
@@ -15,8 +16,8 @@ export const blockUser = async (req, res) => {
     }
 
     if (profile.id === currentProfile.id) {
-            return sendResponse(res, 400, "You cannot block your own profile");
-        }
+        return sendResponse(res, 400, "You cannot block your own profile");
+    }
 
     const isBlocked = await Block.exists({
         blockerUserId: currentProfile._id,
@@ -100,7 +101,7 @@ export const blockedUser = async (req, res) => {
 
     const nextCursor =
         blockedInfos.length > 0 && hasMore
-            ? blockedInfos[blockedInfos.length - 1].createdAt
+            ? blockedInfos[blockedInfos.length - 1][createdAt]
             : null;
 
     const reponse = {

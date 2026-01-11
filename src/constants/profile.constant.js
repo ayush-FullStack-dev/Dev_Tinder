@@ -9,6 +9,15 @@ export const lookingFor = [
     "dating"
 ];
 
+export const reportReason = [
+    "spam",
+    "fake_profile",
+    "harassment",
+    "abuse",
+    "impersonation",
+    "other"
+];
+
 export const techStacks = [
     // languages
     "javascript",

@@ -36,7 +36,6 @@ export const likePublicProfile = async (req, res) => {
 
     const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    
     const alreadyLiked = await ProfileLike.findOne({
         likedProfileUserId: profile._id,
         likedByUserId: currentProfile._id
@@ -64,7 +63,7 @@ export const likePublicProfile = async (req, res) => {
             }
         });
 
-        if (totalLiked > 30) {
+        if (totalLiked > 15) {
             return sendResponse(res, 429, {
                 message: "You’ve reached your daily like limit",
                 limit: 30,
@@ -151,8 +150,8 @@ export const unlikePublicProfile = async (req, res) => {
 };
 
 export const getWhoLikedMe = async (req, res) => {
-    let hasMore = false;
     const { currentProfile } = req.auth;
+    let hasMore = false;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
     const premiumInfo = buildSubscriptionInfo(currentProfile.premium);
     const query = {
@@ -196,6 +195,7 @@ export const getWhoLikedMe = async (req, res) => {
 
     const response = {
         likes: [],
+        pagination: { limit, hasMore, nextCursor },
         meta: {
             visible: 0,
             hidden: 0
@@ -207,18 +207,14 @@ export const getWhoLikedMe = async (req, res) => {
 
         if (premiumInfo.tier === "gold") {
             response.meta.visible += 1;
-            response.pagination = {
-                total: currentProfile.stats.likes,
-                limit,
-                hasMore,
-                nextCursor
-            };
             response.likes.push({
                 ...basicInfo,
                 likedAt: people.likedAt
             });
             continue;
         }
+
+        response.pagination = undefined;
 
         if (response.likes.length >= 3) {
             response.likes.push({
