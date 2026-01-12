@@ -60,6 +60,19 @@ export const viewPublicProfile = async (req, res) => {
             }
         });
     }
+    
+    
+    if (currentProfile.premium.features?.incognito?.enabled) {
+        return sendResponse(res, 200, {
+            data: {
+                ...basicInfo,
+                stats: {
+                    likes: profile.stats.likes,
+                    views: profile.stats.views
+                }
+            }
+        });
+    }
 
     if (isGoldActive(profile?.premium)) {
         await ProfileView.create({

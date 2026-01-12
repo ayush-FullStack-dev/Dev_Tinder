@@ -76,7 +76,10 @@ export const reportedProfiles = async (req, res) => {
         query.createdAt = { $lt: new Date(req.query.cursor) };
     }
 
-    const reportedProfile = await Report.find(query);
+    const reportedProfile = await Report.find(query).populate(
+        "reportedUserId",
+        "username"
+    );
     const reportedCount = await Report.countDocuments({
         reporterUserId: currentProfile._id
     });
@@ -107,9 +110,10 @@ export const reportedProfiles = async (req, res) => {
             reason: reportInfo.reason,
             message: reportInfo.message,
             status: reportInfo.status,
-            reportedAt: reportInfo.createdAt
+            reportedAt: reportInfo.createdAt,
+            resolvedAt: reportInfo.resolvedAt
         });
     }
-    
+
     return sendResponse(res, 200, reponse);
 };

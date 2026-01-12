@@ -52,8 +52,8 @@ export const likePublicProfile = async (req, res) => {
     }
 
     if (currentProfile.id === profile.id) {
-        return sendResponse(res, 200, "You cannot like your own profile");
-    }
+            return sendResponse(res, 200, "You cannot like your own profile");
+        }
 
     if (!premium.isActive) {
         const totalLiked = await ProfileLike.countDocuments({
@@ -66,7 +66,7 @@ export const likePublicProfile = async (req, res) => {
         if (totalLiked > 15) {
             return sendResponse(res, 429, {
                 message: "You’ve reached your daily like limit",
-                limit: 30,
+                limit: 15,
                 tier: "free",
                 upgradeHint: "Upgrade to Silver or Gold for unlimited likes",
                 requiredTier: ["silver", "gold"],

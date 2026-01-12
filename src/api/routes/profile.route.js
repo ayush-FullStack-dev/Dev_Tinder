@@ -16,6 +16,7 @@ import {
     loginProfileInfo,
     updateProfileInfo,
     changeProfileVisiblity,
+    changeProfileIncognito,
     deleteProfile,
     restoreProfile,
     getProfileStats
@@ -93,6 +94,14 @@ router.patch(
     findLoginData,
     isProfileExists,
     changeProfileVisiblity
+);
+
+router.patch(
+    "/incognito",
+    isLogin,
+    findLoginData,
+    isProfileExists,
+    changeProfileIncognito
 );
 
 router.post(

@@ -22,12 +22,16 @@ const reportSchema = new mongoose.Schema({
     },
     message: {
         type: String,
-        default: ""
+        default: null
     },
     status: {
         type: String,
         enum: ["pending", "reviewed", "action_taken", "dismissed"],
         default: "pending"
+    },
+    resolvedAt: {
+        type: Date,
+        default: null
     },
     createdAt: {
         type: Date,

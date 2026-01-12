@@ -7,6 +7,7 @@ import {
     getBadges
 } from "../../../../helpers/premium.helper.js";
 import { checkValidation } from "../../../../helpers/helpers.js";
+import { updateProfile } from "../../../../services/profile.service.js";
 
 import { profilePatchValidator } from "../../../../validators/user/profile.validator.js";
 import { updateProfileDeleteInfo } from "./../../../../helpers/profile.helper.js";
@@ -29,6 +30,8 @@ export const loginProfileInfo = async (req, res) => {
             },
             visibility: currentProfile.visibility,
             profileScore: currentProfile.profileScore,
+            incognitoEnabled:
+                currentProfile.premium?.features?.incognito?.enabled,
             badges: getBadges(currentProfile.premium),
             subscription: buildSubscriptionInfo(currentProfile.premium),
             stats: {
@@ -159,11 +162,10 @@ export const restoreProfile = async (req, res) => {
     const { currentProfile } = req.auth;
 
     if (!currentProfile.deletedAt) {
-        return sendResponse(res, 400,{
-  
-  "message": "Account is not scheduled for deletion",
-  "code": "NOT_IN_DELETE_STATE"
-})
+        return sendResponse(res, 400, {
+            message: "Account is not scheduled for deletion",
+            code: "NOT_IN_DELETE_STATE"
+        });
     }
 
     await updateProfileDeleteInfo(currentProfile, null);
@@ -186,6 +188,35 @@ export const getProfileStats = (req, res) => {
             views: currentProfile.stats.views || 0,
             matches: currentProfile.stats.matches || 0,
             profileScore: currentProfile.profileScore || 0
+        }
+    });
+};
+
+export const changeProfileIncognito = async (req, res) => {
+    const { currentProfile } = req.auth;
+
+    const nextIncognito = currentProfile.premium.features?.incognito?.enabled
+        ? false
+        : true;
+
+    if (!isGoldActive(currentProfile.premium)) {
+        return sendResponse(res, 403, {
+            message: "Incognito is available for Gold members only"
+        });
+    }
+
+    const updatedProfile = await updateProfile(
+        currentProfile._id,
+        { "premium.features.incognito.enabled": nextIncognito },
+        { id: true }
+    );
+
+    return sendResponse(res, 200, {
+        message: nextIncognito
+            ? "Incognito mode enabled"
+            : "Incognito mode disabled",
+        data: {
+            incognito: nextIncognito
         }
     });
 };

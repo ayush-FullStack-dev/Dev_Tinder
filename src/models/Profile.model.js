@@ -101,6 +101,14 @@ const profileSchema = new mongoose.Schema(
                 enum: ["free", "silver", "gold"],
                 default: "free"
             },
+            features: {
+            	incognito: {
+            		enabled: {
+            			type: Boolean,
+                default: false
+            		}
+            	}
+            },
             since: {
                 type: Date,
                 default: null
