@@ -3,7 +3,7 @@ import Block from "../models/Block.model.js";
 import ProfileSeen from "../models/ProfileSeen.model.js";
 import Report from "../models/User.model.js";
 
-import { buildSubscriptionInfo } from "./premium.helper.js";
+import { buildSubscriptionInfo, activeBoosts } from "./premium.helper.js";
 
 export const getExcludedIds = async id => {
     const excludedIds = [];
@@ -46,11 +46,15 @@ export const freeProfileScore = (profiles, currentProfile) => {
 
         if (p.location.country === currentProfile.location.country) score += 3;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 15;
+        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
+
+        if (activeBoosts(p.packs.features).isActive)
+            score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;
 
         score += p.profileScore;
+        score = Math.min(score, 100);
 
         return {
             ...p.toObject(),
@@ -72,14 +76,17 @@ export const silverProfileScore = (profiles, currentProfile) => {
             currentProfile.tech_stack.includes(k)
         ).length;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 15;
+        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
 
         if (p.location.country === currentProfile.location.country) score += 3;
+        if (activeBoosts(p.packs.features).isActive)
+            score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;
 
         score += commonTechstack * 5;
         score += p.profileScore;
+        score = Math.min(score, 100);
 
         return {
             ...p.toObject(),
@@ -101,14 +108,17 @@ export const goldProfileScore = (profiles, currentProfile) => {
             currentProfile.tech_stack.includes(k)
         ).length;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 15;
+        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
 
         if (p.location.country === currentProfile.location.country) score += 3;
+        if (activeBoosts(p.packs.features).isActive)
+            score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;
 
         score += commonTechstack * 5;
         score += p.profileScore;
+        score = Math.min(score, 100);
 
         return {
             ...p,

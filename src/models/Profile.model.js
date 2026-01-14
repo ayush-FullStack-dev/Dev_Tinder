@@ -120,14 +120,7 @@ const profileSchema = new mongoose.Schema(
                     }
                 }
             },
-            history: [
-                {
-                    pack: String,
-                    boughtAt: Date,
-                    boostsAdded: Number
-                }
-            ],
-
+            
             expiresAt: {
                 type: Date,
                 default: null

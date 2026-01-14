@@ -22,10 +22,34 @@ export const buildSubscriptionInfo = premium => {
     };
 };
 
-export const getBadges = premium => 
+export const buildPacksInfo = packs => {
+    const isActive =
+        packs?.activePack !== "none" &&
+        packs?.expiresAt &&
+        packs.expiresAt > Date.now();
+
+    return {
+        tier: isActive ? packs?.activePack : "none",
+        isActive,
+        expiresAt: packs?.expiresAt
+    };
+};
+
+export const activeBoosts = features => {
+    const isActive =
+        features.boost?.active &&
+        features.boost?.endsAt &&
+        features.boost.endsAt > Date.now();
+
+    return {
+        isActive,
+        expiresAt: features.boost.endsAt
+    };
+};
+
+export const getBadges = premium =>
     isGoldActive(premium)
         ? ["gold"]
         : isSilverActive(premium)
         ? ["silver"]
-        : []
-
+        : [];

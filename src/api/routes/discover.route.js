@@ -5,7 +5,8 @@ import {
 } from "../../middlewares/auth/auth.middleware.js";
 import {
     isProfileExists,
-    isProfileBlocked
+    isProfileBlocked,
+    checkPacksStatus
 } from "../../middlewares/user/profile.middleware.js";
 import { swipeProfile } from "../../middlewares/user/swipe.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
@@ -20,6 +21,7 @@ import {
     rewindOldSwipe,
     getWhoRightSwipe
 } from "../controllers/user/discover/swipe.controller.js";
+import { boostProfile } from "../controllers/user/discover/premium.controller.js";
 
 const router = express.Router();
 
@@ -53,7 +55,16 @@ router.post(
 );
 
 router.get("/likes", getWhoRightSwipe);
-router.post("/rewind/", rewindOldSwipe);
-router.post("/boost/", rewindOldSwipe);
+router.post(
+    "/rewind/",
+    rateLimiter({ limit: 10, window: 2, block: 10, route: "discover:rewind" }),
+    rewindOldSwipe
+);
+router.post(
+    "/boost/",
+    rateLimiter({ limit: 5, window: 10, block: 30, route: "discover:boost" }),
+    checkPacksStatus,
+    boostProfile
+);
 
 export default router;
