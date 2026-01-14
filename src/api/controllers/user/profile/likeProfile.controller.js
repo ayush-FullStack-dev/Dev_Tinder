@@ -43,7 +43,7 @@ export const likePublicProfile = async (req, res) => {
 
     if (alreadyLiked) {
         return sendResponse(res, 200, {
-            message: "Already liked",
+            message: "Already Profile liked",
             data: {
                 username: profile.username,
                 liked: true
@@ -52,21 +52,22 @@ export const likePublicProfile = async (req, res) => {
     }
 
     if (currentProfile.id === profile.id) {
-            return sendResponse(res, 200, "You cannot like your own profile");
-        }
+        return sendResponse(res, 200, "You cannot like your own profile");
+    }
 
     if (!premium.isActive) {
         const totalLiked = await ProfileLike.countDocuments({
             likedByUserId: currentProfile._id,
+
             likedAt: {
                 $gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
             }
         });
 
-        if (totalLiked > 15) {
+        if (totalLiked > 30) {
             return sendResponse(res, 429, {
-                message: "You’ve reached your daily like limit",
-                limit: 15,
+                message: "You’ve reached your daily profile like limit",
+                limit: 30,
                 tier: "free",
                 upgradeHint: "Upgrade to Silver or Gold for unlimited likes",
                 requiredTier: ["silver", "gold"],
@@ -149,7 +150,7 @@ export const unlikePublicProfile = async (req, res) => {
     });
 };
 
-export const getWhoLikedMe = async (req, res) => {
+export const getWhoLikedProfile = async (req, res) => {
     const { currentProfile } = req.auth;
     let hasMore = false;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
@@ -158,10 +159,10 @@ export const getWhoLikedMe = async (req, res) => {
         likedProfileUserId: currentProfile._id
     };
 
-    if (!premiumInfo.isActive) {
+    if (!premiumInfo.isActive && premiumInfo.tier !== "gold") {
         return sendResponse(res, 403, {
-            message: "Upgrade to Silver or Gold to see who liked your profile",
-            requiredTier: ["silver", "gold"]
+            message: "Upgrade to Gold to see who liked your profile",
+            requiredTier: ["gold"]
         });
     }
 
@@ -195,42 +196,16 @@ export const getWhoLikedMe = async (req, res) => {
 
     const response = {
         likes: [],
-        pagination: { limit, hasMore, nextCursor },
-        meta: {
-            visible: 0,
-            hidden: 0
-        }
+        pagination: { limit, hasMore, nextCursor }
     };
 
     for (const people of likesInfos) {
         const basicInfo = getBasicDetailes(people.likedByUserId);
 
-        if (premiumInfo.tier === "gold") {
-            response.meta.visible += 1;
-            response.likes.push({
-                ...basicInfo,
-                likedAt: people.likedAt
-            });
-            continue;
-        }
-
-        response.pagination = undefined;
-
-        if (response.likes.length >= 3) {
-            response.likes.push({
-                username: "hidden",
-                displayName: "Someone liked you",
-                role: people.likedByUserId.role,
-                blurred: true
-            });
-            response.meta.hidden += 1;
-            response.meta.upgradeHint = "Unlock Gold to see all likes";
-            response.meta.upgradeTier = "gold";
-            continue;
-        }
-
-        response.meta.visible += 1;
-        response.likes.push(basicInfo);
+        response.likes.push({
+            ...basicInfo,
+            likedAt: people.likedAt
+        });
     }
 
     return sendResponse(res, 200, response);

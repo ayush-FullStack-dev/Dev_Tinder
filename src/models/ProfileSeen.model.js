@@ -14,6 +14,11 @@ const profileSeenSchema = new mongoose.Schema({
         required: true
     },
 
+    action: {
+        type: String,
+        enum: ["like", "pass"],
+        required: true
+    },
     seenAt: {
         type: Date,
         default: () => new Date()

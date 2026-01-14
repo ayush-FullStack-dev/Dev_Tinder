@@ -13,6 +13,11 @@ const profileLikeSchema = new mongoose.Schema({
         index: true,
         required: true
     },
+    action: {
+        type: String,
+        enum: ["profile_like", "swipe_like"],
+        required: true
+    },
 
     likedAt: {
         type: Date,

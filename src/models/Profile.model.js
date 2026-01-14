@@ -95,19 +95,58 @@ const profileSchema = new mongoose.Schema(
                 default: 0
             }
         },
+        packs: {
+            activePack: {
+                type: String,
+                enum: ["none", "starter_1", "starter_2", "starter_3"],
+                default: "none"
+            },
+            benefits: {
+                boosts: { type: Number, default: 0 }
+            },
+            features: {
+                boost: {
+                    active: {
+                        type: Boolean,
+                        default: false
+                    },
+                    startedAt: {
+                        type: Date,
+                        default: null
+                    },
+                    endsAt: {
+                        type: Date,
+                        default: null
+                    }
+                }
+            },
+            history: [
+                {
+                    pack: String,
+                    boughtAt: Date,
+                    boostsAdded: Number
+                }
+            ],
+
+            expiresAt: {
+                type: Date,
+                default: null
+            }
+        },
         premium: {
             type: {
                 type: String,
                 enum: ["free", "silver", "gold"],
                 default: "free"
             },
+
             features: {
-            	incognito: {
-            		enabled: {
-            			type: Boolean,
-                default: false
-            		}
-            	}
+                incognito: {
+                    enabled: {
+                        type: Boolean,
+                        default: false
+                    }
+                }
             },
             since: {
                 type: Date,

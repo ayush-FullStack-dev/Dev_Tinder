@@ -28,7 +28,7 @@ import {
 import {
     likePublicProfile,
     unlikePublicProfile,
-    getWhoLikedMe
+    getWhoLikedProfile
 } from "../controllers/user/profile/likeProfile.controller.js";
 import {
     blockUser,
@@ -83,7 +83,7 @@ router.get(
         block: 5,
         route: "profile:likes"
     }),
-    getWhoLikedMe
+    getWhoLikedProfile
 );
 
 router.get("/stats", isLogin, findLoginData, isProfileExists, getProfileStats);

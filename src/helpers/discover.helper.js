@@ -6,28 +6,37 @@ import Report from "../models/User.model.js";
 import { buildSubscriptionInfo } from "./premium.helper.js";
 
 export const getExcludedIds = async id => {
-    const [likedUsers, blockedUsers, blockedByUsers, seenUsers] =
+    const excludedIds = [];
+    const [reportUsers, blockedUsers, blockedByUsers, seenUsers] =
         await Promise.all([
-            ProfileLike.findOne({
-                likedByUserId: id
-            }).select("likedByUserId"),
-            Block.findOne({
+            Report.find({
+                reporterUserId: id
+            }),
+            Block.find({
                 blockerUserId: id
-            }).select("blockerUserId"),
-            Block.findOne({
+            }),
+            Block.find({
                 blockedUserId: id
-            }).select("blockedUserId"),
-            ProfileSeen.findOne({
+            }),
+            ProfileSeen.find({
                 viewerProfileId: id
-            }).select("viewerProfileId")
+            })
         ]);
 
-    return [
-        likedUsers?.likedByUserId,
-        blockedUsers?.blockerUserId,
-        blockedByUsers?.blockedUserId,
-        seenUsers?.viewerProfileId
-    ];
+    for (const user of reportUsers) {
+        excludedIds.push(user.reportedUserId);
+    }
+    for (const user of blockedUsers) {
+        excludedIds.push(user.blockedUserId);
+    }
+    for (const user of blockedByUsers) {
+        excludedIds.push(user.blockerUserId);
+    }
+    for (const user of seenUsers) {
+        excludedIds.push(user.seenProfileId);
+    }
+
+    return excludedIds;
 };
 
 export const freeProfileScore = (profiles, currentProfile) => {
@@ -36,6 +45,7 @@ export const freeProfileScore = (profiles, currentProfile) => {
         const premiumInfo = buildSubscriptionInfo(p.premium);
 
         if (p.location.country === currentProfile.location.country) score += 3;
+
         if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 15;
 
         if (p.location.city === currentProfile.location.city) score += 5;
@@ -43,7 +53,7 @@ export const freeProfileScore = (profiles, currentProfile) => {
         score += p.profileScore;
 
         return {
-            ...p,
+            ...p.toObject(),
             _freeScore: score
         };
     });
@@ -72,7 +82,7 @@ export const silverProfileScore = (profiles, currentProfile) => {
         score += p.profileScore;
 
         return {
-            ...p,
+            ...p.toObject(),
             _silverScore: score
         };
     });
@@ -102,11 +112,11 @@ export const goldProfileScore = (profiles, currentProfile) => {
 
         return {
             ...p,
-            _silverScore: score
+            _goldScore: score
         };
     });
 
-    return updatedProfiles.sort((a, b) => b._silverScore - a._silverScore);
+    return updatedProfiles.sort((a, b) => b._goldScore - a._goldScore);
 };
 
 function ensureArray(value) {
