@@ -16,7 +16,7 @@ export function getAccessToken(user) {
     );
 }
 
-export function getRefreshToken(data, expiry) {
+export function getRefreshToken(data, expiry = "30d") {
     return signToken(data, expiry);
 }
 

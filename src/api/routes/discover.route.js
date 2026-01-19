@@ -5,9 +5,12 @@ import {
 } from "../../middlewares/auth/auth.middleware.js";
 import {
     isProfileExists,
-    isProfileBlocked,
-    checkPacksStatus
+    isProfileBlocked
 } from "../../middlewares/user/profile.middleware.js";
+import {
+    checkPremiumStatus,
+    checkPacksStatus
+} from "../../middlewares/user/premium.middleware.js";
 import { swipeProfile } from "../../middlewares/user/swipe.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
@@ -34,7 +37,8 @@ router.use(
         window: 2,
         block: 5,
         route: "discover:base"
-    })
+    }),
+    checkPremiumStatus
 );
 
 router.get("/", getDiscover);

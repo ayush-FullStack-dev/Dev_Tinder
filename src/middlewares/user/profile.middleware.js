@@ -36,59 +36,9 @@ export const optionalProfile = async (req, res, next) => {
     return next();
 };
 
-export const checkPremiumStatus = async (req, res, next) => {
-    const profile = req.auth.currentProfile;
 
-    if (
-        profile &&
-        profile.premium?.type !== "free" &&
-        !profile.premium?.isLifetime &&
-        profile.premium?.expiresAt &&
-        profile.premium.expiresAt < Date.now()
-    ) {
-        const profileInfo = await updateProfile(
-            { _id: profile._id },
-            {
-                $set: {
-                    "premium.type": "free",
-                    "premium.since": null,
-                    "premium.expiresAt": null
-                }
-            }
-        );
 
-        req.auth.currentProfile = profileInfo;
-    }
 
-    return next();
-};
-
-export const checkPacksStatus = async (req, res, next) => {
-    const profile = req.auth.currentProfile;
-
-    if (
-        profile &&
-        profile.packs.activePack !== "none" &&
-        profile.packs.expiresAt &&
-        profile.packs.expiresAt < Date.now()
-    ) {
-        const profileInfo = await updateProfile(
-            { _id: profile._id },
-            {
-                $set: {
-                    "packs.activePack": "none",
-                    "packs.benefits": {},
-                    "packs.features": {},
-                    "packs.expiresAt": null
-                }
-            }
-        );
-
-        req.auth.currentProfile = profileInfo;
-    }
-
-    return next();
-};
 
 export const isProfileBlocked = async (req, res, next) => {
     const { currentProfile, logged } = req.auth;

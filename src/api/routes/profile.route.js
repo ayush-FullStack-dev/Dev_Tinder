@@ -9,6 +9,7 @@ import {
     isProfileBlocked
 } from "../../middlewares/user/profile.middleware.js";
 import { optionalLogin } from "../../middlewares/auth/optional.middleware.js";
+import { checkPremiumStatus } from "../../middlewares/user/premium.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
 import { profileSetupHandler } from "../controllers/user/profile/setupProfile.controller.js";
@@ -70,7 +71,14 @@ router
         deleteProfile
     );
 
-router.get("/views", isLogin, findLoginData, isProfileExists, getWhoViewdMe);
+router.get(
+    "/views",
+    isLogin,
+    findLoginData,
+    isProfileExists,
+    checkPremiumStatus,
+    getWhoViewdMe
+);
 
 router.get(
     "/likes",
@@ -83,6 +91,7 @@ router.get(
         block: 5,
         route: "profile:likes"
     }),
+    checkPremiumStatus,
     getWhoLikedProfile
 );
 
@@ -101,6 +110,7 @@ router.patch(
     isLogin,
     findLoginData,
     isProfileExists,
+    checkPremiumStatus,
     changeProfileIncognito
 );
 

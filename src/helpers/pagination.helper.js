@@ -5,7 +5,6 @@ export const paginationInfos = (info, limit, viewedAt) => {
         hasMore = true;
         info.pop();
     }
-
     const nextCursor =
         info.length > 0 && hasMore ? info[info.length - 1][viewedAt] : null;
 
@@ -25,7 +24,5 @@ export const queryLimit = (limit, premiumInfo) => {
         return Math.min(Number(limit) || 10, 30);
     }
 
-
-        return Math.min(Number(limit) || 20, 60);
-    
+    return Math.min(Number(limit) || 20, 60);
 };

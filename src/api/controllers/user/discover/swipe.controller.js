@@ -1,6 +1,7 @@
 import sendResponse from "../../../../helpers/sendResponse.js";
 import ProfileSeen from "../../../../models/ProfileSeen.model.js";
 import ProfileLike from "../../../../models/ProfileLike.model.js";
+import Match from "../../../../models/Match.model.js";
 import redis from "../../../../config/redis.js";
 
 import {
@@ -91,22 +92,56 @@ export const rightSwipeProfile = async (req, res) => {
         });
     }
 
+    const meta = {
+        tier: premiumInfo.isActive ? premiumInfo.tier : "free",
+        unlimited: isGoldUser
+    };
+
     await ProfileSeen.create({
         viewerProfileId: currentProfile._id,
         seenProfileId: profile._id,
         action: "like"
     });
 
-    return sendResponse(res, 200, {
-        message: "Profile Liked",
+    const isMatch = await ProfileSeen.exists({
+        viewerProfileId: profile._id,
+        seenProfileId: currentProfile._id,
+        action: "like"
+    });
+
+    if (!isMatch) {
+        return sendResponse(res, 200, {
+            message: "Profile Liked",
+            data: {
+                username: profile.username,
+                action: "like",
+                liked: true,
+                match: false
+            },
+            meta
+        });
+    }
+
+    const users = [currentProfile._id, profile._id].sort();
+    const matchDoc = await Match.create({
+        users,
+        createdBy: currentProfile._id
+    });
+    const matchId = matchDoc._id;
+
+    return sendResponse(res, 201, {
+        message: "It's a match",
         data: {
             username: profile.username,
             action: "like",
-            liked: true
+            liked: true,
+            match: true,
+            matchId: matchId
         },
         meta: {
-            tier: premiumInfo.isActive ? premiumInfo.tier : "free",
-            unlimited: isGoldUser
+            ...meta,
+            next: "open_chat",
+            route: `/chat/${matchId}`
         }
     });
 };
@@ -213,7 +248,6 @@ export const rewindOldSwipe = async (req, res) => {
         await redis.expire(key, 60 * 60 * 24);
     }
 
-    
     if (!premium.isLifetime && count > rewindLimit) {
         return sendResponse(res, 429, {
             message: "Daily rewind limit reached",

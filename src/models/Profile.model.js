@@ -11,7 +11,38 @@ const profileSchema = new mongoose.Schema(
             required: true,
             index: true
         },
+        photos: [
+  {
+    type: String,
+    validate: {
+      validator: (url) => {
+        try {
+          new URL(url);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      message: "Provide a valid image url"
+    }
+  }
+],
 
+primaryPhoto: {
+  type: String,
+  required: true,
+  validate: {
+    validator: (url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    message: "Provide a valid image url"
+  }
+},
         username: {
             type: String,
             unique: true,
@@ -120,7 +151,7 @@ const profileSchema = new mongoose.Schema(
                     }
                 }
             },
-            
+
             expiresAt: {
                 type: Date,
                 default: null

@@ -30,4 +30,9 @@ const profileSeenSchema = new mongoose.Schema({
     }
 });
 
+profileSeenSchema.index(
+  { viewerProfileId: 1, seenProfileId: 1 },
+  { unique: true }
+);
+
 export default mongoose.model("profileSeen", profileSeenSchema);

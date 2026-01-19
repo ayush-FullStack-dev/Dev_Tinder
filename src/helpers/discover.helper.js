@@ -48,7 +48,7 @@ export const freeProfileScore = (profiles, currentProfile) => {
 
         if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
 
-        if (activeBoosts(p.packs.features).isActive)
+        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
             score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;
@@ -79,7 +79,7 @@ export const silverProfileScore = (profiles, currentProfile) => {
         if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
 
         if (p.location.country === currentProfile.location.country) score += 3;
-        if (activeBoosts(p.packs.features).isActive)
+        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
             score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;
@@ -111,7 +111,7 @@ export const goldProfileScore = (profiles, currentProfile) => {
         if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
 
         if (p.location.country === currentProfile.location.country) score += 3;
-        if (activeBoosts(p.packs.features).isActive)
+        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
             score += Math.ceil(score * 0.25);
 
         if (p.location.city === currentProfile.location.city) score += 5;

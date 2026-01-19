@@ -7,6 +7,7 @@ import authRouter from "./api/routes/auth.route.js";
 import pushRouter from "./api/routes/push.route.js";
 import profileRouter from "./api/routes/profile.route.js";
 import discoverRouter from "./api/routes/discover.route.js";
+import matchRouter from "./api/routes/match.route.js";
 
 // global routes
 import {
@@ -32,10 +33,11 @@ app.use(helmet());
 app.use(getInfo);
 
 // routes
-app.use("/push", pushRouter);
 app.use("/auth", authRouter);
 app.use("/profile", profileRouter);
 app.use("/discover", discoverRouter);
+app.use("/match", matchRouter);
+app.use("/push", pushRouter);
 
 // error handers
 app.use("/", handleNotFound);
