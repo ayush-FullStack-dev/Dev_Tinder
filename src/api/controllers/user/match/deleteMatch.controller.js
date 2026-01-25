@@ -92,7 +92,6 @@ export const revokeMatch = async (req, res) => {
 
 export const restoreMatch = async (req, res) => {
     const { currentProfile } = req.auth;
-    
 
     if (req.params?.matchId?.length !== 24) {
         return sendResponse(res, 400, {
@@ -239,6 +238,14 @@ export const deactivatedMatches = async (req, res) => {
             user: {
                 username: opponent.username,
                 displayName: opponent.displayName,
+                photos: [
+                    {
+                        id: "none",
+                        url: opponent.primaryPhoto.url,
+                        isPrimary: true,
+                        createdAt: opponent.primaryPhoto.createdAt
+                    }
+                ],
                 role: opponent.role,
                 badges: getBadges(opponent.premium)
             },

@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 // routes
 import authRouter from "./api/routes/auth.route.js";
@@ -27,6 +28,14 @@ app.set("json spaces", 2);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(
+    cors({
+        origin: ["http://localhost:8158"],
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        credentials: true
+    })
+);
+
 app.use(express.static(getPath.publicDir));
 app.use(cookieParser(process.env.APP_SECRET));
 app.use(helmet());

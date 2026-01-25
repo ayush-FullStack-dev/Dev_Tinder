@@ -42,13 +42,21 @@ const buildProfileInfo = profile => {
             city: profile.location?.city,
             country: profile.location?.country
         },
+        photos: [
+            {
+                id: "none",
+                url: profile.primaryPhoto.url,
+                isPrimary: true,
+                createdAt: profile.primaryPhoto.createdAt
+            }
+        ],
         score: profile._goldScore || profile._silverScore || profile._freeScore,
         badges: getBadges(profile.premium)
     };
 };
 
 export const getDiscover = async (req, res) => {
-    const { currentProfile } = req.auth;
+    const { user,currentProfile } = req.auth;
     let hasMore = false;
 
     const activeBatch = await getSession(
@@ -127,7 +135,7 @@ export const getDiscover = async (req, res) => {
             "createdAt"
         );
 
-        info = freeProfileScore(info, currentProfile);
+        info = freeProfileScore(info, currentProfile, user);
         const remaining = [];
 
         for (const profile of info) {

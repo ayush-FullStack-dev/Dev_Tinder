@@ -29,12 +29,9 @@ export const userSchema = new mongoose.Schema({
         default: "user",
         enum: ["user", "admin"]
     },
-    age: {
-        type: Number,
-        min: 18
-    },
     gender: {
         type: String,
+        enum: ["male", "female", "other"],
         required: true
     },
     loginMethods: {

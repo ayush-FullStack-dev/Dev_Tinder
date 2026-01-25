@@ -28,6 +28,20 @@ export const loginProfileInfo = async (req, res) => {
                 city: currentProfile.location.city,
                 country: currentProfile.location.country
             },
+            photos: [
+                ...currentProfile.photos.map(p => ({
+                    id: p._id,
+                    url: p.url,
+                    isPrimary: false,
+                    createdAt: p.createdAt
+                })),
+                {
+                    id: "none",
+                    url: currentProfile.primaryPhoto.url,
+                    isPrimary: true,
+                    createdAt: currentProfile.primaryPhoto.createdAt
+                }
+            ],
             visibility: currentProfile.visibility,
             profileScore: currentProfile.profileScore,
             incognitoEnabled:
@@ -184,6 +198,14 @@ export const getProfileStats = (req, res) => {
 
     return sendResponse(res, 200, {
         data: {
+            photos: [
+                {
+                    id: "none",
+                    url: currentProfile.primaryPhoto.url,
+                    isPrimary: true,
+                    createdAt: currentProfile.primaryPhoto.createdAt
+                }
+            ],
             likes: currentProfile.stats.likes || 0,
             views: currentProfile.stats.views || 0,
             matches: currentProfile.stats.matches || 0,

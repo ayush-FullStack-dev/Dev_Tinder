@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 import { techStacks, lookingFor, role } from "../constants/profile.constant.js";
 
+import { isValidS3UserPhotoKey } from "../helpers/s3.helper.js";
+
 const profileSchema = new mongoose.Schema(
     {
         userId: {
@@ -12,37 +14,65 @@ const profileSchema = new mongoose.Schema(
             index: true
         },
         photos: [
-  {
-    type: String,
-    validate: {
-      validator: (url) => {
-        try {
-          new URL(url);
-          return true;
-        } catch (e) {
-          return false;
-        }
-      },
-      message: "Provide a valid image url"
-    }
-  }
-],
+            {
+                url: {
+                    type: String,
+                    validate: {
+                        validator: url => {
+                            try {
+                                new URL(url);
+                                return true;
+                            } catch (e) {
+                                return false;
+                            }
+                        },
+                        message: "Provide a valid image url"
+                    }
+                },
+                key: {
+                    type: String,
+                    required: true,
+                    validate: {
+                        validator: isValidS3UserPhotoKey
+                    },
+                    message: "Provide a valid s3 key"
+                },
+                createdAt: {
+                    type: Date,
+                    default: () => new Date()
+                }
+            }
+        ],
 
-primaryPhoto: {
-  type: String,
-  required: true,
-  validate: {
-    validator: (url) => {
-      try {
-        new URL(url);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-    message: "Provide a valid image url"
-  }
-},
+        primaryPhoto: {
+            url: {
+                type: String,
+                required: true,
+                validate: {
+                    validator: url => {
+                        try {
+                            new URL(url);
+                            return true;
+                        } catch (e) {
+                            return false;
+                        }
+                    },
+                    message: "Provide a valid image url"
+                }
+            },
+            key: {
+                type: String,
+                required: true,
+                validate: {
+                    validator: isValidS3UserPhotoKey
+                },
+                message: "Provide a valid s3 key"
+            },
+            createdAt: {
+                type: Date,
+                default: () => new Date()
+            }
+        },
         username: {
             type: String,
             unique: true,
@@ -60,6 +90,12 @@ primaryPhoto: {
             trim: true,
             maxlength: 500
         },
+        gender: {
+            type: String,
+            enum: ["male", "female", "other"],
+            required: true
+        },
+        
         role: {
             type: String,
             required: true,

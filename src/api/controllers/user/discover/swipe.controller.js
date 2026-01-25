@@ -12,6 +12,11 @@ import {
     rewindLimit,
     premiumRewindLimit
 } from "../../../../constants/premium.constant.js";
+import {
+    blurBoyImage,
+    blurGirlImage,
+    blurNeutralImage
+} from "../../../../constants/url.constant.js";
 import { paginationInfos } from "../../../../helpers/pagination.helper.js";
 import { isValidDate, europeanStyleDate } from "../../../../helpers/time.js";
 
@@ -21,6 +26,20 @@ const getBasicDetailes = likedByUserId => {
         displayName: likedByUserId.displayName,
         role: likedByUserId.role,
         tech_stack: likedByUserId.tech_stack,
+        photos: [
+            ...likedByUserId.photos.map(p => ({
+                id: p._id,
+                url: p.url,
+                isPrimary: false,
+                createdAt: p.createdAt
+            })),
+            {
+                id: "none",
+                url: likedByUserId.primaryPhoto.url,
+                isPrimary: true,
+                createdAt: likedByUserId.primaryPhoto.createdAt
+            }
+        ],
         location: {
             city: likedByUserId.location.city,
             country: likedByUserId.location.country
@@ -147,7 +166,7 @@ export const rightSwipeProfile = async (req, res) => {
 };
 
 export const getWhoRightSwipe = async (req, res) => {
-    const { currentProfile } = req.auth;
+    const { user, currentProfile } = req.auth;
     let hasMore = false;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
     const premiumInfo = buildSubscriptionInfo(currentProfile.premium);
@@ -212,6 +231,18 @@ export const getWhoRightSwipe = async (req, res) => {
             response.swipes.push({
                 username: "hidden",
                 displayName: "Someone rigth swipe you",
+                photos: [
+                    {
+                        url:
+                            user.gender === "female"
+                                ? blurBoyImage
+                                : user.gender === "male"
+                                ? blurGirlImage
+                                : blurNeutralImage,
+                        isPrimary: true,
+                        createdAt: likedByUserId.primaryPhoto.createdAt
+                    }
+                ],
                 role: people.viewerProfileId.role,
                 blurred: true
             });
@@ -233,7 +264,7 @@ export const rewindOldSwipe = async (req, res) => {
     const key = `rewind:count:${currentProfile._id}:${europeanStyleDate()}`;
     const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    if (!premium.isActive && premium.tier === "gold") {
+    if (!premium.isActive && premium.tier !== "gold") {
         return sendResponse(res, 403, {
             success: false,
             message: "Rewind is available for Gold members only",
@@ -303,6 +334,14 @@ export const rewindOldSwipe = async (req, res) => {
                 username: profile.username,
                 displayName: profile.displayName,
                 role: profile.role,
+                photos: [
+                    {
+                        id: "none",
+                        url: profile.primaryPhoto.url,
+                        isPrimary: true,
+                        createdAt: profile.primaryPhoto.createdAt
+                    }
+                ],
                 tech_stack: profile.tech_stack,
                 location: {
                     city: profile.location.city,

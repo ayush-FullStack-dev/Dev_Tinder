@@ -17,6 +17,10 @@ import { isValidDate } from "../../../../helpers/time.js";
 export const viewPublicProfile = async (req, res) => {
     const { logged, profile, currentProfile } = req.auth;
 
+    if (profile.premium?.features?.incognito?.enabled) {
+        return sendResponse(res, 404, { message: "Profile not found" });
+    }
+
     const basicInfo = {
         username: profile.username,
         displayName: profile.displayName,
@@ -25,6 +29,21 @@ export const viewPublicProfile = async (req, res) => {
         tech_stack: profile.tech_stack,
         looking_for: profile.looking_for,
         experience_years: profile.experience_years,
+        primaryPhoto: profile.primaryPhoto,
+        photos: [
+            ...currentProfile.photos.map(p => ({
+                id: p._id,
+                url: p.url,
+                isPrimary: false,
+                createdAt: p.createdAt
+            })),
+            {
+                id: "none",
+                url: currentProfile.primaryPhoto.url,
+                isPrimary: true,
+                createdAt: currentProfile.primaryPhoto.createdAt
+            }
+        ],
         location: {
             city: profile.location.city,
             country: profile.location.country
@@ -60,9 +79,8 @@ export const viewPublicProfile = async (req, res) => {
             }
         });
     }
-    
-    
-    if (currentProfile.premium.features?.incognito?.enabled) {
+
+    if (currentProfile.premium?.features?.incognito?.enabled) {
         return sendResponse(res, 200, {
             data: {
                 ...basicInfo,
@@ -134,7 +152,7 @@ export const getWhoViewdMe = async (req, res) => {
         .limit(limit + 1)
         .populate(
             "viewerUserId",
-            "username displayName role tech_stack location premium"
+            "username photos primaryPhoto displayName role tech_stack location premium"
         );
 
     if (viewsInfo.length > limit) {
@@ -172,6 +190,20 @@ export const getWhoViewdMe = async (req, res) => {
             displayName: pepole.viewerUserId.displayName,
             role: pepole.viewerUserId.role,
             tech_stack: pepole.viewerUserId.tech_stack,
+            photos: [
+                ...pepole.viewerUserId.photos.map(p => ({
+                    id: p._id,
+                    url: p.url,
+                    isPrimary: false,
+                    createdAt: p.createdAt
+                })),
+                {
+                    id: "none",
+                    url: pepole.viewerUserId.primaryPhoto.url,
+                    isPrimary: true,
+                    createdAt: pepole.viewerUserId.primaryPhoto.createdAt
+                }
+            ],
             location: {
                 city: pepole.viewerUserId.location.city,
                 country: pepole.viewerUserId.location.country

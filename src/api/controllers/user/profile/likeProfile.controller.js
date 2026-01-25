@@ -26,6 +26,20 @@ const getBasicDetailes = likedByUserId => {
             city: likedByUserId.location.city,
             country: likedByUserId.location.country
         },
+        photos: [
+            ...likedByUserId.photos.map(p => ({
+                id: p._id,
+                url: p.url,
+                isPrimary: false,
+                createdAt: p.createdAt
+            })),
+            {
+                id: "none",
+                url: likedByUserId.primaryPhoto.url,
+                isPrimary: true,
+                createdAt: likedByUserId.primaryPhoto.createdAt
+            }
+        ],
         badges: getBadges(likedByUserId.premium),
         blurred: false
     };
@@ -181,7 +195,7 @@ export const getWhoLikedProfile = async (req, res) => {
         .limit(limit + 1)
         .populate(
             "likedByUserId",
-            "username displayName role tech_stack location premium"
+            "username photos primaryPhoto displayName role tech_stack location premium"
         );
 
     if (likesInfos.length > limit) {

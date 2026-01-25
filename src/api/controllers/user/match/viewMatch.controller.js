@@ -58,7 +58,14 @@ export const getMatched = async (req, res) => {
             status: matchDoc.status,
             user: {
                 username: opponent.username,
-                primaryPhoto: opponent.primaryPhoto,
+                photos: [
+                    {
+                        id: "none",
+                        url: opponent.primaryPhoto.url,
+                        isPrimary: true,
+                        createdAt: opponent.primaryPhoto.createdAt
+                    }
+                ],
                 displayName: opponent.displayName,
                 role: opponent.role,
                 badges: getBadges(opponent.premium)
@@ -158,8 +165,20 @@ export const getSpecificMatch = async (req, res) => {
                 bio: opponent.bio,
                 role: opponent.role,
                 tech_stack: opponent.tech_stack,
-                primaryPhoto: opponent.primaryPhoto,
-                pictures: opponent.photos,
+                photos: [
+                    ...opponent.photos.map(p => ({
+                        id: p._id,
+                        url: p.url,
+                        isPrimary: false,
+                        createdAt: p.createdAt
+                    })),
+                    {
+                        id: "none",
+                        url: opponent.primaryPhoto.url,
+                        isPrimary: true,
+                        createdAt: opponent.primaryPhoto.createdAt
+                    }
+                ],
                 location: {
                     city: opponent.location.city,
                     country: opponent.location.country

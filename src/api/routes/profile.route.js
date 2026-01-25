@@ -4,9 +4,9 @@ import {
     findLoginData
 } from "../../middlewares/auth/auth.middleware.js";
 import {
-    isProfileExists,
     optionalProfile,
-    isProfileBlocked
+    isProfileBlocked,
+    isProfileExists
 } from "../../middlewares/user/profile.middleware.js";
 import { optionalLogin } from "../../middlewares/auth/optional.middleware.js";
 import { checkPremiumStatus } from "../../middlewares/user/premium.middleware.js";
@@ -22,6 +22,12 @@ import {
     restoreProfile,
     getProfileStats
 } from "../controllers/user/profile/loginProfile.controller.js";
+import {
+    uploadPhoto,
+    getPhotos,
+    deletePhoto,
+    replacePrimaryPhoto
+} from "../controllers/user/profile/photo.controller.js";
 import {
     viewPublicProfile,
     getWhoViewdMe
@@ -52,16 +58,20 @@ router.use(
     })
 );
 
+router.use(
+    /^(?!\/setup\/?$|\/public\/).*/,
+    isLogin,
+    findLoginData,
+    isProfileExists
+);
+
 router.post("/setup", isLogin, findLoginData, profileSetupHandler);
 
 router
     .route("/me")
-    .get(isLogin, findLoginData, isProfileExists, loginProfileInfo)
-    .patch(isLogin, findLoginData, isProfileExists, updateProfileInfo)
+    .get(loginProfileInfo)
+    .patch(updateProfileInfo)
     .delete(
-        isLogin,
-        findLoginData,
-        isProfileExists,
         rateLimiter({
             limit: 3,
             window: 60,
@@ -71,20 +81,19 @@ router
         deleteProfile
     );
 
-router.get(
-    "/views",
-    isLogin,
-    findLoginData,
-    isProfileExists,
-    checkPremiumStatus,
-    getWhoViewdMe
-);
+router.use("/photo", checkPremiumStatus);
+
+router
+    .route("/photo")
+    .get(getPhotos)
+    .post(uploadPhoto)
+    .patch(replacePrimaryPhoto);
+router.delete("/photo/:photoId", deletePhoto);
+
+router.get("/views", checkPremiumStatus, getWhoViewdMe);
 
 router.get(
     "/likes",
-    isLogin,
-    findLoginData,
-    isProfileExists,
     rateLimiter({
         limit: 20,
         window: 5,
@@ -95,30 +104,14 @@ router.get(
     getWhoLikedProfile
 );
 
-router.get("/stats", isLogin, findLoginData, isProfileExists, getProfileStats);
+router.get("/stats", getProfileStats);
 
-router.patch(
-    "/visibility",
-    isLogin,
-    findLoginData,
-    isProfileExists,
-    changeProfileVisiblity
-);
+router.patch("/visibility", changeProfileVisiblity);
 
-router.patch(
-    "/incognito",
-    isLogin,
-    findLoginData,
-    isProfileExists,
-    checkPremiumStatus,
-    changeProfileIncognito
-);
+router.patch("/incognito", checkPremiumStatus, changeProfileIncognito);
 
 router.post(
     "/restore",
-    isLogin,
-    findLoginData,
-    isProfileExists,
     rateLimiter({
         limit: 3,
         window: 60,
@@ -153,14 +146,11 @@ router
         unlikePublicProfile
     );
 
-router.get("/block", isLogin, findLoginData, isProfileExists, blockedUser);
+router.get("/block", blockedUser);
 
 router
     .route("/block/:username")
     .post(
-        isLogin,
-        findLoginData,
-        isProfileExists,
         rateLimiter({
             limit: 5,
             window: 5,
@@ -170,9 +160,6 @@ router
         blockUser
     )
     .delete(
-        isLogin,
-        findLoginData,
-        isProfileExists,
         rateLimiter({
             limit: 5,
             window: 5,
@@ -184,9 +171,6 @@ router
 
 router.post(
     "/report/:username",
-    isLogin,
-    findLoginData,
-    isProfileExists,
     isProfileBlocked,
     rateLimiter({
         limit: 3,
@@ -197,12 +181,6 @@ router.post(
     reportProfile
 );
 
-router.get(
-    "/report/",
-    isLogin,
-    findLoginData,
-    isProfileExists,
-    reportedProfiles
-);
+router.get("/report/", reportedProfiles);
 
 export default router;

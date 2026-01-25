@@ -1,7 +1,7 @@
 import ProfileLike from "../models/ProfileLike.model.js";
 import Block from "../models/Block.model.js";
 import ProfileSeen from "../models/ProfileSeen.model.js";
-import Report from "../models/User.model.js";
+import Report from "../models/Report.model.js";
 
 import { buildSubscriptionInfo, activeBoosts } from "./premium.helper.js";
 
@@ -40,91 +40,111 @@ export const getExcludedIds = async id => {
 };
 
 export const freeProfileScore = (profiles, currentProfile) => {
-    const updatedProfiles = profiles.map(p => {
-        let score = 0;
-        const premiumInfo = buildSubscriptionInfo(p.premium);
+    const updatedProfiles = profiles
+        .filter(k => !k.premium?.features?.incognito?.enabled)
+        .map(p => {
+            let score = 0;
+            const premiumInfo = buildSubscriptionInfo(p.premium);
 
-        if (p.location.country === currentProfile.location.country) score += 3;
+            if (p.location.country === currentProfile.location.country)
+                score += 3;
+            score += p.profileScore;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
+            if (premiumInfo?.isActive && premiumInfo.tier === "gold")
+                score += 10;
 
-        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
-            score += Math.ceil(score * 0.25);
+            if (p.packs?.features && activeBoosts(p.packs.features).isActive)
+                score += Math.ceil(score * 0.25);
 
-        if (p.location.city === currentProfile.location.city) score += 5;
+            if (p.location.city === currentProfile.location.city) score += 5;
 
-        score += p.profileScore;
-        score = Math.min(score, 100);
 
-        return {
-            ...p.toObject(),
-            _freeScore: score
-        };
-    });
+
+                if (p.gender !== currentProfile.gender) score += 5;
+            
+
+            score = Math.min(score, 100);
+
+            return {
+                ...p.toObject(),
+                _freeScore: score
+            };
+        });
 
     return updatedProfiles.sort((a, b) => b._freeScore - a._freeScore);
 };
 
 export const silverProfileScore = (profiles, currentProfile) => {
-    const updatedProfiles = profiles.map(p => {
-        let score = 0;
-        const premiumInfo = buildSubscriptionInfo(p.premium);
+    const updatedProfiles = profiles
+        .filter(k => !k.premium?.features?.incognito?.enabled)
+        .map(p => {
+            let score = 0;
+            const premiumInfo = buildSubscriptionInfo(p.premium);
 
-        if (p.role === currentProfile.role) score += 10;
+            if (p.role === currentProfile.role) score += 10;
+            score += p.profileScore;
 
-        const commonTechstack = p.tech_stack.filter(k =>
-            currentProfile.tech_stack.includes(k)
-        ).length;
+            const commonTechstack = p.tech_stack.filter(k =>
+                currentProfile.tech_stack.includes(k)
+            ).length;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
+            if (premiumInfo?.isActive && premiumInfo.tier === "gold")
+                score += 10;
 
-        if (p.location.country === currentProfile.location.country) score += 3;
-        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
-            score += Math.ceil(score * 0.25);
+            if (p.location.country === currentProfile.location.country)
+                score += 3;
+            if (p.packs?.features && activeBoosts(p.packs.features).isActive)
+                score += Math.ceil(score * 0.25);
 
-        if (p.location.city === currentProfile.location.city) score += 5;
+            if (p.location.city === currentProfile.location.city) score += 5;
+            if (p.gender !== currentProfile.gender) score += 5;
 
-        score += commonTechstack * 5;
-        score += p.profileScore;
-        score = Math.min(score, 100);
+            score += commonTechstack * 5;
+            score = Math.min(score, 100);
 
-        return {
-            ...p.toObject(),
-            _silverScore: score
-        };
-    });
+            return {
+                ...p.toObject(),
+                _silverScore: score
+            };
+        });
 
     return updatedProfiles.sort((a, b) => b._silverScore - a._silverScore);
 };
 
 export const goldProfileScore = (profiles, currentProfile) => {
-    const updatedProfiles = profiles.map(p => {
-        let score = 0;
-        const premiumInfo = buildSubscriptionInfo(p.premium);
+    const updatedProfiles = profiles
+        .filter(k => !k.premium?.features?.incognito?.enabled)
+        .map(p => {
+            let score = 0;
+            score += p.profileScore;
+            const premiumInfo = buildSubscriptionInfo(p.premium);
 
-        if (p.role === currentProfile.role) score += 10;
+            if (p.role === currentProfile.role) score += 10;
 
-        const commonTechstack = p.tech_stack.filter(k =>
-            currentProfile.tech_stack.includes(k)
-        ).length;
+            const commonTechstack = p.tech_stack.filter(k =>
+                currentProfile.tech_stack.includes(k)
+            ).length;
 
-        if (premiumInfo?.isActive && premiumInfo.tier === "gold") score += 10;
+            if (premiumInfo?.isActive && premiumInfo.tier === "gold")
+                score += 10;
 
-        if (p.location.country === currentProfile.location.country) score += 3;
-        if (p.packs?.features && activeBoosts(p.packs.features).isActive)
-            score += Math.ceil(score * 0.25);
+            if (p.location.country === currentProfile.location.country)
+                score += 3;
 
-        if (p.location.city === currentProfile.location.city) score += 5;
+            if (p.packs?.features && activeBoosts(p.packs.features).isActive)
+                score += Math.ceil(score * 0.25);
 
-        score += commonTechstack * 5;
-        score += p.profileScore;
-        score = Math.min(score, 100);
+            if (p.location.city === currentProfile.location.city) score += 5;
+            if (p.gender !== currentProfile.gender) score += 5;
 
-        return {
-            ...p,
-            _goldScore: score
-        };
-    });
+            score += Math.min(commonTechstack, 4) * 5;
+            score = Math.min(score, 100);
+
+            return {
+                ...p,
+                _goldScore: score
+            };
+        });
 
     return updatedProfiles.sort((a, b) => b._goldScore - a._goldScore);
 };

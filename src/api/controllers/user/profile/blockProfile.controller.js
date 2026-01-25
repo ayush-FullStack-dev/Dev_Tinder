@@ -2,7 +2,6 @@ import Block from "../../../../models/Block.model.js";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 
-
 import { findProfile } from "../../../../services/profile.service.js";
 
 export const blockUser = async (req, res) => {
@@ -87,7 +86,7 @@ export const blockedUser = async (req, res) => {
         .limit(limit + 1)
         .populate(
             "blockedUserId",
-            "username displayName role tech_stack location"
+            "username photos primaryPhoto displayName role tech_stack location"
         );
 
     const blockedCount = await Block.countDocuments({
@@ -119,6 +118,20 @@ export const blockedUser = async (req, res) => {
             username: block.blockedUserId.username,
             displayName: block.blockedUserId.displayName,
             role: block.blockedUserId.role,
+            photos: [
+                ...block.blockedUserId.photos.map(p => ({
+                    id: p._id,
+                    url: p.url,
+                    isPrimary: false,
+                    createdAt: p.createdAt
+                })),
+                {
+                    id: "none",
+                    url: block.blockedUserId.primaryPhoto.url,
+                    isPrimary: true,
+                    createdAt: block.blockedUserId.primaryPhoto.createdAt
+                }
+            ],
             tech_stack: block.blockedUserId.tech_stack,
             location: {
                 city: block.blockedUserId.location.city,
