@@ -1,5 +1,7 @@
 import mailer from "nodemailer";
 
+import "../config/config.js";
+
 import verifyAccountTemplate from "../templates/mail/verifyAccount.template.js";
 import verifyOtpTemplete from "../templates/mail/verifyOtp.templete.js";
 import suspiciousAlertTemplete from "../templates/mail/suspiciousAlert.templete.js";

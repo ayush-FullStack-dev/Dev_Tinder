@@ -17,6 +17,7 @@ export const loginProfileInfo = async (req, res) => {
 
     return sendResponse(res, 200, {
         data: {
+        	id: currentProfile._id,
             username: currentProfile.username,
             displayName: currentProfile.displayName,
             bio: currentProfile.bio,

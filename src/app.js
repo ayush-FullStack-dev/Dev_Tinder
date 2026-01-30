@@ -9,6 +9,7 @@ import pushRouter from "./api/routes/push.route.js";
 import profileRouter from "./api/routes/profile.route.js";
 import discoverRouter from "./api/routes/discover.route.js";
 import matchRouter from "./api/routes/match.route.js";
+import chatRouter from "./api/routes/chat.route.js";
 
 // global routes
 import {
@@ -30,22 +31,33 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
     cors({
-        origin: ["http://localhost:8158"],
+        origin: [
+            "https://myapp6838.oneapp.dev",
+            "http://localhost:8159",
+            "http://localhost:8158"
+        ],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         credentials: true
     })
 );
 
 app.use(express.static(getPath.publicDir));
-app.use(cookieParser(process.env.APP_SECRET));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(helmet());
 app.use(getInfo);
 
 // routes
+app.get("/getToken", (req, res) => {
+    return res.json({
+        success: true,
+        token: req.signedCookies?.accessToken
+    });
+});
 app.use("/auth", authRouter);
 app.use("/profile", profileRouter);
 app.use("/discover", discoverRouter);
 app.use("/match", matchRouter);
+app.use("/chat", chatRouter);
 app.use("/push", pushRouter);
 
 // error handers

@@ -23,14 +23,14 @@ const verifyTwoFAValidators = joi.object({
         "string.min": "Code must be minimum 6 digits.",
         "any.required": "Code is required."
     }),
-    clientTime: joi.number(),
+    
     trustDevice: joi.boolean().valid(true, false).messages({
         "any.only": "Invalid trustDevice type only allowed true or false."
     }),
     remeberDevice: joi.boolean().valid(true, false).messages({
         "any.only": "Invalid remeberDevice type only allowed true or false."
     }),
-    clientTime: joi.number(),
+    
     deviceSize: joi.number(),
     remember: joi.boolean().valid(true, false).required().messages({
         "any.only": "Invalid remember type only allowed true or false.",

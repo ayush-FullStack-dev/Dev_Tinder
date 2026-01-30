@@ -1,7 +1,11 @@
+import http from "http";
+import app from "./src/app.js";
+import { initSocket } from "./socket.js";
+import { registerChatSocket } from "./src/api/socket/chat.socket.js";
+
 import connectDB from "./src/config/mongodb.js";
 import { connectRedis } from "./src/config/redis.js";
 import { webPushStart } from "./src/config/webpush.js";
-import app from "./src/app.js";
 import chalk, {
     printASCII,
     errorLog,
@@ -10,10 +14,17 @@ import chalk, {
 } from "./logs/printLogs.js";
 
 // configure server
+const server = http.createServer(app);
 const port = process.env.PORT || 3000;
 
+function startSocket() {
+    const { chatIO } = initSocket(server);
+    registerChatSocket(chatIO);
+}
+
 function startServer() {
-    app.listen(port, () => {
+    startSocket();
+    server.listen(port, () => {
         info("STARTING SERVER ...");
         console.log(chalk.gray(`server is listening on port ${port} ...`));
         success("SERVER STARTED ✓");

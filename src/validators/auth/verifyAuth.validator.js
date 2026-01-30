@@ -20,6 +20,6 @@ export const verifyAuthValidator = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
-    clientTime: joi.number(),
+    
     deviceSize: joi.number()
 });

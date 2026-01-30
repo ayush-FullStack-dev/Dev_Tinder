@@ -18,7 +18,7 @@ export const loginValidator = joi
             "any.required": "deviceId is required.",
             "string.empty": "deviceId cannot be empty."
         }),
-        clientTime: joi.number(),
+
         deviceSize: joi.number().required().messages({
             "any.required": "deviceSize is required."
         }),
@@ -45,7 +45,7 @@ export const loginIdentifyValidator = joi
             "any.required": "deviceId is required.",
             "string.empty": "deviceId cannot be empty."
         }),
-        clientTime: joi.number(),
+
         deviceSize: joi.number().required().messages({
             "any.required": "deviceSize is required."
         })

@@ -3,6 +3,7 @@ import sendResponse, { removeCookie } from "../../helpers/sendResponse.js";
 import { findUser, updateUser } from "../../services/user.service.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
 import { getIpDetails } from "../../helpers/ip.js";
+import { getTime } from "../../helpers/time.js";
 
 import crypto from "crypto";
 
@@ -77,7 +78,9 @@ export const logoutAllSession = async (req, res, next) => {
     if (user.logout.length >= 15) {
         user.logout.shift();
     }
+
     device.name = user.name;
+    device.fullTime = getTime().fullTime
 
     sendLogoutAllAlert(user.email, device);
 
@@ -96,8 +99,8 @@ export const logoutAllSession = async (req, res, next) => {
             success: true,
             logout: "logout-all"
         };
-        next();
-        return;
+
+        return next();
     }
 };
 
@@ -131,8 +134,8 @@ export const logoutCurrentSession = async (req, res, next) => {
             logout: "logout",
             id: logoutInfo.id
         };
-        next();
-        return;
+
+        return next();
     }
 
     return {

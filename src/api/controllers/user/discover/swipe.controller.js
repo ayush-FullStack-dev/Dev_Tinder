@@ -1,7 +1,8 @@
-import sendResponse from "../../../../helpers/sendResponse.js";
 import ProfileSeen from "../../../../models/ProfileSeen.model.js";
+import sendResponse from "../../../../helpers/sendResponse.js";
 import ProfileLike from "../../../../models/ProfileLike.model.js";
 import Match from "../../../../models/Match.model.js";
+import Chat from "../../../../models/Chat.model.js";
 import redis from "../../../../config/redis.js";
 
 import {
@@ -146,7 +147,30 @@ export const rightSwipeProfile = async (req, res) => {
         users,
         createdBy: currentProfile._id
     });
+
     const matchId = matchDoc._id;
+    const settings = [
+        {
+            userId: users[0],
+            unreadCount: 0,
+            muted: false,
+            pinned: false,
+            archived: false
+        },
+        {
+            userId: users[1],
+            unreadCount: 0,
+            muted: false,
+            pinned: false,
+            archived: false
+        }
+    ];
+
+    await Chat.create({
+        users,
+        matchId,
+        settings
+    });
 
     return sendResponse(res, 201, {
         message: "It's a match",
@@ -167,7 +191,6 @@ export const rightSwipeProfile = async (req, res) => {
 
 export const getWhoRightSwipe = async (req, res) => {
     const { user, currentProfile } = req.auth;
-    let hasMore = false;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
     const premiumInfo = buildSubscriptionInfo(currentProfile.premium);
     const query = {

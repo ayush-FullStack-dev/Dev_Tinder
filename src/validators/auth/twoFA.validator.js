@@ -9,7 +9,7 @@ const twoFAValidators = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
-    clientTime: joi.number(),
+    
     deviceSize: joi.number(),
     method: joi
         .string()

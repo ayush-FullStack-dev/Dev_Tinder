@@ -9,12 +9,13 @@ import {
 } from "../../../middlewares/auth/logout.middleware.js";
 
 export const issueNewTokens = async (req, res, next) => {
-    const { user, verify, riskLevel, tokenInfo, refreshToken, accessToken } =
+    const { user, verify, token, refreshToken, accessToken } =
         req.auth;
-    req.auth.device = tokenInfo;
+    req.auth.device = token;
     req.auth.reason = "security_risk";
     if (verify?.action === "logout-all") {
         await logoutAllSession(req);
+
         return res
             .clearCookie("accessToken", cookieOption)
             .clearCookie("refreshToken", cookieOption)

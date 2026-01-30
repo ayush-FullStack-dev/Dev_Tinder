@@ -95,7 +95,7 @@ const profileSchema = new mongoose.Schema(
             enum: ["male", "female", "other"],
             required: true
         },
-        
+
         role: {
             type: String,
             required: true,
@@ -221,6 +221,10 @@ const profileSchema = new mongoose.Schema(
                 default: null,
                 expires: 0
             }
+        },
+        lastSeen: {
+            type: Date,
+            default: null
         },
         deletedAt: {
             type: Date,

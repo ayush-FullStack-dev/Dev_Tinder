@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Nexus Chat | Secure</title>
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /* --- CSS Variables & Reset --- */
+            :root {
+                --bg-app: #0b141a;
+                --bg-header: #202c33;
+                --bg-input: #2a3942;
+                --bubble-me: #005c4b;
+                --bubble-opp: #202c33;
+                --accent: #00a884;
+                --text-main: #e9edef;
+                --text-sec: #8696a0;
+                --tick-blue: #53bdeb;
+                --menu-bg: #233138;
+                --shadow: rgba(0, 0, 0, 0.3);
+            }
+            * {
+                box-sizing: border-box;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            body {
+                margin: 0;
+                font-family: "Inter", sans-serif;
+                background: var(--bg-app);
+                color: var(--text-main);
+                display: flex;
+                flex-direction: column;
+                height: 100dvh;
+                overflow: hidden;
+                user-select: none;
+            }
+
+            /* --- Header --- */
+            header {
+                padding: 10px 16px;
+                background: var(--bg-header);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 1px 3px var(--shadow);
+                z-index: 10;
+                height: 60px;
+                min-height: 60px;
+            }
+            .profile-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .avatar {
+                width: 40px;
+                height: 40px;
+                background: #6b7c85;
+                border-radius: 50%;
+            }
+            .status-text {
+                font-size: 13px;
+                color: var(--text-sec);
+            }
+            .btn-icon {
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: var(--text-sec);
+            }
+
+            /* --- Messages Area --- */
+            #messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px 5%;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                background-color: var(--bg-app);
+                background-image: linear-gradient(
+                        var(--bg-app) 2px,
+                        transparent 2px
+                    ),
+                    linear-gradient(90deg, var(--bg-app) 2px, transparent 2px),
+                    linear-gradient(
+                        rgba(255, 255, 255, 0.03) 1px,
+                        transparent 1px
+                    ),
+                    linear-gradient(
+                        90deg,
+                        rgba(255, 255, 255, 0.03) 1px,
+                        transparent 1px
+                    );
+                background-size:
+                    100px 100px,
+                    100px 100px,
+                    20px 20px,
+                    20px 20px;
+                background-position:
+                    -2px -2px,
+                    -2px -2px,
+                    -1px -1px,
+                    -1px -1px;
+            }
+
+            /* --- Bubbles --- */
+            .bubble {
+                max-width: 85%;
+                width: fit-content;
+                padding: 6px 9px 8px 9px;
+                border-radius: 10px;
+                font-size: 14.2px;
+                line-height: 19px;
+                position: relative;
+                box-shadow: 0 1px 0.5px var(--shadow);
+                margin-bottom: 2px;
+                transition: background 0.2s;
+            }
+            .bubble.me {
+                align-self: flex-end;
+                background: var(--bubble-me);
+                border-top-right-radius: 0;
+            }
+            .bubble.opponent {
+                align-self: flex-start;
+                background: var(--bubble-opp);
+                border-top-left-radius: 0;
+            }
+
+            .bubble:active {
+                filter: brightness(0.9);
+            }
+
+            /* Deleted Message Style */
+            .deleted-content {
+                font-style: italic;
+                color: var(--text-sec);
+                font-size: 13.5px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            /* Meta Data */
+            .meta {
+                float: right;
+                margin-left: 10px;
+                margin-top: 4px;
+                margin-bottom: -5px;
+                display: flex;
+                align-items: flex-end;
+                gap: 3px;
+                height: 15px;
+            }
+            .time {
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.6);
+            }
+            .ticks {
+                font-size: 16px;
+                line-height: 1;
+                color: var(--text-sec);
+                transition: color 0.2s ease;
+            }
+            .ticks.blue {
+                color: var(--tick-blue);
+            }
+
+            /* --- Context Menu --- */
+            #context-menu {
+                position: fixed;
+                background: var(--menu-bg);
+                border-radius: 12px;
+                padding: 6px 0;
+                min-width: 180px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+                display: none;
+                z-index: 1000;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                animation: menuPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            @keyframes menuPop {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
+            .menu-item {
+                padding: 12px 20px;
+                font-size: 14.5px;
+                color: var(--text-main);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .menu-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            .menu-item.danger {
+                color: #ff6b6b;
+            }
+
+            /* --- Footer --- */
+            footer {
+                padding: 8px 10px;
+                background: var(--bg-header);
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+                min-height: 62px;
+            }
+            .input-wrapper {
+                flex: 1;
+                background: var(--bg-input);
+                border-radius: 20px;
+                padding: 10px 15px;
+                display: flex;
+                align-items: center;
+                min-height: 42px;
+                margin-bottom: 6px;
+            }
+            input {
+                width: 100%;
+                border: none;
+                background: transparent;
+                color: white;
+                font-size: 15px;
+                outline: none;
+                font-family: inherit;
+            }
+            input::placeholder {
+                color: var(--text-sec);
+            }
+
+            button.send {
+                background: var(--accent);
+                border: none;
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                color: #111b21;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                transition: transform 0.1s;
+                margin-bottom: 6px;
+            }
+            button.send:active {
+                transform: scale(0.9);
+            }
+            ::-webkit-scrollbar {
+                width: 5px;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 3px;
+            }
+
+            @media (min-width: 768px) {
+                .bubble {
+                    max-width: 60%;
+                }
+                #messages {
+                    padding: 20px 10%;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <div class="profile-info">
+                <div class="avatar"></div>
+                <div>
+                    <div style="font-weight: 500">User Name</div>
+                    <div class="status-text">online</div>
+                </div>
+            </div>
+            <button class="btn-icon" id="updateToken" title="Update Token">
+                ⋮
+            </button>
+        </header>
+
+        <div id="messages"></div>
+
+        <div id="context-menu">
+            <div class="menu-item" id="btn-delete-me">🗑️ Delete for me</div>
+            <div class="menu-item danger" id="btn-delete-everyone">
+                🚫 Delete for everyone
+            </div>
+        </div>
+
+        <footer>
+            <div class="input-wrapper">
+                <input id="text" placeholder="Message" autocomplete="off" />
+            </div>
+            <button class="send" id="send">➤</button>
+        </footer>
+
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+        <script>
+            const BASE_URL = "http://localhost:8080";
+            const NAMESPACE = "/chat";
+            const CHAT_ID = "6975e20daf61124220ef1a43";
+            const TOKEN_KEY = "chat_jwt";
+
+// Jab user tab par wapas aaye to read mark karein
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        socket.emit("chat:read", { chatId: CHAT_ID });
+    }
+});
+
+
+            function parseJwt(token) {
+                try {
+                    const base64Url = token.split(".")[1];
+                    const base64 = base64Url
+                        .replace(/-/g, "+")
+                        .replace(/_/g, "/");
+                    const jsonPayload = decodeURIComponent(
+                        window
+                            .atob(base64)
+                            .split("")
+                            .map(function (c) {
+                                return (
+                                    "%" +
+                                    ("00" + c.charCodeAt(0).toString(16)).slice(
+                                        -2
+                                    )
+                                );
+                            })
+                            .join("")
+                    );
+                    return JSON.parse(jsonPayload);
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            // --- Token Logic ---
+            let token = localStorage.getItem(TOKEN_KEY);
+            if (!token) {
+                token = prompt("Enter JWT Token:");
+                if (token) localStorage.setItem(TOKEN_KEY, token);
+            }
+
+            // Extract MY_ID from token
+            const decoded = parseJwt(token);
+            const MY_ID = decoded ? decoded._id || decoded.id : null;
+
+            document.getElementById("updateToken").onclick = () => {
+                const t = prompt("New JWT Token:");
+                if (t) {
+                    localStorage.setItem(TOKEN_KEY, t);
+                    location.reload();
+                }
+            };
+
+            // --- Socket Connection ---
+            const socket = io(`${BASE_URL}${NAMESPACE}`, {
+                auth: { token },
+                transports: ["websocket"]
+            });
+
+            const messagesEl = document.getElementById("messages");
+            const inputEl = document.getElementById("text");
+            const menuEl = document.getElementById("context-menu");
+            const sendBtn = document.getElementById("send");
+
+            const messageMap = new Map();
+            let selectedMessageId = null;
+
+            const formatTime = d =>
+                new Date(d).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+            // --- Ticks Logic ---
+            const getTicksHtml = msg => {
+                if (msg.status === "deleted" || msg.deleted?.forEveryone)
+                    return "";
+
+                let icon = "✔";
+                let className = "ticks";
+                if (msg.timestamps.deliveredAt) icon = "✔✔";
+                if (msg.timestamps.readAt) {
+                    icon = "✔✔";
+                    className += " blue";
+                }
+                return `<span class="${className}">${icon}</span>`;
+            };
+
+            const scrollToBottom = () => {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            };
+
+            const renderMessage = msg => {
+                const isChatReading = document.visibilityState === "visible";
+
+                if (isChatReading) {
+                    socket.emit("chat:read", { chatId: CHAT_ID });
+                }
+
+                if (messageMap.has(msg.messageId)) return;
+
+                const isMe = String(msg.senderUserId) === String(MY_ID);
+                const senderClass = isMe ? "me" : "opponent";
+
+                const isDeleted =
+                    msg.deleted?.forEveryone || msg.status === "deleted";
+
+                const div = document.createElement("div");
+                div.className = `bubble ${senderClass}`;
+                div.dataset.id = msg.messageId;
+
+                // 2. Content
+                let contentHtml = isDeleted
+                    ? `<span class="deleted-content"><span style="font-size:16px">🚫</span> This message was deleted</span>`
+                    : `<span>${msg.text}</span>`;
+
+                let metaHtml = `
+              <div class="meta">
+                <span class="time">${formatTime(msg.timestamps.sentAt)}</span>
+                ${
+                    isMe && !isDeleted
+                        ? `<span class="tick-area">${getTicksHtml(msg)}</span>`
+                        : ""
+                }
+              </div>
+            `;
+
+                div.innerHTML = contentHtml + metaHtml;
+
+                // 4. Context Menu Handler
+                const handleContext = e => {
+                    e.preventDefault();
+                    showContextMenu(
+                        e.clientX || e.touches?.[0].clientX,
+                        e.clientY || e.touches?.[0].clientY,
+                        msg.messageId,
+                        isMe,
+                        isDeleted
+                    );
+                };
+
+                div.oncontextmenu = handleContext;
+                let pressTimer;
+                div.addEventListener("touchstart", event => {
+                    pressTimer = setTimeout(e => handleContext(event), 500);
+                });
+                div.addEventListener("touchend", () =>
+                    clearTimeout(pressTimer)
+                );
+                div.addEventListener("touchmove", () =>
+                    clearTimeout(pressTimer)
+                );
+
+                messagesEl.appendChild(div);
+                scrollToBottom();
+                messageMap.set(msg.messageId, { el: div, msg });
+            };
+
+            // --- Context Menu ---
+            const showContextMenu = (x, y, msgId, isMe, isDeleted) => {
+                selectedMessageId = msgId;
+                const btnAll = document.getElementById("btn-delete-everyone");
+
+                // Show "Delete for Everyone" ONLY if I sent it and it's not already deleted
+                btnAll.style.display = isMe && !isDeleted ? "flex" : "none";
+
+                // Boundary Checks
+                const menuWidth = 180;
+                const menuHeight = 100;
+                if (x + menuWidth > window.innerWidth)
+                    x = window.innerWidth - menuWidth - 20;
+                if (y + menuHeight > window.innerHeight)
+                    y = window.innerHeight - menuHeight - 20;
+
+                menuEl.style.left = `${x}px`;
+                menuEl.style.top = `${y}px`;
+                menuEl.style.display = "block";
+            };
+
+            document.addEventListener("click", e => {
+                if (!menuEl.contains(e.target)) menuEl.style.display = "none";
+            });
+
+            document.getElementById("btn-delete-me").onclick = () => {
+                if (!selectedMessageId) return;
+                socket.emit("chat:deleteMessage", {
+                    messageId: selectedMessageId,
+                    mode: "me"
+                });
+                menuEl.style.display = "none";
+            };
+
+            document.getElementById("btn-delete-everyone").onclick = () => {
+                if (!selectedMessageId) return;
+                socket.emit("chat:deleteMessage", {
+                    messageId: selectedMessageId,
+                    mode: "everyone"
+                });
+                menuEl.style.display = "none";
+            };
+
+            socket.on("connect", () => {
+                console.log("Connected");
+                socket.emit("chat:join", { chatId: CHAT_ID });
+            });
+
+            socket.on("chat:newMessage", p => renderMessage(p.data));
+            socket.on("chat:messageSent", p => renderMessage(p.data));
+
+            socket.on("chat:update", update => {
+                console.log(update);
+                if (Array.isArray(update.messageIds)) {
+                    update.messageIds.forEach(id =>
+                        handleUpdateSingle({ ...update, messageId: id })
+                    );
+                } else {
+                    handleUpdateSingle(update);
+                }
+            });
+
+            const handleUpdateSingle = update => {
+                const entry = messageMap.get(update.messageId);
+                if (!entry) return;
+
+                // 1. DELETE LOGIC
+
+                if (update.type === "MESSAGE_DELETED") {
+                    if (update.mode === "everyone") {
+                        entry.msg.deleted = { forEveryone: true };
+                        entry.el.innerHTML =
+                            `<span class="deleted-content"><span style="font-size:16px">🚫</span> This message was deleted</span>` +
+                            `<div class="meta"><span class="time">${formatTime(
+                                entry.msg.timestamps.sentAt
+                            )}</span></div>`;
+                    } else if (update.mode === "me") {
+                        if (update.deleterId === MY_ID) {
+                            entry.el.remove();
+                            messageMap.delete(update.messageId);
+                        }
+                    }
+                }
+
+                // 2. READ/DELIVERED LOGIC
+                if (update.type === "MESSAGE_READ")
+                    entry.msg.timestamps.readAt = update.readAt;
+                if (update.type === "MESSAGE_DELIVERED")
+                    entry.msg.timestamps.deliveredAt = update.deliveredAt;
+
+                const isMe = String(entry.msg.senderUserId) === String(MY_ID);
+                const isDeleted = entry.msg.deleted?.forEveryone;
+
+                if (isMe && !isDeleted) {
+                    const tickArea = entry.el.querySelector(".tick-area");
+                    if (tickArea) tickArea.innerHTML = getTicksHtml(entry.msg);
+                }
+            };
+
+            const sendMessage = () => {
+                const text = inputEl.value.trim();
+                if (!text) return;
+                socket.emit("chat:send", {
+                    type: "text",
+                    text
+                });
+                inputEl.value = "";
+                inputEl.focus();
+            };
+
+            sendBtn.onclick = sendMessage;
+            inputEl.onkeydown = e => {
+                if (e.key === "Enter") sendMessage();
+            };
+        </script>
+    </body>
+</html>

@@ -62,7 +62,7 @@ export const validateRefreshToken = async (req, res, next) => {
     }
 
     const findedToken = user.refreshToken.find(
-        k => k.token === oldRefreshToken
+        k => k?.token === oldRefreshToken
     );
 
     if (findedToken?.version !== 1) {
@@ -71,7 +71,7 @@ export const validateRefreshToken = async (req, res, next) => {
 
     req.auth.user = user;
     req.auth.token = findedToken;
-    next();
+    return next();
 };
 
 export const bindTokenToDevice = async (req, res, next) => {
@@ -116,7 +116,7 @@ export const bindTokenToDevice = async (req, res, next) => {
 
     req.auth.tokenInfo = tokenInfo;
     req.auth.tokenIndex = user.refreshToken.findIndex(
-        t => t.token === token.token
+        t => t?.token === token?.token
     );
     return next();
 };
@@ -201,7 +201,12 @@ export const handleStepUpIfNeeded = async (req, res, next) => {
 };
 
 export const rotateRefreshToken = async (req, res, next) => {
-    const { token, user, tokenIndex, tokenInfo } = req.auth;
+    const { token, user, tokenIndex, tokenInfo, verify } = req.auth;
+
+    if (verify?.success === false) {
+        return next();
+    }
+
     const refreshExpiry = setRefreshExpiry(req.body);
     const accessToken = getAccessToken(user);
     const refreshToken = getRefreshToken(

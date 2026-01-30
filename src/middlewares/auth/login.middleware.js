@@ -41,7 +41,8 @@ export const loginIdentifyValidation = async (req, res, next) => {
 
     if (!user) {
         return sendResponse(res, 401, {
-            message
+            message: "Invalid email or username",
+            code: "INVALID_CREDENTIALS"
         });
     }
 
@@ -52,9 +53,8 @@ export const loginIdentifyValidation = async (req, res, next) => {
     );
 
     deviceInfo.fingerprint = await fingerprintBuilder(deviceInfo);
-
     req.auth.user = user;
     req.auth.deviceInfo = deviceInfo;
     req.auth.time = getTime(req);
-    next();
+    return next();
 };

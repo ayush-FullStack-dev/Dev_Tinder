@@ -58,6 +58,7 @@ export const loginIdentifyHandler = async (req, res) => {
         ctxId,
         "login:ctx"
     );
+
     return setCtxId(res, 200, response, ctxId, "login_ctx");
 };
 
@@ -99,16 +100,16 @@ export const verifyLoginHandler = async (req, res) => {
         return sendResponse(res, 401, verify?.message || "Unauthorized");
     }
 
-    if (verify?.stepup) {
-        if (!user.twoFA.enabled) {
-            return sendResponse(res, 401, {
-                status: "BLOCKED",
-                risk: info.risk,
-                message:
-                    "Login request blocked due to security risk. Two-Factor Authentication is not enabled on your account.",
-                action: ["ENABLE_2FA", "ACCOUNT_RECOVER"]
-            });
-        }
+    if (verify?.stepup && !user.twoFA.enabled && verify.method === "password") {
+        return sendResponse(res, 403, {
+            error: "STEP_UP_REQUIRED",
+            message:
+                "Password authentication is not sufficient for this request.",
+            action: "TRY_ANOTHER_VERIFICATION_METHOD"
+        });
+    }
+
+    if (verify?.stepup && user.twoFA.enabled) {
         const data = await setTwoFa(ctxId, userInfo, methods);
         user.twoFA.tokenInfo.push(data.info);
 

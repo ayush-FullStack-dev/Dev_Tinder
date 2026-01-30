@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import "../config/config.js";
 
 const ALGO = "aes-256-gcm";
 

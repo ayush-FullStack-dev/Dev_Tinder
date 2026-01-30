@@ -12,11 +12,7 @@ import { securitycodeLua } from "../../constants/redis.contants.js";
 
 import { verifyToken } from "../../helpers/jwt.js";
 import { buildDeviceInfo } from "../../helpers/buildDeviceInfo.js";
-import {
-    checkValidation,
-    
-    setRefreshExpiry
-} from "../../helpers/helpers.js";
+import { checkValidation, setRefreshExpiry } from "../../helpers/helpers.js";
 import { getTime } from "../../helpers/time.js";
 import { getIpDetails } from "../../helpers/ip.js";
 
@@ -36,6 +32,7 @@ export const verifyLoginValidation = async (req, res, next) => {
     const time = getTime(req);
     const ctxId = req.signedCookies?.login_ctx;
 
+    
     const validate = checkValidation(
         verifyLoginValidator,
         req,
@@ -92,7 +89,7 @@ export const verifyLoginValidation = async (req, res, next) => {
         return sendResponse(
             res,
             401,
-            "This request is prevent Method-hopping attack!"
+            "This request is prevent Risk-hopping attack!"
         );
     }
 
