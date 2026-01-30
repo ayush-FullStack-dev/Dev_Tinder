@@ -32,7 +32,7 @@ app.use(express.json());
 app.use(
     cors({
         origin: [
-            "https://myapp6838.oneapp.dev",
+            "https://benevolent-rabanadas-d70418.netlify.app",
             "http://localhost:8159",
             "http://localhost:8158"
         ],

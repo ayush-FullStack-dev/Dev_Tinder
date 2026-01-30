@@ -41,6 +41,7 @@ async function init() {
             startServer();
             webPushStart();
             printASCII("PRODUCTION");
+            return;
         } catch (err) {
             errorLog("BOOT FAILED ❌");
             console.error(err);
