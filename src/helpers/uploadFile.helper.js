@@ -1,5 +1,6 @@
 export const validatePhtoInfo = config => {
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+    
     if (!config?.fileName || !config?.fileType) {
         return {
             success: false,

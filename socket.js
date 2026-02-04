@@ -12,12 +12,17 @@ export const initSocket = server => {
     });
 
     const chatIO = io.of("/chat");
+    const callIO = io.of("/call");
 
     chatIO.use(socketAuth);
     chatIO.use(findSocketAuthInfo);
     chatIO.use(socketProfile);
 
-    return { io, chatIO };
+    callIO.use(socketAuth);
+    callIO.use(findSocketAuthInfo);
+    callIO.use(socketProfile);
+
+    return { io, chatIO, callIO };
 };
 
 export const getIO = () => {

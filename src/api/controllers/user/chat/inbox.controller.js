@@ -41,6 +41,14 @@ export const getChats = async (req, res) => {
     };
 
     for (const chat of chatsInfo) {
+        let lastMessage = {
+            text: null,
+            type: null,
+            sender: null,
+            messageId: null,
+            sentAt: null
+        };
+
         const opponent = chat.users.find(
             k => String(k) !== String(currentProfile._id)
         );
@@ -48,6 +56,16 @@ export const getChats = async (req, res) => {
         const mySetting = chat.settings.find(
             k => String(k.userId) === String(currentProfile._id)
         );
+
+        if (chat.lastMessage.sentAt > mySetting.deletedAt) {
+            lastMessage = {
+                text: chat.lastMessage.text,
+                type: chat.lastMessage.type,
+                sender: chat.lastMessage.senderId,
+                messageId: chat.lastMessage.messageId,
+                sentAt: chat.lastMessage.sentAt
+            };
+        }
 
         response.chats.push({
             chatId: chat._id,
@@ -59,13 +77,11 @@ export const getChats = async (req, res) => {
                     url: opponent.primaryPhoto.url
                 }
             },
-            lastMessage: {
-                text: chat.lastMessage.text,
-                type: chat.lastMessage.type,
-                sender: chat.lastMessage.senderId,
-                sentAt: chat.lastMessage.sentAt
-            },
-            lastMessageAt: chat.lastMessageAt,
+            lastMessage,
+            lastMessageAt:
+                chat.lastMessage.sentAt > mySetting.deletedAt
+                    ? chat.lastMessageAt
+                    : null,
             unreadCount: mySetting.unreadCount,
             isPinned: mySetting.pinned,
             isMuted: mySetting.muted,

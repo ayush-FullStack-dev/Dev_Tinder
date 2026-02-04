@@ -30,11 +30,7 @@ const matchSchema = new mongoose.Schema(
             index: true
         },
 
-        lastMessageAt: {
-            type: Date,
-            default: null,
-            index: true
-        },
+        
 
         unmatchedAt: {
             type: Date,

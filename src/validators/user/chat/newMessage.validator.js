@@ -26,6 +26,14 @@ export const newMessageValidator = Joi.object({
             })
         }),
 
+    forwarded: Joi.object({
+        
+        originalMessageId: Joi.string().required().length(24).hex().messages({
+            "string.length": "Invalid originalMessageId format",
+            "string.hex": "Invalid originalMessageId  format",
+            "any.required": "originalMessageId is required"
+        })
+    }).allow(null),
     media: Joi.object({
         key: Joi.string().trim().required().messages({
             "any.required": "media.key is required",
@@ -88,6 +96,50 @@ export const newMessageValidator = Joi.object({
     replyTo: Joi.string().length(24).hex().allow(null).messages({
         "string.length": "Invalid replyTo messageId format",
         "string.hex": "Invalid replyTo messageId format"
+    })
+}).options({
+    abortEarly: true,
+    allowUnknown: false
+});
+
+export const editMessageValidator = Joi.object({
+    messageId: Joi.string()
+        .length(24)
+        .hex()
+        .required()
+        .messages({
+            "any.required": "messageId is required",
+            "string.length": "Invalid messageId format",
+            "string.hex": "Invalid messageId format"
+        }),
+
+    text: Joi.string()
+        .trim()
+        .min(1)
+        .max(4000)
+        .required()
+        .messages({
+            "any.required": "Message text is required",
+            "string.empty": "Message text cannot be empty",
+            "string.min": "Message text cannot be empty",
+            "string.max": "Message text is too long (max 4000 chars)"
+        }),
+
+    // Hard block unwanted edits
+    type: Joi.forbidden().messages({
+        "any.unknown": "Message type cannot be edited"
+    }),
+
+    media: Joi.forbidden().messages({
+        "any.unknown": "Media cannot be edited"
+    }),
+
+    forwarded: Joi.forbidden().messages({
+        "any.unknown": "Forwarded data cannot be edited"
+    }),
+
+    replyTo: Joi.forbidden().messages({
+        "any.unknown": "replyTo cannot be edited"
     })
 }).options({
     abortEarly: true,

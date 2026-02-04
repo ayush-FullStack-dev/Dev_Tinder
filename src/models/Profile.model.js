@@ -206,6 +206,24 @@ const profileSchema = new mongoose.Schema(
                         type: Boolean,
                         default: false
                     }
+                },
+                ringtone: {
+                    incoming: {
+                        enabled: {
+                            type: Boolean,
+                            default: false
+                        },
+                        key: { type: String, default: null },
+                        url: { type: String, default: null }
+                    },
+                    ringback: {
+                        enabled: {
+                            type: Boolean,
+                            default: false
+                        },
+                        key: { type: String, default: null },
+                        url: { type: String, default: null }
+                    }
                 }
             },
             since: {

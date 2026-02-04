@@ -15,11 +15,17 @@ import {
     globalOffline,
     syncPresence
 } from "../controllers/socket/chat/onlinePresence.socket.js";
+import {
+    reactToMessage,
+    unreactToMessage
+} from "../controllers/socket/chat/message/reactMessage.socket.js";
+import { editRealTimeMessage } from "../controllers/socket/chat/message/editMessage.socket.js";
+
 import { socketValidChat } from "../../middlewares/socket/socketValidChat.middleware.js";
 
 export const registerChatSocket = chatIO => {
     chatIO.on("connection", socket => {
-        console.log("✅ /chat connected:", socket.id);
+        
         socket.join(`user:${socket.user.currentProfile._id}`);
 
         globalOnline(socket);
@@ -44,6 +50,13 @@ export const registerChatSocket = chatIO => {
                 // TYPING EVENTS
                 socket.on("chat:typing", typing(socket));
                 socket.on("chat:stopTyping", stopTyping(socket));
+
+                // react events
+                socket.on("chat:message:react", reactToMessage(socket));
+                socket.on("chat:message:unreact", unreactToMessage(socket));
+
+                // edit events
+                socket.on("chat:message:edit", editRealTimeMessage(socket));
 
                 return ack?.({
                     success: true,

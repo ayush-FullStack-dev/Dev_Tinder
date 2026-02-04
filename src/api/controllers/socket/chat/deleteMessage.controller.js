@@ -1,11 +1,18 @@
 import mongoose from "mongoose";
 
 import Message from "../.././../../models/Message.model.js";
+import Chat from "../.././../../models/Chat.model.js";
+
+import { deleteS3Key } from "../../../../helpers/s3.helper.js";
 
 export const deleteRealTimeMessage =
     socket =>
     async ({ messageId, mode }, ack) => {
-        const { currentProfile } = socket.user;
+        const { currentProfile, chatInfo } = socket.user;
+        const mySetting = chatInfo.settings.find(
+            u => String(u.userId) === String(currentProfile._id)
+        );
+
         const chatId = socket.data.chatId;
 
         if (!chatId) {
@@ -33,7 +40,20 @@ export const deleteRealTimeMessage =
             });
         }
 
-        const message = await Message.findOne({ _id: messageId });
+        const opponentId = chatInfo.settings.find(
+            k => String(k.userId) !== String(currentProfile._id)
+        ).userId;
+
+        const query = {
+            _id: messageId,
+            chatId
+        };
+
+        if (mySetting.deletedAt) {
+            query.createdAt = { $gt: mySetting.deletedAt };
+        }
+
+        const message = await Message.findOne(query);
 
         if (!message) {
             return ack?.({
@@ -42,6 +62,26 @@ export const deleteRealTimeMessage =
                 message: "Message not found"
             });
         }
+
+        const isAlreadyDeleted =
+            !!message.deletedFor.some(
+                u => String(u.userId) === String(currentProfile._id)
+            ) || message.deletedForEveryoneAt;
+
+        if (isAlreadyDeleted) {
+            return ack?.({
+                success: false,
+                code: "MESSAGE_ALREADY_DELETED",
+                message: message.deletedForEveryoneAt
+                    ? "This message was already deleted for everyone"
+                    : "You have already deleted this message",
+                status: 409
+            });
+        }
+
+        const isLastMessage =
+            String(chatInfo.lastMessage.messageId) === String(message._id);
+        
 
         if (
             mode === "everyone" &&
@@ -71,6 +111,81 @@ export const deleteRealTimeMessage =
                           }
                       }
                   };
+
+        if (mode === "everyone" && message.type !== "text") {
+            await deleteS3Key(message.media.key);
+        }
+
+        if (mode === "me" && isLastMessage) {
+            const secondLastMessage = await Message.findOne({
+                _id: { $ne: message._id },
+                chatId,
+                deletedFor: {
+                    $not: {
+                        $elemMatch: { userId: currentProfile._id }
+                    }
+                }
+            }).sort({ createdAt: -1 });
+
+            if (!secondLastMessage) {
+                socket
+                    .to(`user:${currentProfile._id}`)
+                    .emit("chat:list:update", {
+                        type: "MESSAGE_DELETED_ME",
+                        chatId,
+                        lastMessage: null,
+                        lastMessageAt: null,
+                        moveToTop: true
+                    });
+            } else {
+                socket
+                    .to(`user:${currentProfile._id}`)
+                    .emit("chat:list:update", {
+                        type: "MESSAGE_DELETED_ME",
+                        chatId,
+                        lastMessage: {
+                            type: secondLastMessage.type,
+                            text: secondLastMessage.text,
+                            senderId: secondLastMessage.senderId,
+                            messageId: secondLastMessage._id,
+                            sentAt: secondLastMessage.createdAt
+                        },
+                        lastMessageAt: secondLastMessage.createdAt,
+                        moveToTop: true
+                    });
+            }
+        }
+
+        if (mode === "everyone" && isLastMessage) {
+            await Chat.findByIdAndUpdate(
+                chatInfo._id,
+                {
+                    lastMessage: null,
+                    lastMessageAt: null
+                },
+                {
+                    new: true
+                }
+            );
+
+            const baseListInfo = {
+                type: "MESSAGE_DELETED",
+                chatId,
+                lastMessage: null,
+                lastMessageAt: null,
+                moveToTop: true
+            };
+
+            socket.to(`user:${opponentId}`).emit("chat:list:update", {
+                ...baseListInfo,
+                sender: "opponent"
+            });
+
+            socket.to(`user:${currentProfile._id}`).emit("chat:list:update", {
+                ...baseListInfo,
+                sender: "me"
+            });
+        }
 
         await Message.findByIdAndUpdate(message._id, updatePayload, {
             new: true

@@ -48,6 +48,32 @@ const messageSchema = new mongoose.Schema(
             index: true
         },
 
+        editedAt: {
+            type: Date,
+            default: null
+        },
+
+        forwarded: {
+            isForwarded: {
+                type: Boolean,
+                default: false
+            },
+
+            fromUserId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Profile",
+                default: null,
+                index: true
+            },
+
+            originalMessageId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Message",
+                default: null,
+                index: true
+            }
+        },
+
         deletedForEveryoneAt: {
             type: Date,
             default: null
@@ -67,6 +93,28 @@ const messageSchema = new mongoose.Schema(
             default: []
         },
 
+        reactions: {
+            type: [
+                {
+                    users: {
+                        type: [
+                            {
+                                type: mongoose.Schema.Types.ObjectId,
+                                ref: "Profile",
+                                required: true
+                            }
+                        ],
+                        required: true
+                    },
+                    emoji: {
+                        type: String,
+                        required: true
+                    }
+                }
+            ],
+            default: []
+        },
+
         deliveredTo: {
             userId: {
                 type: mongoose.Schema.Types.ObjectId,
@@ -78,6 +126,7 @@ const messageSchema = new mongoose.Schema(
                 default: null
             }
         },
+        
         readBy: {
             userId: {
                 type: mongoose.Schema.Types.ObjectId,

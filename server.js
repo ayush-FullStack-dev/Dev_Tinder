@@ -2,6 +2,7 @@ import http from "http";
 import app from "./src/app.js";
 import { initSocket } from "./socket.js";
 import { registerChatSocket } from "./src/api/socket/chat.socket.js";
+import { registerCallSocket } from "./src/api/socket/call.socket.js";
 
 import connectDB from "./src/config/mongodb.js";
 import { connectRedis } from "./src/config/redis.js";
@@ -18,8 +19,9 @@ const server = http.createServer(app);
 const port = process.env.PORT || 3000;
 
 function startSocket() {
-    const { chatIO } = initSocket(server);
+    const { callIO, chatIO } = initSocket(server);
     registerChatSocket(chatIO);
+    registerCallSocket(callIO);
 }
 
 function startServer() {

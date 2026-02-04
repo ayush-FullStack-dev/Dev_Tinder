@@ -4,6 +4,7 @@ import Chat from "../../../../models/Chat.model.js";
 import { newMessageValidator } from "../../../../validators/user/chat/newMessage.validator.js";
 
 import { prettyErrorResponse } from "../../../../helpers/ApiError.js";
+import { getMessagePayload } from "../../../../helpers/chat/message.helper.js";
 
 export const sendRealTimeMessage = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
@@ -42,7 +43,25 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
         senderId: socket.user.currentProfile._id,
         type: value.type,
         text: value.text,
-        media: value.media?.url ? value.media : null,
+        media: value.media?.key
+            ? {
+                  key: value.media?.key,
+                  url: value.media?.url,
+                  mimeType: value.media?.mimeType,
+                  size: value.media?.size,
+                  name: value.media?.name,
+                  width: value.media?.width,
+                  height: value.media?.height,
+                  duration: value.media?.duration
+              }
+            : null,
+        forwarded: payload.forwarded?.originalMessageId
+            ? {
+                  isForwarded: true,
+                  fromUserId: currentProfile._id,
+                  originalMessageId: payload.forwarded.originalMessageId
+              }
+            : null,
         replyTo: value.replyTo,
         deliveredTo: isOnline
             ? {
@@ -52,17 +71,15 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
             : null
     });
 
-    const updatedChatInfo = await Chat.findOneAndUpdate(
-        {
-            _id: chatId,
-            status: "active"
-        },
+    const updatedChatInfo = await Chat.findByIdAndUpdate(
+        chatId,
         {
             $set: {
                 lastMessage: {
                     type: message.type,
                     text: message.text,
                     senderId: message.senderId,
+                    messageId: message._id,
                     sentAt: message.createdAt
                 },
                 lastMessageAt: new Date()
@@ -77,56 +94,22 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
         }
     );
 
-    const messagePayload = {
-        messageId: message._id,
-        type: message.type,
-        text: message.text,
-        senderId: currentProfile?._id,
-        media:
-            message.type !== "text" && message.media.url
-                ? {
-                      url: message.media.url,
-                      key: message.media.key,
-                      mimeType: message.media.mimeType,
-                      size: message.media.size,
-                      duration: message.media.duration,
-                      width: message.media.width,
-                      height: message.media.height
-                  }
-                : null,
-        replyTo: message.replyTo,
-        deleted: {
-            forEveryone: false
-        },
-        timestamps: {
-            sentAt: message.createdAt,
-            deliveredAt: message.deliveredTo?.deliveredAt || null,
-            readAt: null
-        },
-        status: message.deliveredTo?.deliveredAt ? "delivered" : "sent"
-    };
-
-    socket.to(`chat:${chatId}`).emit("chat:newMessage", {
-        success: true,
-        data: messagePayload
-    });
+    const messagePayload = getMessagePayload(message, currentProfile);
 
     const baseListInfo = {
-        chatId: updatedChatInfo._id,
+        type: "MESSAGE_SEND",
+        chatId,
         lastMessage: {
             type: updatedChatInfo.lastMessage.type,
             text: updatedChatInfo.lastMessage.text,
             senderId: updatedChatInfo.lastMessage.senderId,
+            messageId: updatedChatInfo.lastMessage._id,
             sentAt: updatedChatInfo.lastMessage.createdAt,
             status: messagePayload.status
         },
         lastMessageAt: updatedChatInfo.lastMessageAt,
         moveToTop: true
     };
-
-    const chats = await Chat.find({ users: currentProfile._id }).select(
-        "users"
-    );
 
     socket.to(`user:${opponentId}`).emit("chat:list:update", {
         ...baseListInfo,
@@ -142,6 +125,11 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
             k => String(k.userId) === String(currentProfile._id)
         ).unreadCount,
         sender: "me"
+    });
+
+    socket.to(`chat:${chatId}`).emit("chat:newMessage", {
+        success: true,
+        data: messagePayload
     });
 
     socket.emit("chat:messageSent", {

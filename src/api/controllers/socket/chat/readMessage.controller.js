@@ -12,13 +12,23 @@ export const readMessage = socket => async (payload, ack) => {
     }
 
     const userId = socket.user.currentProfile._id;
+    const mySetting = socket.user.chatInfo.settings.find(
+        u => String(u.userId) === String(userId)
+    );
+
     const readAt = new Date();
 
-    const messages = await Message.find({
+    const query = {
         chatId,
         senderId: { $ne: userId },
         "readBy.readAt": null
-    }).select("_id");
+    };
+
+    if (mySetting.deletedAt) {
+        query.createdAt = { $gt: mySetting.deletedAt };
+    }
+
+    const messages = await Message.find(query).select("_id");
 
     const updatedChatInfo = await Chat.findOneAndUpdate(
         {
@@ -65,7 +75,7 @@ export const readMessage = socket => async (payload, ack) => {
     });
 
     const baseListInfo = {
-        chatId: updatedChatInfo._id,
+        chatId,
         lastMessage: {
             type: updatedChatInfo.lastMessage.type,
             text: updatedChatInfo.lastMessage.text,
@@ -76,7 +86,7 @@ export const readMessage = socket => async (payload, ack) => {
         moveToTop: true
     };
 
-    socket.emit("chat:list:update", {
+    socket.to(`user:${userId}`).emit("chat:list:update", {
         ...baseListInfo,
         unreadCount: updatedChatInfo.settings.find(
             k => String(k.userId) === String(userId)
