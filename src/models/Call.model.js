@@ -31,7 +31,7 @@ const callSchema = new mongoose.Schema(
             type: String,
             enum: [
                 "calling",
-                "ringing", 
+                "ringing",
                 "ongoing",
                 "ended",
                 "missed",
@@ -39,6 +39,20 @@ const callSchema = new mongoose.Schema(
             ],
             default: "calling",
             index: true
+        },
+        iceBuffer: {
+            type: [
+                {
+                    candidate: String,
+                    sdpMid: String,
+                    sdpMLineIndex: Number
+                }
+            ],
+            default: []
+        },
+        _flushedIce: {
+            type: [Object],
+            default: undefined
         },
 
         startedAt: {

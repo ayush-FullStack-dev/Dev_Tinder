@@ -3,26 +3,45 @@ import Profile from "../.././../../models/Profile.model.js";
 
 export const callSignal = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
-
-    const callId = payload.callId;
+    const { callId } = payload;
 
     const call = await Call.findOne({
         _id: callId,
         chatId: chatInfo._id,
-        status: "ongoing"
+        status: { $in: ["calling", "ringing", "ongoing"] }
     });
 
     if (!call) {
         return ack?.({
             success: false,
-            code: "CALL_NOT_FOUMD",
+            code: "CALL_NOT_FOUND",
             message: "Call not found or not active"
         });
     }
 
-    const callRoom = `call:${call._id}`;
+    if (call.status === "ongoing") {
+        socket
+            .to(`call:${call._id}`)
+            .emit("call:signal", payload);
+    } else {
+        if (payload.type === "ice") {
+            await Call.findByIdAndUpdate(callId, {
+                $push: { iceBuffer: payload.data }
+            });
 
-    socket.to(callRoom).emit("call:signal", payload);
+            return ack?.({
+                success: true,
+                buffered: true
+            });
+        }
+
+        const opponentId =
+            String(call.callerId) === String(currentProfile._id)
+                ? call.receiverId
+                : call.callerId;
+
+        socket.nsp.to(`user:${opponentId}`).emit("call:signal", payload);
+    }
 
     return ack?.({ success: true });
 };

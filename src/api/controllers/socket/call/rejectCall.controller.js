@@ -1,15 +1,22 @@
 import Call from "../.././../../models/Call.model.js";
+import Message from "../.././../../models/Message.model.js";
+import {
+    getMessagePayload,
+    updateLastMessageCall
+} from "../../../../helpers/chat/message.helper.js";
+
+import { getIO } from "../../../../../socket.js";
 
 export const rejectCall =
     socket =>
     async ({ callId }, ack) => {
         const { currentProfile, chatInfo } = socket.user;
+        const io = getIO();
 
         const call = await Call.findOneAndUpdate(
             {
                 _id: callId,
                 receiverId: currentProfile._id,
-                chatId: chatInfo._id,
                 status: { $in: ["ringing", "calling"] }
             },
             {
@@ -33,6 +40,34 @@ export const rejectCall =
             by: currentProfile._id
         });
 
+        const message = await Message.create({
+            chatId: chatInfo._id,
+            senderId: call.callerId,
+            type: "system",
+            system: {
+                event: "call",
+                call: {
+                    callId: call._id,
+                    type: call.type,
+                    callerId: call.callerId,
+                    status: "rejected"
+                }
+            },
+            deliveredTo: {
+                userId: currentProfile._id,
+                deliveredAt: new Date()
+            }
+        });
+
+        const messagePayload = getMessagePayload(message, currentProfile);
+
+        io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
+            success: true,
+            data: messagePayload
+        });
+
+        await updateLastMessageCall(io, call.callerId, chatInfo._id, message);
+
         return ack?.({
             success: true
         });
@@ -40,7 +75,16 @@ export const rejectCall =
 
 export const endCall =
     socket =>
-    async ({ reason, callId }, ack) => {
+    async (...args) => {
+        const io = getIO();
+
+        const { reason, callId } = args[0];
+
+        const ack =
+            typeof args[args.length - 1] === "function"
+                ? args[args.length - 1]
+                : null;
+
         const { currentProfile, chatInfo } = socket.user;
 
         const call = await Call.findOne({
@@ -66,17 +110,44 @@ export const endCall =
         call.duration = durationInSeconds;
         call.endReason = reason || "network";
 
-        await call.save();
+        const res = await call.save();
 
         const callRoom = `call:${call._id}`;
 
-        socket.nsp.to(callRoom).emit("call:ended", {
-            callId,
+        io.of("/call").to(callRoom).emit("call:ended", {
+            callId: call._id,
             by: currentProfile._id,
             duration: durationInSeconds
         });
 
-        socket.nsp.socketsLeave(callRoom);
+        const message = await Message.create({
+            chatId: chatInfo._id,
+            senderId: call.callerId,
+            type: "system",
+            system: {
+                event: "call",
+                call: {
+                    callId: call._id,
+                    type: call.type,
+                    callerId: call.callerId,
+                    status: "ended",
+                    duration: durationInSeconds
+                }
+            },
+            deliveredTo: {
+                userId: currentProfile._id,
+                deliveredAt: new Date()
+            }
+        });
+
+        const messagePayload = getMessagePayload(message, currentProfile);
+
+        io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
+            success: true,
+            data: messagePayload
+        });
+
+        updateLastMessageCall(io, call.callerId, chatInfo._id, message);
 
         return ack?.({
             success: true
@@ -86,7 +157,8 @@ export const endCall =
 export const cancelCall =
     socket =>
     async ({ callId }, ack) => {
-        const { currentProfile } = socket.user;
+        const { currentProfile, chatInfo } = socket.user;
+        const io = getIO();
 
         const call = await Call.findOneAndUpdate(
             {
@@ -113,6 +185,34 @@ export const cancelCall =
             callId,
             by: currentProfile._id
         });
+
+        const message = await Message.create({
+            chatId: chatInfo._id,
+            senderId: call.callerId,
+            type: "system",
+            system: {
+                event: "call",
+                call: {
+                    callId: call._id,
+                    type: call.type,
+                    callerId: call.callerId,
+                    status: "missed"
+                }
+            },
+            deliveredTo: {
+                userId: currentProfile._id,
+                deliveredAt: new Date()
+            }
+        });
+
+        const messagePayload = getMessagePayload(message, currentProfile);
+
+        io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
+            success: true,
+            data: messagePayload
+        });
+
+        updateLastMessageCall(io, call.callerId, chatInfo._id, message);
 
         return ack?.({
             success: true

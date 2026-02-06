@@ -1,11 +1,13 @@
+import Chat from "../../models/Chat.model.js";
+
 export const getMessageStatus = (isDeletedForEveryone, readBy, deliveredTo) => {
     return isDeletedForEveryone
         ? "deleted"
         : readBy.readAt
-        ? "read"
-        : deliveredTo.deliveredAt
-        ? "delivered"
-        : "sent";
+          ? "read"
+          : deliveredTo.deliveredAt
+            ? "delivered"
+            : "sent";
 };
 
 export const getReaction = (reactions, myId) => {
@@ -46,7 +48,7 @@ export const getMessagePayload = (message, currentProfile) => {
 
     const isDeletedForEveryone = !!message.deletedForEveryoneAt;
 
-    return {
+    const response = {
         messageId: message._id,
         type: message.type,
         text: message.text,
@@ -102,4 +104,72 @@ export const getMessagePayload = (message, currentProfile) => {
             message.deliveredTo
         )
     };
+
+    if (message.type === "system") {
+        if (message.system.event === "call") {
+            const call = message.system.call;
+
+            const direction =
+                String(call.callerId) === String(currentProfile._id)
+                    ? "outgoing"
+                    : "incoming";
+
+            response.sender = "system";
+            response.system = {
+                event: message.system.event,
+                call: {
+                    callId: call.callId,
+                    type: call.type,
+                    callerId: call.callerId,
+                    status: call.status,
+                    duration: call.duration,
+                    direction
+                }
+            };
+        }
+    }
+
+    return response;
+};
+
+export const updateLastMessageCall = async (
+    io,
+    opponentId,
+    chatId,
+    message
+) => {
+    const updatedChatInfo = await Chat.findByIdAndUpdate(
+        chatId,
+        {
+            $set: {
+                lastMessage: {
+                    type: message.type,
+                    text: message.text,
+                    senderId: message.senderId,
+                    messageId: message._id,
+                    sentAt: message.createdAt
+                },
+                lastMessageAt: new Date()
+            }
+        },
+        {
+            new: true
+        }
+    );
+
+    io.of("/chat")
+        .to(`user:${opponentId}`)
+        .emit("chat:list:update", {
+            type: "CALL_SEND",
+            chatId,
+            lastMessage: {
+                type: updatedChatInfo.lastMessage.type,
+                text: updatedChatInfo.lastMessage.text,
+                senderId: updatedChatInfo.lastMessage.senderId,
+                messageId: updatedChatInfo.lastMessage.messageId,
+                sentAt: updatedChatInfo.lastMessage.sentAt
+            },
+            lastMessageAt: updatedChatInfo.lastMessageAt,
+            moveToTop: true
+        });
 };

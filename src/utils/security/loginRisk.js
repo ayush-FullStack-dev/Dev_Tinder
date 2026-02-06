@@ -49,6 +49,27 @@ export const sendSecurityUpgrade = (user, res, deviceInfo) => {
 
 export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
     const options = await getPasskey(user);
+
+    if (user.logout?.length && riskLevel === "verylow") {
+        const lastLogout = user.logout[user.logout.length - 1];
+        
+        if (lastLogout?.logout === "logout-all") {
+            await setSession(
+                { challenge: options.challenge },
+                ctxId,
+                "passkey:login"
+            );
+            return {
+                action: "REQUIRED_METHOD",
+                risk: riskLevel,
+                loginCtx: ctxId,
+                allowedMethod: ["passkey", "password"],
+                primaryMethod: "passkey",
+                passkey: options
+            };
+        }
+    }
+
     if (riskLevel === "verylow") {
         return {
             action: "AUTO_LOGIN",
@@ -127,6 +148,25 @@ export const buildLoginDecisionResponse = async (riskLevel, ctxId, user) => {
 
 export const buildVerifyDecisionResponse = async (riskLevel, ctxId, user) => {
     const options = await getPasskey(user);
+
+    if (user.logout?.length && riskLevel === "verylow") {
+        const lastLogout = user.logout[user.logout.length - 1];
+        if (lastLogout?.logout === "logout-all") {
+            await setSession(
+                { challenge: options.challenge },
+                ctxId,
+                "passkey:login"
+            );
+            return {
+                action: "REQUIRED_METHOD",
+                risk: riskLevel,
+                loginCtx: ctxId,
+                allowedMethod: ["passkey", "password"],
+                primaryMethod: "passkey",
+                passkey: options
+            };
+        }
+    }
 
     if (riskLevel === "verylow" || riskLevel === "low") {
         await setSession(

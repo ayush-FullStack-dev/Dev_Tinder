@@ -32,7 +32,6 @@ export const verifyLoginValidation = async (req, res, next) => {
     const time = getTime(req);
     const ctxId = req.signedCookies?.login_ctx;
 
-    
     const validate = checkValidation(
         verifyLoginValidator,
         req,
@@ -119,7 +118,9 @@ export const verifyLoginValidation = async (req, res, next) => {
 
 export const verifyLoginTrustDevice = (req, res, next) => {
     const { user, deviceInfo, info } = req.auth;
+
     if (info.risk !== "verylow") return next();
+
     if (user.logout?.length) {
         const lastLogout = user.logout[user.logout.length - 1];
         if (lastLogout?.logout === "logout-all") return next();
@@ -154,7 +155,7 @@ export const verifyLoginPasskey = async (req, res, next) => {
     }
 
     if (
-        !["low", "mid", "high"].includes(info.risk) ||
+        !["verylow", "low", "mid", "high"].includes(info.risk) ||
         values.method !== "passkey"
     ) {
         return next();
@@ -229,7 +230,7 @@ export const verifyLoginPassword = async (req, res, next) => {
     }
 
     if (
-        !["low", "mid", "high"].includes(info.risk) ||
+        !["verylow", "low", "mid", "high"].includes(info.risk) ||
         values.method !== "password"
     ) {
         return next();
@@ -269,10 +270,7 @@ export const verifyLoginSessionApproval = async (req, res, next) => {
         return next();
     }
 
-    if (
-        !["mid", "high", "veryhigh"].includes(info.risk) ||
-        values.method !== "session_approval"
-    ) {
+    if (values.method !== "session_approval") {
         return next();
     }
 
@@ -311,7 +309,7 @@ export const verifyLoginSecurityCode = async (req, res, next) => {
     }
 
     if (
-        !["mid", "high", "veryhigh"].includes(info.risk) ||
+
         values?.method !== "security_code"
     ) {
         return next();

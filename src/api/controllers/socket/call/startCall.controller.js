@@ -1,13 +1,23 @@
+import Chat from "../.././../../models/Chat.model.js";
 import Call from "../.././../../models/Call.model.js";
+import Message from "../.././../../models/Message.model.js";
 import Profile from "../.././../../models/Profile.model.js";
 
 import { ringtone } from "../../../../constants/call.constant.js";
 import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
+import {
+    getMessagePayload,
+    updateLastMessageCall
+} from "../../../../helpers/chat/message.helper.js";
+import { getIO } from "../../../../../socket.js";
 
-const cleanupHandler = (socket, callId, opponentId) => async () => {
+const cleanupHandler = (socket, call, opponentId, isOnline) => async () => {
+    const io = getIO();
+    const { currentProfile, chatInfo } = socket.user;
+
     const updated = await Call.findOneAndUpdate(
         {
-            _id: callId,
+            _id: call._id,
             status: {
                 $in: ["calling", "ringing"]
             }
@@ -22,13 +32,49 @@ const cleanupHandler = (socket, callId, opponentId) => async () => {
 
     if (updated) {
         socket.nsp.to(`user:${opponentId}`).emit("call:missed", {
-            callId
+            callId: call._id
         });
+
+        const message = await Message.create({
+            chatId: chatInfo._id,
+            senderId: currentProfile._id,
+            type: "system",
+            system: {
+                event: "call",
+                call: {
+                    callId: call._id,
+                    type: call.type,
+                    callerId: currentProfile._id,
+                    status: "missed"
+                }
+            },
+            deliveredTo: isOnline
+                ? {
+                      userId: opponentId,
+                      deliveredAt: new Date()
+                  }
+                : null
+        });
+
+        const messagePayload = getMessagePayload(message, currentProfile);
+
+        io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
+            success: true,
+            data: messagePayload
+        });
+
+        await updateLastMessageCall(
+            io,
+            updated.callerId,
+            chatInfo._id,
+            message
+        );
     }
 };
 
-export const startCall = async ({ callType, socket, chatId }, ack) => {
+export const startCall = async ({ callType, socket }, ack) => {
     const { currentProfile, chatInfo } = socket.user;
+    const chatId = chatInfo._id;
 
     if (!chatId) {
         return ack?.({
@@ -61,6 +107,11 @@ export const startCall = async ({ callType, socket, chatId }, ack) => {
             ? receiverProfile.premium.features?.ringtone.incoming?.url
             : ringtone.incoming;
 
+    const rinbackTone =
+        isPremium && receiverProfile.premium.features?.ringback?.enabled
+            ? receiverProfile.premium.features?.ringtone.ringback?.url
+            : ringtone.ringBack;
+
     const isOnline = socket.adapter.rooms.has(`user:${opponentId}`);
 
     const ongoingCall = await Call.findOne({
@@ -91,12 +142,14 @@ export const startCall = async ({ callType, socket, chatId }, ack) => {
         caller: {
             userId: currentProfile._id,
             name: currentProfile.displayName,
-            photo: currentProfile.primaryPhoto
+            photo: currentProfile.primaryPhoto.url
         },
         incomingTone
     });
 
-    setTimeout(cleanupHandler(socket, call._id, opponentId), 60000);
+    
+
+    setTimeout(cleanupHandler(socket, call, opponentId, isOnline), 60000);
 
     return ack?.({
         success: true,
@@ -104,6 +157,7 @@ export const startCall = async ({ callType, socket, chatId }, ack) => {
             callId: call._id,
             status: call.status,
             type: call.type,
+            rinbackTone,
             timeout: 60
         }
     });

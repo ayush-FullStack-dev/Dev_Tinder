@@ -103,8 +103,8 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
             type: updatedChatInfo.lastMessage.type,
             text: updatedChatInfo.lastMessage.text,
             senderId: updatedChatInfo.lastMessage.senderId,
-            messageId: updatedChatInfo.lastMessage._id,
-            sentAt: updatedChatInfo.lastMessage.createdAt,
+            messageId: updatedChatInfo.lastMessage.messageId,
+            sentAt: updatedChatInfo.lastMessage.sentAt,
             status: messagePayload.status
         },
         lastMessageAt: updatedChatInfo.lastMessageAt,

@@ -80,7 +80,8 @@ export const readMessage = socket => async (payload, ack) => {
             type: updatedChatInfo.lastMessage.type,
             text: updatedChatInfo.lastMessage.text,
             senderId: updatedChatInfo.lastMessage.senderId,
-            sentAt: updatedChatInfo.lastMessage.createdAt
+            messageId: updatedChatInfo.lastMessage.messageId,
+            sentAt: updatedChatInfo.lastMessage.sentAt
         },
         lastMessageAt: updatedChatInfo.lastMessageAt,
         moveToTop: true

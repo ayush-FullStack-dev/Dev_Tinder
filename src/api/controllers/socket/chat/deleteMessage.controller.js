@@ -81,7 +81,6 @@ export const deleteRealTimeMessage =
 
         const isLastMessage =
             String(chatInfo.lastMessage.messageId) === String(message._id);
-        
 
         if (
             mode === "everyone" &&
@@ -171,7 +170,14 @@ export const deleteRealTimeMessage =
             const baseListInfo = {
                 type: "MESSAGE_DELETED",
                 chatId,
-                lastMessage: null,
+                lastMessage: {
+                    type: null,
+                    text: null,
+                    senderId: null,
+                    messageId: null,
+                    sentAt: null,
+                    status: null
+                },
                 lastMessageAt: null,
                 moveToTop: true
             };

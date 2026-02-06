@@ -29,11 +29,17 @@ export const acceptCall =
                 chatId: chatInfo._id,
                 status: { $in: ["ringing", "calling"] }
             },
-            {
-                status: "ongoing",
-                startedAt: new Date()
-            },
-            { new: true }
+            [
+                {
+                    $set: {
+                        status: "ongoing",
+                        startedAt: new Date(),
+                        _flushedIce: "$iceBuffer",
+                        iceBuffer: []
+                    }
+                }
+            ],
+            { new: true, updatePipeline: true }
         );
 
         if (!call) {
@@ -48,20 +54,32 @@ export const acceptCall =
         const callRoom = `call:${call._id}`;
         socket.join(callRoom);
 
+        const io = socket.nsp;
+        io.in(`user:${call.callerId}`).socketsJoin(callRoom);
+
+        socket.data = { ...socket.data, callId: call._id };
+
         socket.nsp.to(`user:${call.callerId}`).emit("call:accepted", {
             callId: call._id,
             chatId: call.chatId,
             receiver: {
                 userId: currentProfile._id,
                 name: currentProfile.displayName,
-                photo: currentProfile.primaryPhoto
+                photo: currentProfile.primaryPhoto.url
             },
             caller: {
                 userId: callerProfile._id,
                 name: callerProfile.displayName,
-                photo: callerProfile.primaryPhoto
+                photo: callerProfile.primaryPhoto.url
             }
         });
+
+        if (call._flushedIce?.length) {
+            socket.nsp.to(callRoom).emit("call:signal", {
+                type: "ice-batch",
+                data: call._flushedIce
+            });
+        }
 
         return ack?.({
             success: true,

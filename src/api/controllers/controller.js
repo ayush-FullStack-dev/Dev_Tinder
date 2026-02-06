@@ -28,6 +28,7 @@ export const handleNotFound = (req, res) => {
 };
 
 export const handleError = (error, req, res, next) => {
+	console.log(error)
     res.status(error.statusCode || 500).json({
         success: false,
         type: error.name || "InternalServerError",

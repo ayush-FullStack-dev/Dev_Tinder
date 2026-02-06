@@ -7,7 +7,10 @@ import { isProfileExists } from "../../middlewares/user/profile.middleware.js";
 import { validateChatAccess } from "../../middlewares/user/chat/chat.controller.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
-import { getChats } from "../controllers/user/chat/inbox.controller.js";
+import {
+    getChats,
+    getSpecifyChatInfo
+} from "../controllers/user/chat/inbox.controller.js";
 import {
     getMessages,
     clearAllMessages,
@@ -38,6 +41,7 @@ router.use(
 router.get("/", getChats);
 router.post("/sync", syncChatInfos);
 router.post("/upload", uploadChatMedia);
+router.get("/:chatId", getSpecifyChatInfo);
 
 router.use("/:chatId", validateChatAccess);
 router.delete("/:chatId", deleteAllMessages);

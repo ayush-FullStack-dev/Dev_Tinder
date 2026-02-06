@@ -35,11 +35,10 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
         u => String(u.userId) === String(currentProfile._id)
     );
 
-    
-
     const query = {
         _id: value.messageId,
-        chatId: socket.data.chatId
+        chatId: socket.data.chatId,
+        type: "text"
     };
 
     if (mySetting.deletedAt) {
@@ -133,9 +132,8 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
                 type: updatedChatInfo.lastMessage.type,
                 text: updatedChatInfo.lastMessage.text,
                 senderId: updatedChatInfo.lastMessage.senderId,
-                editedAt: message.editedAt,
-                messageId: updatedChatInfo.lastMessage._id,
-                sentAt: updatedChatInfo.lastMessage.createdAt,
+                messageId: updatedChatInfo.lastMessage.messageId,
+                sentAt: updatedChatInfo.lastMessage.sentAt,
                 status: messagePayload.status
             },
             lastMessageAt: updatedChatInfo.lastMessageAt,

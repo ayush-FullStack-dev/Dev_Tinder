@@ -10,6 +10,7 @@ import profileRouter from "./api/routes/profile.route.js";
 import discoverRouter from "./api/routes/discover.route.js";
 import matchRouter from "./api/routes/match.route.js";
 import chatRouter from "./api/routes/chat.route.js";
+import callRouter from "./api/routes/call.route.js";
 
 // global routes
 import {
@@ -32,9 +33,10 @@ app.use(express.json());
 app.use(
     cors({
         origin: [
-            "https://benevolent-rabanadas-d70418.netlify.app",
+            "https://whatsapp-test-mu.vercel.app",
             "http://localhost:8159",
-            "http://localhost:8158"
+            "http://localhost:8158",
+            "http://localhost:5500"
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         credentials: true
@@ -58,6 +60,7 @@ app.use("/profile", profileRouter);
 app.use("/discover", discoverRouter);
 app.use("/match", matchRouter);
 app.use("/chat", chatRouter);
+app.use("/call", callRouter);
 app.use("/push", pushRouter);
 
 // error handers

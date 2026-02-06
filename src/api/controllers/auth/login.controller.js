@@ -64,11 +64,55 @@ export const loginIdentifyHandler = async (req, res) => {
 
 export const verifyLoginHandler = async (req, res) => {
     const { refreshExpiry, user, verify, deviceInfo, info, ctxId } = req.auth;
+
+    const primaryMethod = {
+        verylow: "password",
+        low: "passkey",
+        mid: "passkey",
+        high: "security_code"
+    };
+    const allowedMethod = [
+        "passkey",
+        "password",
+        "security_code",
+        "session_approval",
+        "trusted_session"
+    ];
+
+    const methods = collectOnMethod(user.twoFA.twoFAMethods);
+
+    if (
+        verify?.success === undefined &&
+        !allowedMethod.includes(verify?.method)
+    ) {
+        return sendResponse(res, 401, {
+            message: "no method provided to verify",
+            code: "METHOD_NOT_FOUND",
+            methods: allowedMethod,
+            primaryMethod: primaryMethod[info.risk]
+        });
+    }
+
+    if (!verify?.success) {
+        await createAuthEvent(
+            await buildAuthInfo(deviceInfo, verify, {
+                _id: user._id,
+                eventType: "login",
+                action: "login_failed",
+                mfaUsed: "none",
+                success: false,
+                risk: info.risk
+            })
+        );
+
+        return sendResponse(res, 401, verify?.message || "UnauthorizedError");
+    }
+
     const userInfo = {
         ...deviceInfo,
         loginContext: {
             primary: {
-                method: verify.method
+                method: verify?.method
             },
             mfa: {
                 required: false,
@@ -81,24 +125,6 @@ export const verifyLoginHandler = async (req, res) => {
             }
         }
     };
-
-    const methods = collectOnMethod(user.twoFA.twoFAMethods);
-
-    if (!verify?.success) {
-        await cleanupLogin(ctxId);
-
-        await createAuthEvent(
-            await buildAuthInfo(deviceInfo, verify, {
-                _id: user._id,
-                eventType: "login",
-                action: "login_failed",
-                mfaUsed: "none",
-                success: false,
-                risk: info.risk
-            })
-        );
-        return sendResponse(res, 401, verify?.message || "Unauthorized");
-    }
 
     if (verify?.stepup && !user.twoFA.enabled && verify.method === "password") {
         return sendResponse(res, 403, {

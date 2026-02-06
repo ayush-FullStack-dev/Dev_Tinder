@@ -79,6 +79,40 @@ const messageSchema = new mongoose.Schema(
             default: null
         },
 
+        system: {
+            event: {
+                type: String,
+                enum: ["call"],
+                index: true
+            },
+
+            call: {
+                callId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Call",
+                    index: true
+                },
+                type: {
+                    type: String,
+                    enum: ["voice", "video"]
+                },
+                callerId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Profile",
+                    index: true
+                },
+                status: {
+                    type: String,
+                    enum: ["ended", "missed", "rejected"],
+                    index: true
+                },
+                duration: {
+                    type: Number,
+                    default: 0
+                }
+            }
+        },
+
         deletedFor: {
             type: [
                 {
@@ -126,7 +160,7 @@ const messageSchema = new mongoose.Schema(
                 default: null
             }
         },
-        
+
         readBy: {
             userId: {
                 type: mongoose.Schema.Types.ObjectId,
