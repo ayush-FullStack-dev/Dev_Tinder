@@ -18,10 +18,12 @@ export const syncActiveCalls = async socket => {
     }
 
     const isPremium = buildSubscriptionInfo(currentProfile.premium).isActive;
+
     const incomingTone =
-        isPremium && currentProfile.premium.features?.ringtone.incoming?.enabled
-            ? currentProfile.premium.features?.ringtone.incoming?.url
+        isPremium && currentProfile.premium.features.ringtone?.incoming?.enabled
+            ? currentProfile.premium.features.ringtone.incoming?.url
             : ringtone.incoming;
+
     const caller = call.callerId;
 
     socket.emit("call:incoming", {

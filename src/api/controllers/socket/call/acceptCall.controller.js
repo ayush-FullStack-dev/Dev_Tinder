@@ -81,6 +81,12 @@ export const acceptCall =
             });
         }
 
+        socket.nsp.to(`user:${call.receiverId}`).emit("call:picked", {
+            callId,
+            picked: true,
+            
+        });
+
         return ack?.({
             success: true,
             code: "CALL_ACCEPTED",
