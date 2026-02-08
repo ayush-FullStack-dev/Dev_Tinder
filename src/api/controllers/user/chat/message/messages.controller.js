@@ -74,7 +74,6 @@ export const getMessages = async (req, res) => {
     );
 
     for (const message of messagesInfo) {
-        
         const isDeletedForMe = message.deletedFor.some(
             d => String(d.userId) === String(currentProfile._id)
         );
@@ -152,6 +151,63 @@ export const deleteAllMessages = async (req, res) => {
         data: {
             chatId: chatInfo._id,
             deletedCount: result.deletedCount
+        }
+    });
+};
+
+export const getSpecifyMessage = async (req, res) => {
+    const { currentProfile } = req.auth;
+    const { messageId } = req.params;
+
+    const message = await Message.findOne({
+        _id: messageId
+    });
+
+    const isDeletedForMe = message?.deletedFor?.some(
+        d => String(d.userId) === String(currentProfile._id)
+    );
+
+    if (!message || isDeletedForMe) {
+        return sendResponse(res, 404, {
+            code: "MESSAGE_NOT_FOUND",
+            message: "Message does not exist or you no longer have access"
+        });
+    }
+
+    const chat = await Chat.findById(message.chatId);
+
+    const mySetting = chat?.settings?.find(
+        u => String(u.userId) === String(currentProfile._id)
+    );
+
+    if (!chat) {
+        return sendResponse(res, 404, {
+            code: "CHAT_NOT_FOUND",
+            message: "Chat no longer exists"
+        });
+    }
+
+    if (!mySetting) {
+        return sendResponse(res, 404, {
+            code: "MESSAGE_NOT_FOUND",
+            message: "Message does not exist or you no longer have access"
+        });
+    }
+
+    if (mySetting.deletedAt && mySetting.deletedAt < message.createdAt) {
+        return sendResponse(res, 404, {
+            code: "MESSAGE_NOT_FOUND",
+            message: "Message does not exist or you no longer have access"
+        });
+    }
+
+    const messageInfo = getMessagePayload(message, currentProfile);
+
+    return sendResponse(res, 200, {
+        message: "Message fetched successfully",
+        data: {
+            chatId: chat._id,
+            ...messageInfo
         }
     });
 };

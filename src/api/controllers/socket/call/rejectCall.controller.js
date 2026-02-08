@@ -156,7 +156,7 @@ export const endCall =
 
 export const cancelCall =
     socket =>
-    async ({ callId }, ack) => {
+    async ({ reason, callId }, ack) => {
         const { currentProfile, chatInfo } = socket.user;
         const io = getIO();
 
@@ -169,7 +169,7 @@ export const cancelCall =
             {
                 status: "missed",
                 endedAt: new Date(),
-                endReason: "hangup"
+                endReason:reason || "hangup"
             },
             { new: true }
         );

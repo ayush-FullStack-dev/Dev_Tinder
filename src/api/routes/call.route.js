@@ -6,7 +6,10 @@ import {
 import { isProfileExists } from "../../middlewares/user/profile.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
-import { getCalls } from "../controllers/user/call/call.controller.js";
+import {
+    getCalls,
+    getSpecifyCall
+} from "../controllers/user/call/call.controller.js";
 
 const router = express.Router();
 
@@ -23,5 +26,6 @@ router.use(
 );
 
 router.get("/", getCalls);
+router.get("/:callId", getSpecifyCall);
 
 export default router;

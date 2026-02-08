@@ -29,6 +29,7 @@ export const registerChatSocket = chatIO => {
         socket.join(`user:${socket.user.currentProfile._id}`);
 
         globalOnline(socket);
+        
         socket.on("disconnect", globalOffline(socket));
         socket.on("chat:syncPresence", syncPresence(socket));
         socket.on("chat:list:typing", globalTyping(socket));

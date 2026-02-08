@@ -3,7 +3,7 @@ import Call from "../.././../../models/Call.model.js";
 import Message from "../.././../../models/Message.model.js";
 import Profile from "../.././../../models/Profile.model.js";
 
-import { ringtone } from "../../../../constants/call.constant.js";
+import { ringtone, busy } from "../../../../constants/call.constant.js";
 import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
 import {
     getMessagePayload,
@@ -87,45 +87,46 @@ export const startCall = async ({ callType, socket }, ack) => {
         k => String(k.userId) !== String(currentProfile._id)
     ).userId;
 
-    const receiverProfile = await Profile.findById(opponentId);
-
-    if (!receiverProfile) {
-        return ack?.({
-            success: false,
-            code: "RECEIVER_NOT_AVAILABLE",
-            message: "Receiver is no longer available",
-            action: "END_CALL",
-            retry: false
-        });
-    }
-
-    const isPremium = buildSubscriptionInfo(receiverProfile.premium).isActive;
-
-    const incomingTone =
-        isPremium &&
-        receiverProfile.premium.features?.ringtone.incoming?.enabled
-            ? receiverProfile.premium.features?.ringtone.incoming?.url
-            : ringtone.incoming;
-
-    const rinbackTone =
-        isPremium && receiverProfile.premium.features?.ringback?.enabled
-            ? receiverProfile.premium.features?.ringtone.ringback?.url
-            : ringtone.ringBack;
-
-    const isOnline = socket.adapter.rooms.has(`user:${opponentId}`);
-
-    const ongoingCall = await Call.findOne({
-        chatId,
-        status: { $in: ["calling", "ringing", "ongoing"] }
+    const ongoingCall = await Call.countDocuments({
+        receiverId: opponentId,
+        status: "ongoing"
     });
 
-    if (ongoingCall) {
-        return ack?.({
-            success: false,
-            code: "CALL_ALREADY_ACTIVE",
-            message: "Call already in progress"
-        });
+    const isBusy = ongoingCall >= 1;
+    let incomingTone = ringtone.incoming;
+    let rinbackTone = ringtone.ringBack;
+
+    if (!isBusy) {
+        const receiverProfile = await Profile.findById(opponentId);
+
+        if (!receiverProfile) {
+            return ack?.({
+                success: false,
+                code: "RECEIVER_NOT_AVAILABLE",
+                message: "Receiver is no longer available",
+                action: "END_CALL",
+                retry: false
+            });
+        }
+
+        const isPremium = buildSubscriptionInfo(
+            receiverProfile.premium
+        ).isActive;
+
+        incomingTone =
+            isPremium &&
+            receiverProfile.premium.features.ringtone?.incoming?.enabled
+                ? receiverProfile.premium.features.ringtone.incoming?.url
+                : ringtone.incoming;
+
+        rinbackTone =
+            isPremium &&
+            receiverProfile.premium.features.ringtone?.ringback?.enabled
+                ? receiverProfile.premium.features.ringtone.ringback?.url
+                : ringtone.ringBack;
     }
+
+    const isOnline = socket.adapter.rooms.has(`user:${opponentId}`);
 
     const call = await Call.create({
         chatId,
@@ -144,12 +145,14 @@ export const startCall = async ({ callType, socket }, ack) => {
             name: currentProfile.displayName,
             photo: currentProfile.primaryPhoto.url
         },
-        incomingTone
+        isBusy,
+        incomingTone: isBusy ? busy.incoming : incomingTone
     });
 
-    
-
-    setTimeout(cleanupHandler(socket, call, opponentId, isOnline), 60000);
+    setTimeout(
+        cleanupHandler(socket, call, opponentId, isOnline),
+        isBusy ? 15000 : 60000
+    );
 
     return ack?.({
         success: true,
@@ -157,8 +160,9 @@ export const startCall = async ({ callType, socket }, ack) => {
             callId: call._id,
             status: call.status,
             type: call.type,
-            rinbackTone,
-            timeout: 60
+            rinbackTone: isBusy ? busy.ringBack : rinbackTone,
+            isBusy,
+            timeout: isBusy ? 15 : 60
         }
     });
 };

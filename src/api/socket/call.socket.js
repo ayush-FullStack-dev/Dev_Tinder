@@ -11,9 +11,13 @@ import { acceptCall } from "../controllers/socket/call/acceptCall.controller.js"
 import { callSignal } from "../controllers/socket/call/webrtc.controller.js";
 import {
     muteCall,
-    videoCall,
-    handleDisconnect
+    videoCall
 } from "../controllers/socket/call/presence.controller.js";
+import {
+    handleDisconnect,
+    handleReconnect
+} from "../controllers/socket/call/connect.controller.js";
+import { syncActiveCalls } from "../controllers/socket/call/callSync.controller.js";
 
 import { socketValidChat } from "../../middlewares/socket/socketValidChat.middleware.js";
 
@@ -23,6 +27,14 @@ export const registerCallSocket = callIO => {
 
         socket.on("disconnect", handleDisconnect(socket));
 
+        process.nextTick(() => {
+            syncActiveCalls(socket);
+        });
+
+socket.on("call:sync", () => {
+                    syncActiveCalls(socket);
+                });
+                
         socket.on("call:join", async ({ chatId }, ack) => {
             try {
                 socket = await socketValidChat(socket, chatId);
@@ -36,7 +48,7 @@ export const registerCallSocket = callIO => {
                 socket.on("call:signal", callSignal(socket));
                 socket.on("call:mute", muteCall(socket));
                 socket.on("call:video", videoCall(socket));
-                socket.on("call:reconnect", videoCall(socket));
+                socket.on("call:reconnect", handleReconnect(socket));
 
                 return ack?.({
                     success: true,

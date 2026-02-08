@@ -13,6 +13,7 @@ import {
 } from "../controllers/user/chat/inbox.controller.js";
 import {
     getMessages,
+    getSpecifyMessage,
     clearAllMessages,
     deleteAllMessages
 } from "../controllers/user/chat/message/messages.controller.js";
@@ -39,6 +40,7 @@ router.use(
 );
 
 router.get("/", getChats);
+router.get("/message/:messageId", getSpecifyMessage);
 router.post("/sync", syncChatInfos);
 router.post("/upload", uploadChatMedia);
 router.get("/:chatId", getSpecifyChatInfo);

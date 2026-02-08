@@ -51,7 +51,7 @@ export const getChats = async (req, res) => {
         };
 
         const opponent = chat.users.find(
-            k => String(k) !== String(currentProfile._id)
+            k => String(k._id) !== String(currentProfile._id)
         );
 
         const mySetting = chat.settings.find(
