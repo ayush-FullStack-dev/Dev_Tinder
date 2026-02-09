@@ -1,7 +1,7 @@
 import Call from "../.././../../models/Call.model.js";
 import redis from "../.././../../config/redis.js";
 
-import { endCall } from "./rejectCall.controller.js";
+import { endCall, cancelCall } from "./rejectCall.controller.js";
 
 export const handleDisconnect = socket => async () => {
     const { currentProfile, chatInfo } = socket.user;
@@ -57,7 +57,7 @@ export const handleDisconnect = socket => async () => {
         return;
     }
 
-    await redis.hset(`call:${call._id}`, {
+    await redis.hset(`call:${call._id}:disconnect`, {
         status: "ongoing",
         callerId: call.callerId.toString(),
         receiverId: call.receiverId.toString(),
@@ -65,7 +65,7 @@ export const handleDisconnect = socket => async () => {
         disconnectAt: new Date()
     });
 
-    await redis.expire(`call:${call._id}`, 3600);
+    await redis.expire(`call:${call._id}:disconnect`, 3600);
 
     socket.to(callRoom).emit("call:peer:disconnected", {
         callId: call._id,
@@ -77,11 +77,13 @@ export const handleDisconnect = socket => async () => {
     });
 
     setTimeout(async () => {
-        const disconnectInfo = await redis.hgetall(`call:${call._id}`);
+        const disconnectInfo = await redis.hgetall(
+            `call:${call._id}:disconnect`
+        );
 
         if (!disconnectInfo || Object.keys(disconnectInfo).length === 0) return;
 
-        await redis.del(`call:${call._id}`);
+        await redis.del(`call:${call._id}:disconnect`);
 
         const callHandler = endCall(socket);
         await callHandler(
@@ -136,7 +138,7 @@ export const handleReconnect =
 
         socket.join(callRoom);
 
-        await redis.del(callRoom);
+        await redis.del(`call:${call._id}:disconnect`);
 
         socket.to(callRoom).emit("call:peer:reconnected", {
             callId: call._id,
@@ -163,5 +165,130 @@ export const handleReconnect =
                 room: callRoom
             },
             resumeWebRTC: true
+        });
+    };
+
+export const callQuality =
+    socket =>
+    async ({ callId, level, rtt, packetLoss }, ack) => {
+        const { currentProfile, chatInfo } = socket.user;
+
+        const callInfo = await redis.hgetall(`call:${callId}`);
+        const networkLevel = ["good", "poor", "lost"];
+
+        if (!networkLevel.includes(level)) {
+            return ack?.({
+                success: false,
+                code: "LEVEL_INVALID",
+                message: `call quality level must be ${networkLevel.join(" , ")}`
+            });
+        }
+
+        if (
+            !callInfo ||
+            (callInfo?.chatId &&
+                String(callInfo?.chatId) !== String(chatInfo._id))
+        ) {
+            return ack?.({
+                success: false,
+                code: "CALL_NOT_FOUMD",
+                message: "Call not found"
+            });
+        }
+
+        const callRoom = `call:${callId}`;
+
+        socket.to(callRoom).emit("call:peer:quality", {
+            userId: currentProfile._id,
+            quality: level,
+            rtt,
+            packetLoss
+        });
+
+        await redis.hset(`call:${callId}:quality`, {
+            quality: level,
+            rtt,
+            packetLoss,
+            qualityAt: Date.now()
+        });
+
+        await redis.expire(`call:${call._id}:quality`, 3600);
+
+        return ack?.({ success: true });
+    };
+
+export const callMediaChange =
+    socket =>
+    async ({ callId, from, to, reason }, ack) => {
+        const { currentProfile, chatInfo } = socket.user;
+
+        const ALLOWED_MEDIA = ["voice", "video", "screen"];
+
+        if (!callId || !from || !to) {
+            return ack?.({
+                success: false,
+                code: "INVALID_PAYLOAD",
+                message: "callId, from and to are required"
+            });
+        }
+
+        if (!ALLOWED_MEDIA.includes(from) || !ALLOWED_MEDIA.includes(to)) {
+            return ack?.({
+                success: false,
+                code: "INVALID_MEDIA_TYPE",
+                message: "Media type must be voice | video | screen"
+            });
+        }
+
+        if (from === to) {
+            return ack?.({
+                success: false,
+                code: "NO_MEDIA_CHANGE",
+                message: "Source and target media are same"
+            });
+        }
+
+        const callInfo = await redis.hgetall(`call:${callId}`);
+
+        if (
+            !callInfo ||
+            !callInfo.chatId ||
+            String(callInfo.chatId) !== String(chatInfo._id)
+        ) {
+            return ack?.({
+                success: false,
+                code: "CALL_NOT_FOUND",
+                message: "Call not found or already ended"
+            });
+        }
+
+        const callRoom = `call:${callId}`;
+
+        await redis.hset(`call:${callId}:media`, {
+            media: to,
+            lastMediaChangeAt: Date.now(),
+            lastMediaReason: reason || "manual"
+        });
+
+        await redis.expire(`call:${callId}:media`, 3600);
+
+        socket.to(callRoom).emit("call:media:changed", {
+            by: currentProfile._id,
+            from,
+            to,
+            reason: reason || "manual",
+            at: new Date()
+        });
+
+        return ack?.({
+            success: true,
+            message:
+                to === "voice"
+                    ? "Call downgraded to voice"
+                    : "Call media upgraded",
+            media: {
+                from,
+                to
+            }
         });
     };

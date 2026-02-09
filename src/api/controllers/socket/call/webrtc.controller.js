@@ -20,9 +20,7 @@ export const callSignal = socket => async (payload, ack) => {
     }
 
     if (call.status === "ongoing") {
-        socket
-            .to(`call:${call._id}`)
-            .emit("call:signal", payload);
+        socket.to(`call:${call._id}`).emit("call:signal", payload);
     } else {
         if (payload.type === "ice") {
             await Call.findByIdAndUpdate(callId, {

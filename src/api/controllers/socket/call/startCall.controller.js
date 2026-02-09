@@ -11,13 +11,12 @@ import {
 } from "../../../../helpers/chat/message.helper.js";
 import { getIO } from "../../../../../socket.js";
 
-const cleanupHandler = (socket, call, opponentId, isOnline) => async () => {
+const cleanupHandler = (socket, callId, isOnline) => async () => {
     const io = getIO();
-    const { currentProfile, chatInfo } = socket.user;
 
-    const updated = await Call.findOneAndUpdate(
+    const updatedCall = await Call.findOneAndUpdate(
         {
-            _id: call._id,
+            _id: callId,
             status: {
                 $in: ["calling", "ringing"]
             }
@@ -30,46 +29,54 @@ const cleanupHandler = (socket, call, opponentId, isOnline) => async () => {
         { new: true }
     );
 
-    if (updated) {
-        socket.nsp.to(`user:${opponentId}`).emit("call:missed", {
-            callId: call._id
-        });
-
-        const message = await Message.create({
-            chatId: chatInfo._id,
-            senderId: currentProfile._id,
-            type: "system",
-            system: {
-                event: "call",
-                call: {
-                    callId: call._id,
-                    type: call.type,
-                    callerId: currentProfile._id,
-                    status: "missed"
-                }
-            },
-            deliveredTo: isOnline
-                ? {
-                      userId: opponentId,
-                      deliveredAt: new Date()
-                  }
-                : null
-        });
-
-        const messagePayload = getMessagePayload(message, currentProfile);
-
-        io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
-            success: true,
-            data: messagePayload
-        });
-
-        await updateLastMessageCall(
-            io,
-            updated.callerId,
-            chatInfo._id,
-            message
-        );
+    if (!updatedCall) {
+        return;
     }
+
+    await redis.del(`call:${callId}`);
+
+    socket.to(`user:${updatedCall.receiverId}`).emit("call:missed", {
+        callId
+    });
+
+    socket.nsp.to(`user:${updatedCall.callerId}`).emit("call:missed", {
+        callId
+    });
+
+    const message = await Message.create({
+        chatId: updatedCall.chatId,
+        senderId: updatedCall.callerId,
+        type: "system",
+        system: {
+            event: "call",
+            call: {
+                callId,
+                type: updatedCall.type,
+                callerId: updatedCall.callerId,
+                status: "missed"
+            }
+        },
+        deliveredTo: isOnline
+            ? {
+                  userId: updatedCall.receiverId,
+                  deliveredAt: new Date()
+              }
+            : null
+    });
+
+    const messagePayload = getMessagePayload(message, updatedCall.callerId);
+
+    io.of("/chat").to(`chat:${updatedCall.chatId}`).emit("chat:newMessage", {
+        success: true,
+        data: messagePayload
+    });
+
+    await updateLastMessageCall(
+        io,
+        updatedCall.callerId,
+        updatedCall.chatId,
+        message
+    );
 };
 
 export const startCall = async ({ callType, socket }, ack) => {
@@ -83,9 +90,9 @@ export const startCall = async ({ callType, socket }, ack) => {
         });
     }
 
-    const opponentId = chatInfo.settings.find(
-        k => String(k.userId) !== String(currentProfile._id)
-    ).userId;
+    const opponentId = chatInfo.users.find(
+        k => String(k) !== String(currentProfile._id)
+    );
 
     const ongoingCall = await Call.countDocuments({
         $or: [{ callerId: opponentId }, { receiverId: opponentId }],
@@ -150,7 +157,7 @@ export const startCall = async ({ callType, socket }, ack) => {
     });
 
     setTimeout(
-        cleanupHandler(socket, call, opponentId, isOnline),
+        cleanupHandler(socket, call._id, isOnline),
         isBusy ? 15000 : 60000
     );
 

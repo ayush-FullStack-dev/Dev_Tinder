@@ -7,15 +7,22 @@ import {
     endCall,
     cancelCall
 } from "../controllers/socket/call/rejectCall.controller.js";
-import { acceptCall } from "../controllers/socket/call/acceptCall.controller.js";
+import {
+    acceptCall,
+    switchCall
+} from "../controllers/socket/call/acceptCall.controller.js";
 import { callSignal } from "../controllers/socket/call/webrtc.controller.js";
 import {
     muteCall,
-    videoCall
+    videoCall,
+    holdCall,
+    resumeCall
 } from "../controllers/socket/call/presence.controller.js";
 import {
     handleDisconnect,
-    handleReconnect
+    handleReconnect,
+    callQuality,
+    callMediaChange
 } from "../controllers/socket/call/connect.controller.js";
 import { syncActiveCalls } from "../controllers/socket/call/callSync.controller.js";
 
@@ -31,10 +38,12 @@ export const registerCallSocket = callIO => {
             syncActiveCalls(socket);
         });
 
-  socket.on("call:sync", () => {
-                    syncActiveCalls(socket);
-                });
-                
+        socket.on("call:sync", () => {
+            syncActiveCalls(socket);
+        });
+
+        socket.on("call:switch", switchCall(socket));
+
         socket.on("call:join", async ({ chatId }, ack) => {
             try {
                 socket = await socketValidChat(socket, chatId);
@@ -43,11 +52,15 @@ export const registerCallSocket = callIO => {
                 socket.on("call:video:start", startVideoCall(socket));
                 socket.on("call:cancel", cancelCall(socket));
                 socket.on("call:end", endCall(socket));
-                socket.on("call:accept", acceptCall(socket));
                 socket.on("call:reject", rejectCall(socket));
+                socket.on("call:accept", acceptCall(socket));
                 socket.on("call:signal", callSignal(socket));
                 socket.on("call:mute", muteCall(socket));
                 socket.on("call:video", videoCall(socket));
+                socket.on("call:hold", holdCall(socket));
+                socket.on("call:resume", resumeCall(socket));
+                socket.on("call:quality", callQuality(socket));
+                socket.on("call:media:change", callMediaChange(socket));
                 socket.on("call:reconnect", handleReconnect(socket));
 
                 return ack?.({

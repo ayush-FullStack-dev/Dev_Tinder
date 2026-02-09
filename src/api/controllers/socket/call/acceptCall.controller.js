@@ -1,26 +1,17 @@
 import Call from "../.././../../models/Call.model.js";
 import Profile from "../.././../../models/Profile.model.js";
 
+import redis from "../.././../../models/Profile.model.js";
+import { endCall } from "./rejectCall.controller.js";
+
 export const acceptCall =
     socket =>
-    async ({ callId }, ack) => {
+    async ({ callId }, ack, ...args) => {
         const { currentProfile, chatInfo } = socket.user;
 
         const opponentId = chatInfo.settings.find(
             k => String(k.userId) !== String(currentProfile._id)
         ).userId;
-
-        const callerProfile = await Profile.findById(opponentId);
-
-        if (!callerProfile) {
-            return ack?.({
-                success: false,
-                code: "CALLER_NOT_AVAILABLE",
-                message: "Caller is no longer available",
-                action: "END_CALL",
-                retry: false
-            });
-        }
 
         const call = await Call.findOneAndUpdate(
             {
@@ -40,7 +31,7 @@ export const acceptCall =
                 }
             ],
             { new: true, updatePipeline: true }
-        );
+        ).populate("callerId", "displayName primaryPhoto");
 
         if (!call) {
             return ack?.({
@@ -48,6 +39,18 @@ export const acceptCall =
                 code: "CALL_EXPIRED",
                 message: "Call already handled on another device or expired",
                 action: "CLOSE_SCREEN"
+            });
+        }
+
+        const caller = call.callerId;
+
+        if (!caller?._id) {
+            return ack?.({
+                success: false,
+                code: "CALLER_NOT_AVAILABLE",
+                message: "Caller is no longer available",
+                action: "END_CALL",
+                retry: false
             });
         }
 
@@ -68,9 +71,9 @@ export const acceptCall =
                 photo: currentProfile.primaryPhoto.url
             },
             caller: {
-                userId: callerProfile._id,
-                name: callerProfile.displayName,
-                photo: callerProfile.primaryPhoto.url
+                userId: caller._id,
+                name: caller.displayName,
+                photo: caller.primaryPhoto.url
             }
         });
 
@@ -86,6 +89,31 @@ export const acceptCall =
             picked: true
         });
 
+        await redis.hset(`call:${callId}`, {
+            status: "ongoing",
+            mute: "false",
+            video: String(call.type === "video"),
+            hold: "false",
+            chatId: chatInfo._id.toString()
+        });
+
+        await redis.expire(`call:${call._id}`, 3600);
+
+        if (args[0] === "server") {
+            return {
+                success: true,
+                code: "CALL_ACCEPTED",
+                message: "Call accepted",
+                call: {
+                    callId: call._id,
+                    chatId: call.chatId,
+                    room: callRoom,
+                    role: "receiver"
+                },
+                startWebRTC: true
+            };
+        }
+
         return ack?.({
             success: true,
             code: "CALL_ACCEPTED",
@@ -98,4 +126,53 @@ export const acceptCall =
             },
             startWebRTC: true
         });
+    };
+
+export const switchCall =
+    socket =>
+    async ({ fromCallId, toCallId }, ack) => {
+        const { currentProfile } = socket.user;
+
+        const endCallHandler = endCall(socket);
+
+        const isDeleted = await endCallHandler(
+            {
+                reason: "switched",
+                callId: fromCallId
+            },
+            () => {},
+            "server"
+        )?.success;
+
+        if (!isDeleted) {
+            return ack?.({
+                success: false,
+                code: "CALL_SWITCH_FAILED",
+                message:
+                    "Unable to switch call. Previous call could not be ended.",
+                action: "RESTORE_PREVIOUS_CALL",
+                retry: true
+            });
+        }
+
+        const acceptCallHandler = acceptCall(socket);
+
+        const call = await acceptCallHandler(
+            {
+                callId: toCallId
+            },
+            () => {},
+            "server"
+        );
+
+        if (!call?.success) {
+            return ack?.({
+                success: false,
+                code: "CALL_SWITCH_FAILED",
+                message: "Unable to switch call",
+                action: "RESTORE_PREVIOUS_CALL"
+            });
+        }
+
+        return ack?.(call);
     };

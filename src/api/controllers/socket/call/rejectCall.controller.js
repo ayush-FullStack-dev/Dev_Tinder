@@ -7,6 +7,8 @@ import {
 
 import { getIO } from "../../../../../socket.js";
 
+import redis from "../.././../../models/Profile.model.js";
+
 export const rejectCall =
     socket =>
     async ({ callId }, ack) => {
@@ -16,6 +18,7 @@ export const rejectCall =
         const call = await Call.findOneAndUpdate(
             {
                 _id: callId,
+                chatId: chatInfo._id,
                 receiverId: currentProfile._id,
                 status: { $in: ["ringing", "calling"] }
             },
@@ -60,6 +63,8 @@ export const rejectCall =
         });
 
         const messagePayload = getMessagePayload(message, currentProfile);
+
+        await redis.del(`call:${callId}`);
 
         io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
             success: true,
@@ -142,12 +147,20 @@ export const endCall =
 
         const messagePayload = getMessagePayload(message, currentProfile);
 
+        await redis.del(`call:${callId}`);
+
         io.of("/chat").to(`chat:${chatInfo._id}`).emit("chat:newMessage", {
             success: true,
             data: messagePayload
         });
 
         updateLastMessageCall(io, call.callerId, chatInfo._id, message);
+
+        if (args[2] === "server") {
+            return {
+                success: true
+            };
+        }
 
         return ack?.({
             success: true
@@ -164,12 +177,13 @@ export const cancelCall =
             {
                 _id: callId,
                 callerId: currentProfile._id,
+                chatId: chatInfo._id,
                 status: { $in: ["calling", "ringing"] }
             },
             {
                 status: "missed",
                 endedAt: new Date(),
-                endReason:reason || "hangup"
+                endReason: reason || "hangup"
             },
             { new: true }
         );
@@ -204,6 +218,8 @@ export const cancelCall =
                 deliveredAt: new Date()
             }
         });
+
+        await redis.del(`call:${callId}`);
 
         const messagePayload = getMessagePayload(message, currentProfile);
 

@@ -72,7 +72,7 @@ const callSchema = new mongoose.Schema(
 
         endReason: {
             type: String,
-            enum: ["hangup", "missed", "rejected", "network"],
+            enum: ["hangup", "missed", "rejected", "network", "hold"],
             default: null
         }
     },
