@@ -13,36 +13,39 @@ const profileSchema = new mongoose.Schema(
             required: true,
             index: true
         },
-        photos: [
-            {
-                url: {
-                    type: String,
-                    validate: {
-                        validator: url => {
-                            try {
-                                new URL(url);
-                                return true;
-                            } catch (e) {
-                                return false;
-                            }
-                        },
-                        message: "Provide a valid image url"
-                    }
-                },
-                key: {
-                    type: String,
-                    required: true,
-                    validate: {
-                        validator: isValidS3UserPhotoKey
+        photos: {
+            type: [
+                {
+                    url: {
+                        type: String,
+                        validate: {
+                            validator: url => {
+                                try {
+                                    new URL(url);
+                                    return true;
+                                } catch (e) {
+                                    return false;
+                                }
+                            },
+                            message: "Provide a valid image url"
+                        }
                     },
-                    message: "Provide a valid s3 key"
-                },
-                createdAt: {
-                    type: Date,
-                    default: () => new Date()
+                    key: {
+                        type: String,
+                        required: true,
+                        validate: {
+                            validator: isValidS3UserPhotoKey
+                        },
+                        message: "Provide a valid s3 key"
+                    },
+                    createdAt: {
+                        type: Date,
+                        default: () => new Date()
+                    }
                 }
-            }
-        ],
+            ],
+            default: []
+        },
 
         primaryPhoto: {
             url: {

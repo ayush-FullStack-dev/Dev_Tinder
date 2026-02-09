@@ -22,6 +22,7 @@ export const initSocket = server => {
     callIO.use(findSocketAuthInfo);
     callIO.use(socketProfile);
 
+    
     return { io, chatIO, callIO };
 };
 

@@ -16,6 +16,7 @@ export const socketProfile = async (socket, next) => {
 
     const profile = await findProfile({ userId: decoded._id });
 
+    
     if (!profile) {
         return next(
             new ApiError("PROFILE_NOT_FOUND", "Profile not found", 404)

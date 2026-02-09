@@ -88,13 +88,13 @@ export const startCall = async ({ callType, socket }, ack) => {
     ).userId;
 
     const ongoingCall = await Call.countDocuments({
-        receiverId: opponentId,
+        $or: [{ callerId: opponentId }, { receiverId: opponentId }],
         status: "ongoing"
     });
 
     const isBusy = ongoingCall >= 1;
-    let incomingTone = ringtone.incoming;
-    let rinbackTone = ringtone.ringBack;
+    let incomingTone = busy.incoming;
+    let rinbackTone = busy.ringBack;
 
     if (!isBusy) {
         const receiverProfile = await Profile.findById(opponentId);
@@ -146,7 +146,7 @@ export const startCall = async ({ callType, socket }, ack) => {
             photo: currentProfile.primaryPhoto.url
         },
         isBusy,
-        incomingTone: isBusy ? busy.incoming : incomingTone
+        incomingTone
     });
 
     setTimeout(
@@ -160,7 +160,7 @@ export const startCall = async ({ callType, socket }, ack) => {
             callId: call._id,
             status: call.status,
             type: call.type,
-            rinbackTone: isBusy ? busy.ringBack : rinbackTone,
+            rinbackTone,
             isBusy,
             timeout: isBusy ? 15 : 60
         }

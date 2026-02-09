@@ -28,7 +28,7 @@ const getBasicDetailes = likedByUserId => {
         role: likedByUserId.role,
         tech_stack: likedByUserId.tech_stack,
         photos: [
-            ...likedByUserId.photos.map(p => ({
+            ...likedByUserId.photos?.map(p => ({
                 id: p._id,
                 url: p.url,
                 isPrimary: false,
@@ -221,7 +221,7 @@ export const getWhoRightSwipe = async (req, res) => {
         .limit(limit + 1)
         .populate(
             "viewerProfileId",
-            "username displayName role tech_stack location premium"
+            "username displayName primaryPhoto photos role tech_stack location premium"
         );
 
     const { pagination, info } = paginationInfos(swipeInfos, limit, "seenAt");
@@ -260,8 +260,8 @@ export const getWhoRightSwipe = async (req, res) => {
                             user.gender === "female"
                                 ? blurBoyImage
                                 : user.gender === "male"
-                                ? blurGirlImage
-                                : blurNeutralImage,
+                                  ? blurGirlImage
+                                  : blurNeutralImage,
                         isPrimary: true,
                         createdAt: likedByUserId.primaryPhoto.createdAt
                     }

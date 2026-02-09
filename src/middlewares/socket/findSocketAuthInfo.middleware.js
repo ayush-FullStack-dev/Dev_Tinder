@@ -30,5 +30,6 @@ export const findSocketAuthInfo = async (socket, next) => {
     }
 
     socket.user.user = user;
+
     return next();
 };

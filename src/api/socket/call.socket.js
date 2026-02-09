@@ -31,7 +31,7 @@ export const registerCallSocket = callIO => {
             syncActiveCalls(socket);
         });
 
-socket.on("call:sync", () => {
+  socket.on("call:sync", () => {
                     syncActiveCalls(socket);
                 });
                 
