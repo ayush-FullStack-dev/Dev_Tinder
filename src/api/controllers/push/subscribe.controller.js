@@ -9,13 +9,12 @@ import { updateOrCreateOption } from "../../../constants/mongoose.constant.js";
 import { subscribeValidator } from "../../../validators/push/subscribe.validator.js";
 
 import { checkValidation } from "../../../helpers/helpers.js";
-import { sendNotification } from "../../../helpers/sendNotification.js";
 import { getIpDetails } from "../../../helpers/ip.js";
 import { getNoSaltHash } from "../../../helpers/hash.js";
 import { buildDeviceInfo } from "../../../helpers/buildDeviceInfo.js";
 
 export const subscribePush = async (req, res) => {
-    const { user } = req.auth;
+    const { user, currentProfile } = req.auth;
 
     const validate = checkValidation(
         subscribeValidator,
@@ -43,7 +42,7 @@ export const subscribePush = async (req, res) => {
         return sendResponse(
             res,
             400,
-            "This endpoint already registered with different deviceId"
+            "This endpoint already registered with different device"
         );
     }
 
@@ -54,6 +53,8 @@ export const subscribePush = async (req, res) => {
         {
             userId: user._id,
             deviceIdHash,
+            profileId: currentProfile._id,
+            token: req.body.token,
             endpoint: req.body.subscription.endpoint,
             keys: {
                 p256dh: req.body.subscription.keys.p256dh,
@@ -65,7 +66,8 @@ export const subscribePush = async (req, res) => {
                 userAgent: deviceInfo.userAgent,
                 ipCountry: deviceInfo.country,
                 ipCity: deviceInfo.city
-            }
+            },
+            deletedAt: req.body.subscription.expirationTime || null
         },
         {},
         updateOrCreateOption

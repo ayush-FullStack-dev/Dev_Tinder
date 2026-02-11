@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import crypto from "crypto";
+import admin from "../config/firebase.js";
 
 import { deletePushSubscription } from "../services/pushSubscription.service.js";
 
@@ -29,4 +30,21 @@ export const sendNotification = async (subscription, data) => {
             error: err?.statusCode || "PUSH_FAILED"
         };
     }
+};
+
+export const sendPush = async (token, payload) => {
+    return admin.messaging().send({
+        token,
+        notification: payload.notification,
+        data: payload.data,
+        webpush: {
+            headers: {
+                Urgency: "high"
+            },
+            notification: {
+                requireInteraction: true,
+                tag: `call-${payload.data.callId}`
+            }
+        }
+    });
 };

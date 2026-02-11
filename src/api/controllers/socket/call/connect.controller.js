@@ -37,7 +37,6 @@ export const handleDisconnect = socket => async () => {
             },
             () => {}
         );
-
         return;
     }
 

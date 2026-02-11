@@ -29,6 +29,7 @@
         "epochify": "^1.0.12",
         "express": "^5.1.0",
         "figlet": "^1.9.4",
+        "firebase-admin": "^13.6.1",
         "geoip-lite": "^1.4.10",
         "helmet": "^8.1.0",
         "ioredis": "^5.8.2",

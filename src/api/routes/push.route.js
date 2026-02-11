@@ -3,6 +3,7 @@ import {
     isLogin,
     findLoginData
 } from "../../middlewares/auth/auth.middleware.js";
+import { isProfileExists } from "../../middlewares/user/profile.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
 import { subscribePush } from "../controllers/push/subscribe.controller.js";
@@ -14,6 +15,7 @@ router.post(
     "/subscribe",
     isLogin,
     findLoginData,
+    isProfileExists,
     rateLimiter({
         limit: 10,
         window: 1,
@@ -27,6 +29,7 @@ router.delete(
     "/unsubscribe",
     isLogin,
     findLoginData,
+    isProfileExists,
     rateLimiter({
         limit: 10,
         window: 1,

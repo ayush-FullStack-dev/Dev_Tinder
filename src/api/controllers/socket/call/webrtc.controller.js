@@ -1,6 +1,8 @@
 import Call from "../.././../../models/Call.model.js";
 import Profile from "../.././../../models/Profile.model.js";
 
+import redis from "../.././../../config/redis.js";
+
 export const callSignal = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
     const { callId } = payload;

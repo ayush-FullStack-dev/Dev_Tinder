@@ -2,6 +2,7 @@ import Chat from "../.././../../models/Chat.model.js";
 import Call from "../.././../../models/Call.model.js";
 import Message from "../.././../../models/Message.model.js";
 import Profile from "../.././../../models/Profile.model.js";
+import Notification from "../.././../../models/Notification.model.js";
 
 import { ringtone, busy } from "../../../../constants/call.constant.js";
 import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
@@ -9,9 +10,13 @@ import {
     getMessagePayload,
     updateLastMessageCall
 } from "../../../../helpers/chat/message.helper.js";
+import { findPushSubscription } from "../../../../services/pushSubscription.service.js";
+import { sendPush } from "../../../../notifications/sendNotification.js";
+import redis from "../.././../../config/redis.js";
 import { getIO } from "../../../../../socket.js";
 
 const cleanupHandler = (socket, callId, isOnline) => async () => {
+    const { currentProfile, chatInfo } = socket.user;
     const io = getIO();
 
     const updatedCall = await Call.findOneAndUpdate(
@@ -64,6 +69,31 @@ const cleanupHandler = (socket, callId, isOnline) => async () => {
             : null
     });
 
+    const receiverSetting = chatInfo.settings.find(
+        u => String(u.userId) === String(updatedCall.receiverId)
+    );
+
+    if (!receiverSetting.muted) {
+        await Notification.create({
+            userId: updatedCall.receiverId,
+            type: "call_missed",
+            title: "Missed Call",
+            message: `${currentProfile.displayName} tried to call you`,
+            data: {
+                callId: updatedCall._id,
+                chatId: updatedCall.chatId
+            }
+        });
+    }
+
+    socket
+        .to(`user:${updatedCall.receiverId}`)
+        .emit("call:notification:dismiss", {
+            callId: updatedCall._id
+        });
+
+    socket.data = { ...socket.data, callId: null };
+
     const messagePayload = getMessagePayload(message, updatedCall.callerId);
 
     io.of("/chat").to(`chat:${updatedCall.chatId}`).emit("chat:newMessage", {
@@ -80,7 +110,7 @@ const cleanupHandler = (socket, callId, isOnline) => async () => {
 };
 
 export const startCall = async ({ callType, socket }, ack) => {
-    const { currentProfile, chatInfo } = socket.user;
+    const { user, currentProfile, chatInfo } = socket.user;
     const chatId = chatInfo._id;
 
     if (!chatId) {
@@ -115,7 +145,6 @@ export const startCall = async ({ callType, socket }, ack) => {
                 retry: false
             });
         }
-
         const isPremium = buildSubscriptionInfo(
             receiverProfile.premium
         ).isActive;
@@ -155,6 +184,34 @@ export const startCall = async ({ callType, socket }, ack) => {
         isBusy,
         incomingTone
     });
+
+    const pushInfos = await findPushSubscription(
+        {
+            profileId: opponentId
+        },
+        {
+            many: true
+        }
+    );
+
+    for (const fcm of pushInfos) {
+        await sendPush(fcm.token, {
+            notification: {
+                title: "Incoming Call",
+                body: `${currentProfile.displayName} is calling you`
+            },
+            data: {
+                type: "call_incoming",
+                callId: call._id.toString(),
+                chatId: chatId.toString(),
+                photo: currentProfile.primaryPhoto.url,
+                callerName: currentProfile.displayName,
+                callType: call.type
+            }
+        });
+    }
+
+    socket.data = { ...socket.data, callId: call._id };
 
     setTimeout(
         cleanupHandler(socket, call._id, isOnline),

@@ -5,12 +5,21 @@ export const subscribeValidator = joi.object({
         "any.required": "deviceId is required.",
         "string.empty": "deviceId cannot be empty."
     }),
+    token: joi.string().required().messages({
+        "any.required": "token key is required.",
+        "string.empty": "token cannot be empty."
+    }),
     subscription: joi
         .object({
             endpoint: joi.string().required().messages({
                 "any.required": "endpoint url is required.",
                 "string.empty": "endpoint url cannot be empty."
             }),
+            expirationTime: joi
+                .alternatives()
+                .try(joi.date(), joi.allow(null))
+                .optional(),
+
             keys: joi
                 .object({
                     p256dh: joi.string().required().messages({
@@ -29,6 +38,6 @@ export const subscribeValidator = joi.object({
         })
         .required()
         .messages({
-            "any.required": "subscription is required.",
+            "any.required": "subscription is required."
         })
 });

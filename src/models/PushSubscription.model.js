@@ -34,9 +34,19 @@ const pushSubscriptionSchema = mongoose.Schema({
         index: true,
         required: true
     },
+    token: {
+        type: String,
+        required: true
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+        index: true,
+        required: true
+    },
+    profileId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Profile",
         index: true,
         required: true
     },

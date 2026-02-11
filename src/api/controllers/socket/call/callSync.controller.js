@@ -6,10 +6,16 @@ import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
 export const syncActiveCalls = async socket => {
     const { currentProfile } = socket.user;
 
-    const call = await Call.findOne({
-        receiverId: currentProfile._id,
-        status: { $in: ["calling", "ringing"] }
-    })
+    const call = await Call.findOneAndUpdate(
+        {
+            receiverId: currentProfile._id,
+            status: { $in: ["calling", "ringing"] }
+        },
+        {
+            status: "ringing"
+        },
+        { new: true }
+    )
         .sort({ createdAt: -1 })
         .populate("callerId", "displayName primaryPhoto");
 
@@ -36,5 +42,11 @@ export const syncActiveCalls = async socket => {
             photo: caller.primaryPhoto.url
         },
         incomingTone
+    });
+
+    socket.to(`user:${caller._id}`).emit("call:updated", {
+        type: "STATUS_UPDATED",
+        callId: call._id,
+        status: "ringing"
     });
 };

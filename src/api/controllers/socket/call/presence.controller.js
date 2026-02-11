@@ -1,6 +1,6 @@
 import Call from "../.././../../models/Call.model.js";
 import { tone } from "../../../../constants/call.constant.js";
-import redis from "../.././../../models/Profile.model.js";
+import redis from "../.././../../config/redis.js";
 
 const toBool = v => v === "true";
 

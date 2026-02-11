@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 import { setSession, getSession } from "../../services/session.service.js";
 import { findPushSubscription } from "../../services/pushSubscription.service.js";
-import { sendNotification } from "../../helpers/sendNotification.js";
+import { sendNotification } from "../../notifications/sendNotification.js";
 
 export const sendSessionApproval = async (deviceInfo, user) => {
     const approvalId = crypto.randomBytes(16).toString("hex");

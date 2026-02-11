@@ -1,7 +1,7 @@
 import Call from "../.././../../models/Call.model.js";
 import Profile from "../.././../../models/Profile.model.js";
 
-import redis from "../.././../../models/Profile.model.js";
+import redis from "../.././../../config/redis.js";
 import { endCall } from "./rejectCall.controller.js";
 
 export const acceptCall =
@@ -55,14 +55,11 @@ export const acceptCall =
         }
 
         const callRoom = `call:${call._id}`;
-        socket.join(callRoom);
-
         const io = socket.nsp;
-        io.in(`user:${call.callerId}`).socketsJoin(callRoom);
+        socket.join(callRoom);
+        io.in(`user:${caller._id}`).socketsJoin(callRoom);
 
-        socket.data = { ...socket.data, callId: call._id };
-
-        socket.nsp.to(`user:${call.callerId}`).emit("call:accepted", {
+        socket.nsp.to(`user:${caller._id}`).emit("call:accepted", {
             callId: call._id,
             chatId: call.chatId,
             receiver: {
@@ -89,6 +86,8 @@ export const acceptCall =
             picked: true
         });
 
+        socket.data = { ...socket.data, callId: call._id };
+
         await redis.hset(`call:${callId}`, {
             status: "ongoing",
             mute: "false",
@@ -96,8 +95,11 @@ export const acceptCall =
             hold: "false",
             chatId: chatInfo._id.toString()
         });
-
         await redis.expire(`call:${call._id}`, 3600);
+
+        socket.to(`user:${caller._id}`).emit("call:notification:dismiss", {
+            callId: call._id
+        });
 
         if (args[0] === "server") {
             return {
@@ -130,7 +132,9 @@ export const acceptCall =
 
 export const switchCall =
     socket =>
-    async ({ fromCallId, toCallId }, ack) => {
+    async ({ toCallId }, ack) => {
+        const fromCallId = socket.data?.callId;
+
         const { currentProfile } = socket.user;
 
         const endCallHandler = endCall(socket);

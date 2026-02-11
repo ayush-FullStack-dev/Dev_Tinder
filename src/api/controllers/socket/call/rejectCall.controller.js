@@ -1,5 +1,7 @@
 import Call from "../.././../../models/Call.model.js";
 import Message from "../.././../../models/Message.model.js";
+import Notification from "../.././../../models/Notification.model.js";
+
 import {
     getMessagePayload,
     updateLastMessageCall
@@ -7,7 +9,7 @@ import {
 
 import { getIO } from "../../../../../socket.js";
 
-import redis from "../.././../../models/Profile.model.js";
+import redis from "../.././../../config/redis.js";
 
 export const rejectCall =
     socket =>
@@ -72,6 +74,30 @@ export const rejectCall =
         });
 
         await updateLastMessageCall(io, call.callerId, chatInfo._id, message);
+
+        const callerSetting = chatInfo.settings.find(
+            u => String(u.userId) === String(call.callerId)
+        );
+
+        socket.to(`user:${call.receiverId}`).emit("call:notification:dismiss", {
+            callId: call._id
+        });
+
+        socket.data = { ...socket.data, callId: null };
+
+        if (!callerSetting.muted) {
+            await Notification.create({
+                userId: call.callerId,
+                type: "call_rejected",
+                title: "Call Rejected",
+                message: `${currentProfile.displayName} rejected your call`,
+                data: {
+                    callId: call._id,
+                    chatId: chatInfo._id,
+                    by: "receiver"
+                }
+            });
+        }
 
         return ack?.({
             success: true
@@ -156,6 +182,8 @@ export const endCall =
 
         updateLastMessageCall(io, call.callerId, chatInfo._id, message);
 
+        socket.data = { ...socket.data, callId: null };
+
         if (args[2] === "server") {
             return {
                 success: true
@@ -227,6 +255,12 @@ export const cancelCall =
             success: true,
             data: messagePayload
         });
+
+        socket.to(`user:${call.receiverId}`).emit("call:notification:dismiss", {
+            callId: call._id
+        });
+
+        socket.data = { ...socket.data, callId: null };
 
         updateLastMessageCall(io, call.callerId, chatInfo._id, message);
 

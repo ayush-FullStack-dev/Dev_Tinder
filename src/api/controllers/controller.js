@@ -2,10 +2,10 @@ import { defaultIp } from "../../helpers/ip.js";
 
 export const getInfo = (req, res, next) => {
     let ip = req.ip;
-    if (ip.startsWith("::ffff:")) {
-        ip = ip.replace("::ffff:", "");
+    if (ip?.startsWith("::ffff:")) {
+        ip = ip?.replace("::ffff:", "");
     } else if (ip === "::1") {
-        ip = defaultIp
+        ip = defaultIp;
     }
     req.realIp = ip;
     if (!process.extra?.DOMAIN) {
@@ -17,7 +17,7 @@ export const getInfo = (req, res, next) => {
             process.extra.DOMAIN_LINK = `https://${process.env.DOMAIN}`;
         }
     }
-    next();
+    return next();
 };
 
 export const handleNotFound = (req, res) => {
@@ -28,7 +28,7 @@ export const handleNotFound = (req, res) => {
 };
 
 export const handleError = (error, req, res, next) => {
-	console.log(error)
+    console.log(error);
     res.status(error.statusCode || 500).json({
         success: false,
         type: error.name || "InternalServerError",
