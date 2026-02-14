@@ -36,7 +36,7 @@ router.use(
     checkPremiumStatus
 );
 
-router.get("/restore/", isPremiumUser(), deactivatedMatches);
+router.get("/restore/", deactivatedMatches);
 
 router.get(
     "/",

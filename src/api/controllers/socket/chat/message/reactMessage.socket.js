@@ -6,6 +6,8 @@ import {
 } from "../../../../../validators/user/chat/reactMessage.validator.js";
 import { getReaction } from "../../../../../helpers/chat/message.helper.js";
 import { buildSubscriptionInfo } from "../../../../../helpers/premium.helper.js";
+import { findPushSubscription } from "../../../../../services/pushSubscription.service.js";
+import { sendNotification } from "../../../../../notifications/sendNotification.js";
 
 export const reactToMessage = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
@@ -24,6 +26,7 @@ export const reactToMessage = socket => async (payload, ack) => {
     }
 
     const { messageId, emoji } = validate.value;
+
     const premium = buildSubscriptionInfo(currentProfile.premium);
 
     const mySetting = chatInfo.settings.find(
@@ -67,6 +70,12 @@ export const reactToMessage = socket => async (payload, ack) => {
         });
     }
 
+    const receiverSetting = chatInfo.settings.find(
+        k => String(k.userId) !== String(currentProfile._id)
+    );
+
+    const opponentId = receiverSetting.userId;
+
     const updated = await Message.findOneAndUpdate(
         {
             _id: messageId,
@@ -94,6 +103,27 @@ export const reactToMessage = socket => async (payload, ack) => {
             },
             { new: true }
         ));
+
+    if (!receiverSetting.muted) {
+        const pushInfos = await findPushSubscription(
+            {
+                profileId: opponentId
+            },
+            {
+                many: true
+            }
+        );
+
+        for (const fcm of pushInfos) {
+            await sendNotification(fcm, {
+                type: "MESSAGE_REACTED",
+                title: `${currentProfile.displayName}`,
+                body: `Reacted ${value.emoji} to "${message.type === "text" ? message.text : message.type === "system" || !message.media?.key ? "system" : message.media.url}"`,
+                tag: `${currentProfile._id}-message`,
+                silent: true
+            });
+        }
+    }
 
     socket.nsp.to(`chat:${chatId}`).emit("chat:message:update", {
         type: "MESSAGE_REACTED",
@@ -123,6 +153,11 @@ export const unreactToMessage = socket => async (payload, ack) => {
     const mySetting = chatInfo.settings.find(
         u => String(u.userId) === String(currentProfile._id)
     );
+    const receiverSetting = chatInfo.settings.find(
+        k => String(k.userId) !== String(currentProfile._id)
+    );
+
+    const opponentId = receiverSetting.userId;
 
     const message = await Message.findOne({
         _id: messageId,
@@ -177,6 +212,27 @@ export const unreactToMessage = socket => async (payload, ack) => {
     );
 
     const updated = await Message.findById(messageId);
+
+    if (!receiverSetting.muted) {
+        const pushInfos = await findPushSubscription(
+            {
+                profileId: opponentId
+            },
+            {
+                many: true
+            }
+        );
+
+        for (const fcm of pushInfos) {
+            await sendNotification(fcm, {
+                type: "MESSAGE_UNREACTED",
+                title: "message unreact",
+                body: "This message is unreact by user",
+                tag: `${currentProfile._id}-message`,
+                silent: true
+            });
+        }
+    }
 
     socket.nsp.to(`chat:${chatId}`).emit("chat:message:update", {
         type: "MESSAGE_UNREACTED",

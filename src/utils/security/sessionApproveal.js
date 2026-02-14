@@ -25,7 +25,11 @@ export const sendSessionApproval = async (deviceInfo, user) => {
             deviceIdHash: trustedDevice?.deviceIdHash
         });
 
-        const isSendFcm = await sendNotification(pushSubscription, {
+        if (!pushSubscription) {
+            continue;
+        }
+
+        await sendNotification(pushSubscription, {
             type: "LOGIN_APPROVAL",
             title: "New sign-in attempt",
             body: `${deviceInfo.deviceName} • ${deviceInfo.location}`,

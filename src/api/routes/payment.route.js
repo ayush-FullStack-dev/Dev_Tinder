@@ -4,17 +4,7 @@ import {
     findLoginData
 } from "../../middlewares/auth/auth.middleware.js";
 import { isProfileExists } from "../../middlewares/user/profile.middleware.js";
-import { validateChatAccess } from "../../middlewares/user/chat/chat.controller.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
-
-import {
-    getCalls,
-    getSpecifyCall
-} from "../controllers/user/call/call.controller.js";
-import {
-    deleteCallLogs,
-    deleteSpecifyCall
-} from "../controllers/user/call/history.controller.js";
 
 const router = express.Router();
 
@@ -26,11 +16,8 @@ router.use(
         limit: 50,
         window: 2,
         block: 5,
-        route: "call:base"
+        route: "payment:base"
     })
 );
-
-router.route("/").get(getCalls).delete(deleteCallLogs);
-router.route("/:callId").get(getSpecifyCall).delete(deleteSpecifyCall)
 
 export default router;

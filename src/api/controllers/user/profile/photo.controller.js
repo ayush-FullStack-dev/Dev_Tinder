@@ -46,6 +46,7 @@ export const uploadPhoto = async (req, res) => {
 
     const premium = buildSubscriptionInfo(currentProfile.premium);
     const photoLimit = !premium.isActive ? 4 : 8;
+    
     if (currentProfile.photos?.length >= photoLimit) {
         const next = !premium.isActive ? "upgrade_plan" : "manage_photos";
 

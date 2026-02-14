@@ -5,16 +5,11 @@ import { editMessageValidator } from "../../../../../validators/user/chat/newMes
 import { EDIT_WINDOW } from "../../../../../constants/message.constant.js";
 import { prettyErrorResponse } from "../../../../../helpers/ApiError.js";
 import { getMessagePayload } from "../../../../../helpers/chat/message.helper.js";
+import { findPushSubscription } from "../../../../../services/pushSubscription.service.js";
+import { sendNotification } from "../../../../../notifications/sendNotification.js";
 
 export const editRealTimeMessage = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
-
-    if (!socket.data?.chatId) {
-        return ack?.({
-            success: false,
-            message: "Chat id is not intilized try again"
-        });
-    }
 
     const validate = editMessageValidator.validate(payload);
     const value = validate?.value;
@@ -37,7 +32,7 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
 
     const query = {
         _id: value.messageId,
-        chatId: socket.data.chatId,
+        chatId: chatInfo._id,
         type: "text"
     };
 
@@ -85,9 +80,11 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
         });
     }
 
-    const opponentId = chatInfo.settings.find(
+    const receiverSetting = chatInfo.settings.find(
         k => String(k.userId) !== String(currentProfile._id)
-    ).userId;
+    );
+
+    const opponentId = receiverSetting.userId;
 
     const isOnline = socket.adapter.rooms.has(`user:${opponentId}`);
 
@@ -95,7 +92,6 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
         message._id,
         {
             text: value.text,
-
             deliveredTo: isOnline
                 ? {
                       userId: opponentId,
@@ -145,7 +141,7 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
             sender: "opponent"
         });
 
-        socket.to(`user:${currentProfile._id}`).emit("chat:list:update", {
+        socket.nsp.to(`user:${currentProfile._id}`).emit("chat:list:update", {
             ...baseListInfo,
             sender: "me"
         });
@@ -156,6 +152,34 @@ export const editRealTimeMessage = socket => async (payload, ack) => {
         type: "MESSAGE_EDITED",
         data: messagePayload
     });
+
+    if (!receiverSetting.muted) {
+        const pushInfos = await findPushSubscription(
+            {
+                profileId: opponentId
+            },
+            {
+                many: true
+            }
+        );
+
+        for (const fcm of pushInfos) {
+            await sendNotification(fcm, {
+                type: "MESSAGE_UPDATED",
+                title: `${currentProfile.displayName}`,
+                body: `${updatesMessage.text}`,
+                message: {
+                    id: updatesMessage._id,
+                    type: updatesMessage.type,
+                    text: updatesMessage.text,
+                    media: message.media.url
+                },
+                tag: `${currentProfile._id}-message`,
+                url: `${process.env.DOMAIN_LINK}chat/${chatInfo._id}`,
+                renotify: false
+            });
+        }
+    }
 
     return ack?.({ success: true, message: "Message sent" });
 };

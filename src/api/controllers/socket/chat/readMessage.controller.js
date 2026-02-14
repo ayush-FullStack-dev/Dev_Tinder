@@ -2,14 +2,8 @@ import Chat from "../.././../../models/Chat.model.js";
 import Message from "../.././../../models/Message.model.js";
 
 export const readMessage = socket => async (payload, ack) => {
-    const chatId = socket.data?.chatId;
-
-    if (!chatId) {
-        return ack?.({
-            success: false,
-            message: "Chat id is not intilized try again"
-        });
-    }
+    const { chatInfo } = socket.user;
+    const chatId = chatInfo._id;
 
     const userId = socket.user.currentProfile._id;
     const mySetting = socket.user.chatInfo.settings.find(

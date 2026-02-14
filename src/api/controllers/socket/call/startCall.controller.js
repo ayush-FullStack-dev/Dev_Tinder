@@ -92,6 +92,29 @@ const cleanupHandler = (socket, callId, isOnline) => async () => {
             callId: updatedCall._id
         });
 
+    const pushInfos = await findPushSubscription(
+        {
+            profileId: updatedCall.receiverId
+        },
+        {
+            many: true
+        }
+    );
+
+    for (const fcm of pushInfos) {
+        await sendPush(fcm.token, {
+            notification: {
+                title: "Missed Call"
+            },
+            data: {
+                type: "call_missed",
+                callId: updatedCall._id.toString(),
+                chatId: chatInfo._id.toString()
+            },
+            tag: `${currentProfile._id}-call`
+        });
+    }
+
     socket.data = { ...socket.data, callId: null };
 
     const messagePayload = getMessagePayload(message, updatedCall.callerId);
@@ -207,7 +230,8 @@ export const startCall = async ({ callType, socket }, ack) => {
                 photo: currentProfile.primaryPhoto.url,
                 callerName: currentProfile.displayName,
                 callType: call.type
-            }
+            },
+            tag: `${currentProfile._id}-call`
         });
     }
 

@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { success, info } from "../../logs/printLogs.js";
 
+
 export const webPushStart = async () => {
     info("INITIALIZING WEB PUSH ...");
     await webpush.setVapidDetails(

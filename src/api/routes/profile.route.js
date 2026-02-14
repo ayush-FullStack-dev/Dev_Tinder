@@ -9,7 +9,10 @@ import {
     isProfileExists
 } from "../../middlewares/user/profile.middleware.js";
 import { optionalLogin } from "../../middlewares/auth/optional.middleware.js";
-import { checkPremiumStatus } from "../../middlewares/user/premium.middleware.js";
+import {
+    isPremiumUser,
+    checkPremiumStatus
+} from "../../middlewares/user/premium.middleware.js";
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
 
 import { profileSetupHandler } from "../controllers/user/profile/setupProfile.controller.js";
@@ -46,6 +49,14 @@ import {
     reportProfile,
     reportedProfiles
 } from "../controllers/user/profile/reportProfile.controller.js";
+import {
+    getIncomingTone,
+    updateIncomingTone,
+    resetIncomingTone,
+    getRingBackTone,
+    updateRingBackTone,
+    resetRingBackTone
+} from "../controllers/user/profile/ringtone.controller.js";
 
 const router = express.Router();
 
@@ -66,7 +77,6 @@ router.use(
 );
 
 router.post("/setup", isLogin, findLoginData, profileSetupHandler);
-
 router
     .route("/me")
     .get(loginProfileInfo)
@@ -82,12 +92,12 @@ router
     );
 
 router.use("/photo", checkPremiumStatus);
-
 router
     .route("/photo")
     .get(getPhotos)
     .post(uploadPhoto)
     .patch(replacePrimaryPhoto);
+
 router.delete("/photo/:photoId", deletePhoto);
 
 router.get("/views", checkPremiumStatus, getWhoViewdMe);
@@ -182,5 +192,29 @@ router.post(
 );
 
 router.get("/report/", reportedProfiles);
+
+router
+    .route("/ringtone/incoming/")
+    .get(getIncomingTone)
+    .patch(checkPremiumStatus, isPremiumUser(), updateIncomingTone)
+    .delete(checkPremiumStatus, isPremiumUser(), resetIncomingTone);
+
+router
+    .route("/ringtone/ringback/")
+    .get(getRingBackTone)
+    .patch(
+        checkPremiumStatus,
+        isPremiumUser({
+            gold: true
+        }),
+        updateRingBackTone
+    )
+    .delete(
+        checkPremiumStatus,
+        isPremiumUser({
+            gold: true
+        }),
+        resetRingBackTone
+    );
 
 export default router;

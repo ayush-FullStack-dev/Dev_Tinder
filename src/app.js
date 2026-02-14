@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 // routes
+import systemRouter from "./api/routes/router.route.js";
 import authRouter from "./api/routes/auth.route.js";
 import pushRouter from "./api/routes/push.route.js";
 import profileRouter from "./api/routes/profile.route.js";
@@ -11,6 +12,7 @@ import discoverRouter from "./api/routes/discover.route.js";
 import matchRouter from "./api/routes/match.route.js";
 import chatRouter from "./api/routes/chat.route.js";
 import callRouter from "./api/routes/call.route.js";
+import paymentRouter from "./api/routes/payment.route.js";
 
 // global routes
 import {
@@ -49,18 +51,15 @@ app.use(helmet());
 app.use(getInfo);
 
 // routes
-app.get("/getToken", (req, res) => {
-    return res.json({
-        success: true,
-        token: req.signedCookies?.accessToken
-    });
-});
+
+app.use("/", systemRouter);
 app.use("/auth", authRouter);
 app.use("/profile", profileRouter);
 app.use("/discover", discoverRouter);
 app.use("/match", matchRouter);
 app.use("/chat", chatRouter);
 app.use("/call", callRouter);
+app.use("/payment", paymentRouter);
 app.use("/push", pushRouter);
 
 // error handers

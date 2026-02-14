@@ -11,8 +11,6 @@ export const boostProfile = async (req, res) => {
     const { currentProfile } = req.auth;
     const packsInfo = buildPacksInfo(currentProfile.packs);
 
-    
-
     const boosts = activeBoosts(currentProfile.packs.features);
 
     if (boosts.isActive) {

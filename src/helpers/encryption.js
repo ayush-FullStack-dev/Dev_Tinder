@@ -28,11 +28,13 @@ export const decryptData = (iv, content, tag) => {
             KEY,
             Buffer.from(iv, "hex")
         );
+
         decipher.setAuthTag(Buffer.from(tag, "hex"));
         const decrypted = Buffer.concat([
             decipher.update(Buffer.from(content, "hex")),
             decipher.final()
         ]);
+        
         return decrypted.toString("utf8");
     } catch (error) {
         return null;

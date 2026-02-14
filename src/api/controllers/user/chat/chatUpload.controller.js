@@ -42,7 +42,7 @@ export const uploadChatMedia = async (req, res) => {
     }
 
     const ext = fileName.split(".").pop();
-    const key = `user/${currentProfile._id}/chat/${crypto
+    const key = `users/${currentProfile._id}/chat/${crypto
         .randomBytes(16)
         .toString("hex")}.${ext}`;
 

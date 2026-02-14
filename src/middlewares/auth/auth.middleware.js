@@ -91,7 +91,7 @@ export const validateBasicInfo = (req, res, next) => {
         return sendResponse(res, 400, "Client timestamp is required");
     }
 
-    if (!deviceId || deviceId.length !== 32) {
+    if (!deviceid || deviceid.length !== 32) {
         return sendResponse(
             res,
             400,
@@ -99,7 +99,7 @@ export const validateBasicInfo = (req, res, next) => {
         );
     }
 
-    if (!deviceSize) {
+    if (!devicesize) {
         return sendResponse(
             res,
             400,
@@ -107,7 +107,7 @@ export const validateBasicInfo = (req, res, next) => {
         );
     }
 
-    if (deviceSize >= 170 && deviceSize <= 3000) {
+    if (devicesize >= 170 && devicesize <= 3000) {
         return sendResponse(res, 400, "Device size is out of allowed range");
     }
 

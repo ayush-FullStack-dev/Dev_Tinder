@@ -3,6 +3,8 @@ import Profile from "../.././../../models/Profile.model.js";
 
 import redis from "../.././../../config/redis.js";
 import { endCall } from "./rejectCall.controller.js";
+import { findPushSubscription } from "../../../../services/pushSubscription.service.js";
+import { sendPush } from "../../../../notifications/sendNotification.js";
 
 export const acceptCall =
     socket =>
@@ -100,6 +102,29 @@ export const acceptCall =
         socket.to(`user:${caller._id}`).emit("call:notification:dismiss", {
             callId: call._id
         });
+
+        const pushInfos = await findPushSubscription(
+            {
+                profileId: opponentId
+            },
+            {
+                many: true
+            }
+        );
+
+        for (const fcm of pushInfos) {
+            await sendPush(fcm.token, {
+                notification: {
+                    title: "Call Picked"
+                },
+                data: {
+                    type: "call_ongoing",
+                    callId: call._id.toString(),
+                    chatId: chatInfo._id.toString()
+                },
+                tag: `${currentProfile._id}-call`
+            });
+        }
 
         if (args[0] === "server") {
             return {

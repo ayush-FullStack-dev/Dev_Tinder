@@ -5,17 +5,12 @@ import { newMessageValidator } from "../../../../validators/user/chat/newMessage
 
 import { prettyErrorResponse } from "../../../../helpers/ApiError.js";
 import { getMessagePayload } from "../../../../helpers/chat/message.helper.js";
+import { findPushSubscription } from "../../../../services/pushSubscription.service.js";
+import { sendNotification } from "../../../../notifications/sendNotification.js";
 
 export const sendRealTimeMessage = socket => async (payload, ack) => {
     const { currentProfile, chatInfo } = socket.user;
-    const chatId = socket.data?.chatId;
-
-    if (!chatId) {
-        return ack?.({
-            success: false,
-            message: "Chat id is not intilized try again"
-        });
-    }
+    const chatId = chatInfo._id;
 
     const validate = newMessageValidator.validate(payload);
     const value = validate?.value;
@@ -32,9 +27,11 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
         });
     }
 
-    const opponentId = chatInfo.settings.find(
+    const receiverSetting = chatInfo.settings.find(
         k => String(k.userId) !== String(currentProfile._id)
-    ).userId;
+    );
+
+    const opponentId = receiverSetting.userId;
 
     const isOnline = socket.adapter.rooms.has(`user:${opponentId}`);
 
@@ -119,7 +116,7 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
         sender: "opponent"
     });
 
-    socket.to(`user:${currentProfile._id}`).emit("chat:list:update", {
+    socket.nsp.to(`user:${currentProfile._id}`).emit("chat:list:update", {
         ...baseListInfo,
         unreadCount: updatedChatInfo.settings.find(
             k => String(k.userId) === String(currentProfile._id)
@@ -136,6 +133,34 @@ export const sendRealTimeMessage = socket => async (payload, ack) => {
         success: true,
         data: messagePayload
     });
+
+    if (!receiverSetting.muted) {
+        const pushInfos = await findPushSubscription(
+            {
+                profileId: opponentId
+            },
+            {
+                many: true
+            }
+        );
+
+        for (const fcm of pushInfos) {
+             await sendNotification(fcm, {
+                type: "MESSAGE_SEND",
+                title: `${currentProfile.displayName}`,
+                body: `${message.type === "text" ? message.text : message.type === "media" ? message.media.url : "system"}`,
+                message: {
+                    id: message._id,
+                    type: message.type,
+                    text: message.text,
+                    media: message.media.url
+                },
+                tag: `${currentProfile._id}-message`,
+                url: `${process.extra.DOMAIN_LINK}/chat/${chatId}`,
+                renotify: true
+            });
+        }
+    }
 
     return ack?.({ success: true, message: "Message sent" });
 };

@@ -7,7 +7,6 @@ import { isValidDate } from "../../../../helpers/time.js";
 
 export const getCalls = async (req, res) => {
     const { currentProfile } = req.auth;
-
     const limit = Math.min(Number(req.query.limit) || 20, 50);
 
     const query = {
@@ -99,14 +98,14 @@ export const getSpecifyCall = async (req, res) => {
         });
     }
 
-    const isMemmber =
-        String(call.callerId) === String(currentProfile._id) ||
-        String(call.receiverId) === String(currentProfile._id);
+    const isMember =
+        String(call.callerId.id) === String(currentProfile._id) ||
+        String(call.receiverId._id) === String(currentProfile._id);
 
-    if (!isMemmber) {
+    if (!isMember) {
         return sendResponse(res, 404, {
-            code: "MESSAGE_NOT_FOUND",
-            message: "Message does not exist or you no longer have access"
+            code: "CALL_NOT_FOUND",
+            message: "Call does not exist or you no longer have access"
         });
     }
 
@@ -122,6 +121,7 @@ export const getSpecifyCall = async (req, res) => {
         ["calling", "ringing"].includes(call.status);
 
     const disconnectInfo = await redis.hgetall(`call:${call._id}`);
+
     let remaining = 0;
 
     if (disconnectInfo) {
@@ -135,7 +135,7 @@ export const getSpecifyCall = async (req, res) => {
     return sendResponse(res, 200, {
         call: {
             callId: call._id,
-            chatId: chat._id,
+            chatId: call.chatId,
             type: call.type,
             status: call.status,
             isActive: call.status === "ongoing",
@@ -165,8 +165,14 @@ export const getSpecifyCall = async (req, res) => {
                 }
             },
             media: {
-                audio: true,
-                video: call.type === "video"
+                audio:
+                    disconnectInfo?.mute === undefined
+                        ? true
+                        : !!disconnectInfo?.mute,
+                video:
+                    disconnectInfo?.video === undefined
+                        ? call.type === "video"
+                        : !!disconnectInfo?.video
             },
             timestamps: {
                 createdAt: call.createdAt,

@@ -46,7 +46,7 @@ const chatSchema = new mongoose.Schema(
             },
             messageId: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: "Profile",
+                ref: "Message",
                 default: null
             },
             sentAt: { type: Date, default: null }

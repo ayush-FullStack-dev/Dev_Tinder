@@ -29,7 +29,6 @@ export const viewPublicProfile = async (req, res) => {
         tech_stack: profile.tech_stack,
         looking_for: profile.looking_for,
         experience_years: profile.experience_years,
-        primaryPhoto: profile.primaryPhoto,
         photos: [
             ...currentProfile.photos.map(p => ({
                 id: p._id,

@@ -4,6 +4,8 @@ import Message from "../.././../../models/Message.model.js";
 import Chat from "../.././../../models/Chat.model.js";
 
 import { deleteS3Key } from "../../../../helpers/s3.helper.js";
+import { findPushSubscription } from "../../../../services/pushSubscription.service.js";
+import { sendNotification } from "../../../../notifications/sendNotification.js";
 
 export const deleteRealTimeMessage =
     socket =>
@@ -13,14 +15,7 @@ export const deleteRealTimeMessage =
             u => String(u.userId) === String(currentProfile._id)
         );
 
-        const chatId = socket.data.chatId;
-
-        if (!chatId) {
-            return ack?.({
-                success: false,
-                message: "Chat id is not intilized try again"
-            });
-        }
+        const chatId = chatInfo._id;
 
         const allowedModes = ["me", "everyone"];
 
@@ -40,9 +35,11 @@ export const deleteRealTimeMessage =
             });
         }
 
-        const opponentId = chatInfo.settings.find(
+        const receiverSetting = chatInfo.settings.find(
             k => String(k.userId) !== String(currentProfile._id)
-        ).userId;
+        );
+
+        const opponentId = receiverSetting.userId;
 
         const query = {
             _id: messageId,
@@ -83,8 +80,9 @@ export const deleteRealTimeMessage =
             String(chatInfo.lastMessage.messageId) === String(message._id);
 
         if (
-            mode === "everyone" &&
-            String(message.senderId) !== String(currentProfile._id)
+            (mode === "everyone" &&
+                String(message.senderId) !== String(currentProfile._id)) ||
+            message.type === "system"
         ) {
             return ack?.({
                 success: false,
@@ -111,7 +109,11 @@ export const deleteRealTimeMessage =
                       }
                   };
 
-        if (mode === "everyone" && message.type !== "text") {
+        if (
+            mode === "everyone" &&
+            message.type !== "text" &&
+            message.media?.key
+        ) {
             await deleteS3Key(message.media.key);
         }
 
@@ -204,7 +206,28 @@ export const deleteRealTimeMessage =
             mode
         };
 
-        socket.nsp.to(`chat:${chatId}`).emit("chat:update", payload);
+        socket.nsp.to(`chat:${chatId}`).emit("chat:message:update", payload);
+
+        if (!receiverSetting.muted) {
+            const pushInfos = await findPushSubscription(
+                {
+                    profileId: opponentId
+                },
+                {
+                    many: true
+                }
+            );
+
+            for (const fcm of pushInfos) {
+                await sendNotification(fcm, {
+                    type: "MESSAGE_DELETED",
+                    title: "message deleted",
+                    body: "This message is no longer valid",
+                    tag: `${currentProfile._id}-message`,
+                    silent: true
+                });
+            }
+        }
 
         return ack?.({
             success: true,

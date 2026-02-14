@@ -67,6 +67,7 @@ export const leftSwipeProfile = async (req, res) => {
             action: "pass",
             passed: true
         },
+        
         meta: {
             tier: premiumInfo.isActive ? premiumInfo.tier : "free",
             unlimited: isGoldUser
