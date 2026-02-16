@@ -23,7 +23,8 @@ export const validateBody = (req, res, next) => {
         return sendResponse(res, 400, validPayment.jsonResponse);
     }
 
-    req.auth.value = validPayment.value;
+    req.auth = { ...req.auth, value: validPayment.value };
+
     return next();
 };
 

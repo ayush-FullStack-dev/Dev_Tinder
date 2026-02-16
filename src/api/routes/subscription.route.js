@@ -27,6 +27,7 @@ import {
 const router = express.Router();
 
 router.use(
+	    /^((?!webhook).)*$/,
     isLogin,
     findLoginData,
     isProfileExists,
