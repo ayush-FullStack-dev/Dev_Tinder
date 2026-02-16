@@ -20,7 +20,7 @@ import { isValidDate } from "../../../../helpers/time.js";
 import {
     getBadges,
     buildSubscriptionInfo
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 
 import {
     setSession,
@@ -56,7 +56,7 @@ const buildProfileInfo = profile => {
 };
 
 export const getDiscover = async (req, res) => {
-    const { user,currentProfile } = req.auth;
+    const { user, currentProfile } = req.auth;
     let hasMore = false;
 
     const activeBatch = await getSession(

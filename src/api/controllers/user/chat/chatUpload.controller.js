@@ -1,5 +1,5 @@
 import sendResponse from "../../../../helpers/sendResponse.js";
-import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
 import { allowedMimeTypes } from "../../../../constants/file.constant.js";
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";

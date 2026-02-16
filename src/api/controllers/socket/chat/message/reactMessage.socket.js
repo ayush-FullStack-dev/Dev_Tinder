@@ -5,7 +5,7 @@ import {
     unreactValidator
 } from "../../../../../validators/user/chat/reactMessage.validator.js";
 import { getReaction } from "../../../../../helpers/chat/message.helper.js";
-import { buildSubscriptionInfo } from "../../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../../helpers/subscription/subscription.helper.js";
 import { findPushSubscription } from "../../../../../services/pushSubscription.service.js";
 import { sendNotification } from "../../../../../notifications/sendNotification.js";
 

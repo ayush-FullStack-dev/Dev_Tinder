@@ -3,7 +3,10 @@ import Block from "../models/Block.model.js";
 import ProfileSeen from "../models/ProfileSeen.model.js";
 import Report from "../models/Report.model.js";
 
-import { buildSubscriptionInfo, activeBoosts } from "./premium.helper.js";
+import {
+    buildSubscriptionInfo,
+    activeBoosts
+} from "./subscription/subscription.helper.js";
 
 export const getExcludedIds = async id => {
     const excludedIds = [];
@@ -58,10 +61,7 @@ export const freeProfileScore = (profiles, currentProfile) => {
 
             if (p.location.city === currentProfile.location.city) score += 5;
 
-
-
-                if (p.gender !== currentProfile.gender) score += 5;
-            
+            if (p.gender !== currentProfile.gender) score += 5;
 
             score = Math.min(score, 100);
 

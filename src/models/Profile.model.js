@@ -4,6 +4,8 @@ import { techStacks, lookingFor, role } from "../constants/profile.constant.js";
 
 import { isValidS3UserPhotoKey } from "../helpers/s3.helper.js";
 
+import {ringtone} from "../constants/call.constant.js"
+
 const profileSchema = new mongoose.Schema(
     {
         userId: {
@@ -217,7 +219,7 @@ const profileSchema = new mongoose.Schema(
                             default: false
                         },
                         key: { type: String, default: null },
-                        url: { type: String, default: null }
+                        url: { type: String, default: ringtone.incoming }
                     },
                     ringback: {
                         enabled: {
@@ -225,7 +227,7 @@ const profileSchema = new mongoose.Schema(
                             default: false
                         },
                         key: { type: String, default: null },
-                        url: { type: String, default: null }
+                        url: { type: String, default: ringtone.ringBack }
                     }
                 }
             },

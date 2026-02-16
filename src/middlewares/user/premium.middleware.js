@@ -1,6 +1,6 @@
 import sendResponse from "../../helpers/sendResponse.js";
 
-import { buildSubscriptionInfo } from "../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../helpers/subscription/subscription.helper.js";
 import { updateProfile } from "../../services/profile.service.js";
 
 const defaultConfig = {

@@ -10,7 +10,7 @@ import {
     isGoldActive,
     isSilverActive,
     getBadges
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 
 import { isValidDate } from "../../../../helpers/time.js";
 
@@ -123,6 +123,7 @@ export const viewPublicProfile = async (req, res) => {
 export const getWhoViewdMe = async (req, res) => {
     const { currentProfile } = req.auth;
     let hasMore = false;
+
     if (!isGoldActive(currentProfile.premium)) {
         return sendResponse(res, 403, {
             message: "Upgrade to Gold to see who viewed your profile",

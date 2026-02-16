@@ -1,6 +1,6 @@
 import { authenticator } from "otplib";
 import QRCode from "qrcode";
-import fs from "fs";
+
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 import { updateUser } from "../../../../services/user.service.js";

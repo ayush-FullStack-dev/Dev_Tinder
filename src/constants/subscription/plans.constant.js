@@ -13,19 +13,39 @@ export const PLANS = {
             rewindsPerDay: 0,
             rewindEnabled: false,
 
+            // 🚀 Boost
+            monthlyBoostCredits: 0, // ❌ none
+
+            // 📞 Ringtones
+            ringtone: {
+                incoming: {
+                    enabled: false,
+                    minDurationSec: null,
+                    maxDurationSec: null
+                },
+                ringback: {
+                    enabled: false,
+                    minDurationSec: null,
+                    maxDurationSec: null
+                }
+            },
+
             // 👀 Visibility
             seeWhoLiked: false,
             seeWhoViewed: false,
+            seeUnmatchedBy: false,
 
-            // 🕶️ Privacy & Customization
+            // 🔄 Match
+            restoreMatch: false, // ❌ premium only
+
+            // 🕶️ Privacy
             incognito: false,
-            customRingtone: false,
 
             // 💬 Chat
             chatMediaLimitMB: 15,
             deleteAllMessages: false,
 
-            // 🔍 Discover Filters
+            // 🔍 Discover
             discoverFilters: {
                 country: true,
                 city: false,
@@ -51,19 +71,39 @@ export const PLANS = {
             rewindsPerDay: 0,
             rewindEnabled: false,
 
-            // 👀 Visibility
-            seeWhoLiked: true, // ⚠️ blurred after 5
-            seeWhoViewed: false,
+            // 🚀 Boost
+            monthlyBoostCredits: 2, // 🥈 2 / month
 
-            // 🕶️ Privacy & Customization
+            // 📞 Ringtones
+            ringtone: {
+                incoming: {
+                    enabled: true,
+                    minDurationSec: 5,
+                    maxDurationSec: 15
+                },
+                ringback: {
+                    enabled: false, // ❌ gold only
+                    minDurationSec: null,
+                    maxDurationSec: null
+                }
+            },
+
+            // 👀 Visibility
+            seeWhoLiked: true, // blurred after 5
+            seeWhoViewed: false,
+            seeUnmatchedBy: false,
+
+            // 🔄 Match
+            restoreMatch: true, // ✅ allowed
+
+            // 🕶️ Privacy
             incognito: true,
-            customRingtone: true,
 
             // 💬 Chat
             chatMediaLimitMB: 50,
             deleteAllMessages: false,
 
-            // 🔍 Discover Filters
+            // 🔍 Discover
             discoverFilters: {
                 country: true,
                 city: true,
@@ -86,22 +126,41 @@ export const PLANS = {
             swipeUnlimited: true,
 
             // 🔁 Rewind
-            rewindsPerDay: 10, // lifetime handled separately
+            rewindsPerDay: 10,
             rewindEnabled: true,
 
-            // 👀 Visibility
-            seeWhoLiked: true, // full unblurred + pagination
-            seeWhoViewed: true,
+            // 🚀 Boost
+            monthlyBoostCredits: 4, // 🥇 4 / month
 
-            // 🕶️ Privacy & Customization
+            // 📞 Ringtones
+            ringtone: {
+                incoming: {
+                    enabled: true,
+                    minDurationSec: 5,
+                    maxDurationSec: 15
+                },
+                ringback: {
+                    enabled: true,
+                    minDurationSec: 6,
+                    maxDurationSec: 15
+                }
+            },
+
+            // 👀 Visibility
+            seeWhoLiked: true,
+            seeWhoViewed: true,
+            seeUnmatchedBy: true,
+
+            restoreMatch: true,
+
+            // 🕶️ Privacy
             incognito: true,
-            customRingtone: true,
 
             // 💬 Chat
             chatMediaLimitMB: 100,
             deleteAllMessages: true,
 
-            // 🔍 Discover Filters
+            // 🔍 Discover
             discoverFilters: {
                 country: true,
                 city: true,

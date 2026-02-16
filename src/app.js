@@ -12,7 +12,7 @@ import discoverRouter from "./api/routes/discover.route.js";
 import matchRouter from "./api/routes/match.route.js";
 import chatRouter from "./api/routes/chat.route.js";
 import callRouter from "./api/routes/call.route.js";
-import paymentRouter from "./api/routes/payment.route.js";
+import subscriptionRouter from "./api/routes/subscription.route.js";
 
 // global routes
 import {
@@ -59,7 +59,7 @@ app.use("/discover", discoverRouter);
 app.use("/match", matchRouter);
 app.use("/chat", chatRouter);
 app.use("/call", callRouter);
-app.use("/payment", paymentRouter);
+app.use("/subscription", subscriptionRouter);
 app.use("/push", pushRouter);
 
 // error handers

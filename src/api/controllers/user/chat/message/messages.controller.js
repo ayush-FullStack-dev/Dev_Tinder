@@ -3,7 +3,7 @@ import Message from "../../../../../models/Message.model.js";
 import Chat from "../../../../../models/Chat.model.js";
 
 import { paginationInfos } from "../../../../../helpers/pagination.helper.js";
-import { buildSubscriptionInfo } from "../../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../../helpers/subscription/subscription.helper.js";
 import { getMessagePayload } from "../../../../../helpers/chat/message.helper.js";
 import { isValidDate } from "../../../../../helpers/time.js";
 

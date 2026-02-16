@@ -1,7 +1,7 @@
 import ProfileSeen from "../../models/ProfileSeen.model.js";
 import sendResponse from "../../helpers/sendResponse.js";
 
-import { buildSubscriptionInfo } from "../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../helpers/subscription/subscription.helper.js";
 
 import {
     setSession,

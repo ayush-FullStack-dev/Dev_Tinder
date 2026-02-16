@@ -4,7 +4,7 @@ import Match from "../../../../models/Match.model.js";
 import {
     getBadges,
     buildSubscriptionInfo
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 import { paginationInfos } from "../../../../helpers/pagination.helper.js";
 import { isValidDate } from "../../../../helpers/time.js";
 

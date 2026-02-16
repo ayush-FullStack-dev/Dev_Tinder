@@ -5,7 +5,7 @@ import Profile from "../.././../../models/Profile.model.js";
 import Notification from "../.././../../models/Notification.model.js";
 
 import { ringtone, busy } from "../../../../constants/call.constant.js";
-import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
 import {
     getMessagePayload,
     updateLastMessageCall

@@ -5,7 +5,7 @@ import {
     isSilverActive,
     buildSubscriptionInfo,
     getBadges
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 import { checkValidation } from "../../../../helpers/helpers.js";
 import { updateProfile } from "../../../../services/profile.service.js";
 
@@ -17,7 +17,7 @@ export const loginProfileInfo = async (req, res) => {
 
     return sendResponse(res, 200, {
         data: {
-        	id: currentProfile._id,
+            id: currentProfile._id,
             username: currentProfile.username,
             displayName: currentProfile.displayName,
             bio: currentProfile.bio,

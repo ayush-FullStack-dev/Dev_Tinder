@@ -12,7 +12,7 @@ import {
     isSilverActive,
     getBadges,
     buildSubscriptionInfo
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 
 import { isValidDate } from "../../../../helpers/time.js";
 

@@ -1,7 +1,7 @@
 import Call from "../.././../../models/Call.model.js";
 
 import { ringtone } from "../../../../constants/call.constant.js";
-import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
 
 export const syncActiveCalls = async socket => {
     const { currentProfile } = socket.user;

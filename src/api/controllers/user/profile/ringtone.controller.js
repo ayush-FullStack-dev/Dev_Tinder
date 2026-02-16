@@ -9,7 +9,7 @@ import {
 import { getS3KeyInfo, deleteS3Key } from "../../../../helpers/s3.helper.js";
 
 import { updateProfile } from "../../../../services/profile.service.js";
-import { buildSubscriptionInfo } from "../../../../helpers/premium.helper.js";
+import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
 import {
     getSession,
     setSession
@@ -115,12 +115,8 @@ export const updateIncomingTone = async (req, res) => {
 
 export const resetIncomingTone = async (req, res) => {
     const { currentProfile } = req.auth;
-    const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    if (
-        premium.isActive ||
-        !currentProfile.premium.features.ringtone?.incoming?.enabled
-    ) {
+    if (!currentProfile.premium.features.ringtone?.incoming?.enabled) {
         return sendResponse(res, 400, {
             code: "RINGTONE_ALREADY_DEFAULT",
             message: "Incoming ringtone is already set to default",
@@ -201,6 +197,7 @@ export const updateRingBackTone = async (req, res) => {
         const duration = await getAudioDuration(localFile);
 
         await deleteTemp(localFile);
+
         if (duration < 6 || duration > 15) {
             await deleteS3Key(req.body.key);
             return sendResponse(
@@ -244,12 +241,8 @@ export const updateRingBackTone = async (req, res) => {
 
 export const resetRingBackTone = async (req, res) => {
     const { currentProfile } = req.auth;
-    const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    if (
-        premium.isActive ||
-        !currentProfile.premium.features.ringtone?.ringback?.enabled
-    ) {
+    if (!currentProfile.premium.features.ringtone?.ringback?.enabled) {
         return sendResponse(res, 400, {
             code: "RINGTONE_ALREADY_DEFAULT",
             message: "Ringback tone is already set to default",
@@ -266,7 +259,7 @@ export const resetRingBackTone = async (req, res) => {
         {
             "premium.features.ringtone.ringback": {
                 enabled: false,
-                url: ringtone.ringback
+                url: ringtone.ringBack
             }
         }
     );

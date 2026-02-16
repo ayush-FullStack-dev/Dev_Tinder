@@ -8,7 +8,7 @@ import redis from "../../../../config/redis.js";
 import {
     getBadges,
     buildSubscriptionInfo
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 import {
     rewindLimit,
     premiumRewindLimit
@@ -67,7 +67,7 @@ export const leftSwipeProfile = async (req, res) => {
             action: "pass",
             passed: true
         },
-        
+
         meta: {
             tier: premiumInfo.isActive ? premiumInfo.tier : "free",
             unlimited: isGoldUser

@@ -3,7 +3,7 @@ import sendResponse from "../../../../helpers/sendResponse.js";
 import {
     buildPacksInfo,
     activeBoosts
-} from "../../../../helpers/premium.helper.js";
+} from "../../../../helpers/subscription/subscription.helper.js";
 
 import { updateProfile } from "../../../../services/profile.service.js";
 
