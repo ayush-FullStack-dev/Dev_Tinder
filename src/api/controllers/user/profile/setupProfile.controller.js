@@ -40,7 +40,7 @@ export const profileSetupHandler = async (req, res) => {
             return sendResponse(res, 400, isValidInfo.jsonResponse);
         }
 
-        const redisKey = `pending_upload:${currentProfile.id}:${req.body?.key}`;
+        const redisKey = `pending_upload:${user.id}:${req.body?.key}`;
 
         const photoUpload = await getSession(redisKey);
 
@@ -56,7 +56,7 @@ export const profileSetupHandler = async (req, res) => {
 
             const randomId = crypto.randomBytes(8).toString("hex");
 
-            const key = `users/${currentProfile.userId}/${randomId}-${req.body?.fileName}`;
+            const key = `temp/${user._id}/${randomId}-${req.body?.fileName}`;
 
             const { uploadUrl, fileUrl } = await getS3SingedUrl({
                 key,
@@ -69,7 +69,7 @@ export const profileSetupHandler = async (req, res) => {
                     createdAt: new Date()
                 },
                 key,
-                `pending_upload:${currentProfile.id}`,
+                `pending_upload:${user._id}`,
                 "EX",
                 120
             );
@@ -103,8 +103,12 @@ export const profileSetupHandler = async (req, res) => {
             profileScore: req.body.bio ? 40 : 30,
             gender: user.gender,
             primaryPhoto: {
-                url: photoUpload.fileUrl,
-                key: req.body?.key
+                url:
+                    photoUpload?.fileUrl ||
+                    "https://devtinder-photos-prod.s3.ap-south-1.amazonaws.com/server/1769291057074.jpg",
+                key:
+                    req.body?.key ||
+                    "users/6965b4c3d885ab88dee4ff61/15f16d465f154373-1000265046.jpg"
             },
             location: {
                 city: info.city,

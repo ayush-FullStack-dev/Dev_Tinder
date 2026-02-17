@@ -4,7 +4,6 @@ export const PLANS = {
         price: 0,
         duration: 0,
         features: {
-            // 🔥 Swipes
             swipesPerDay: 30,
             rightSwipesPerDay: 15,
             swipeUnlimited: false,

@@ -4,7 +4,7 @@ import { techStacks, lookingFor, role } from "../constants/profile.constant.js";
 
 import { isValidS3UserPhotoKey } from "../helpers/s3.helper.js";
 
-import {ringtone} from "../constants/call.constant.js"
+import { ringtone } from "../constants/call.constant.js";
 
 const profileSchema = new mongoose.Schema(
     {
@@ -241,8 +241,7 @@ const profileSchema = new mongoose.Schema(
             },
             expiresAt: {
                 type: Date,
-                default: null,
-                expires: 0
+                default: null
             }
         },
         lastSeen: {

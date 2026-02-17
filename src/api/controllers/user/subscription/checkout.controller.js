@@ -1,5 +1,6 @@
 import Coupon from "../../../../models/subscription/Coupon.model.js";
 import PaymentOrder from "../../../../models/subscription/PaymentOrder.model.js";
+import Subscription from "../../../../models/subscription/Subscription.model.js";
 import razorpay from "../../../../config/razorpay.js";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
@@ -8,6 +9,7 @@ import { PLANS } from "../../../../constants/subscription/plans.constant.js";
 import { METHOD_CONFIG } from "../../../../constants/subscription/checkout.constant.js";
 
 import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
+import { isValidDate } from "../../../../helpers/time.js";
 import { validCoupon } from "../../../../helpers/subscription/coupon.helper.js";
 
 export const validatePlan = (req, res, next) => {
@@ -22,14 +24,6 @@ export const validatePlan = (req, res, next) => {
         return sendResponse(res, 400, {
             code: "PLAN_NOT_FOUND",
             message: "Selected subscription plan does not exist"
-        });
-    }
-
-    if (premium.isActive && premium.tier === planId) {
-        return sendResponse(res, 409, {
-            code: "PLAN_ALREADY_ACTIVE",
-            message: `You already have an active ${premium.tier} subscription`,
-            currentPlan: premium.tier
         });
     }
 
@@ -94,7 +88,7 @@ export const validateCoupon = async (req, res, next) => {
 };
 
 export const finalizeAmount = async (req, res, next) => {
-    const { currentProfile, plan, coupon, method, gateway } = req.auth;
+    const { currentProfile, premium, plan, coupon, method, gateway } = req.auth;
     const baseAmount = plan.price;
     let finalAmount = baseAmount;
     let discount = 0;
@@ -139,6 +133,31 @@ export const finalizeAmount = async (req, res, next) => {
         }
     });
 
+    const now = new Date();
+
+    const carriedForwardDays =
+        premium?.expiresAt && isValidDate(premium.expiresAt)
+            ? Math.max(
+                  0,
+                  Math.ceil(
+                      (new Date(premium.expiresAt) - now) /
+                          (1000 * 60 * 60 * 24)
+                  )
+              )
+            : 0;
+
+    await Subscription.create({
+        userId: order.userId,
+        paymentOrderId: order._id,
+        action:
+            !premium.isActive || (premium.isActive && premium.tier === plan.id)
+                ? "PURCHASE"
+                : "UPGRADE",
+        fromPlan: premium.isActive ? premium.tier : "free",
+        toPlan: plan.id,
+        carriedForwardDays
+    });
+
     req.auth.order = order;
     return next();
 };
@@ -154,17 +173,12 @@ export const createOrder = async (req, res, next) => {
         payment_capture: 1
     });
 
-    const updatedOrder = await PaymentOrder.findByIdAndUpdate(
-        order._id,
-        {
-            gatewayOrderId: razorpayOrder.id
-        },
-        { new: true }
-    );
+    order.gatewayOrderId = razorpayOrder.id;
+    await order.save();
 
     req.auth.razorpayOrder = razorpayOrder;
     req.auth.amount = amount;
-    req.auth.order = updatedOrder;
+    req.auth.order = order;
     return next();
 };
 

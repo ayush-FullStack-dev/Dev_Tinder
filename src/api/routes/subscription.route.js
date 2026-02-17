@@ -21,13 +21,15 @@ import {
 import {
     validateBody,
     validateOrder,
-    validateSigntaure
+    validateSigntaure,
+    handlePaymentCoupon,
+    handlePaymentSuccess
 } from "../controllers/user/subscription/verifyPayment.controller.js";
 
 const router = express.Router();
 
 router.use(
-	    /^((?!webhook).)*$/,
+    /^((?!webhook).)*$/,
     isLogin,
     findLoginData,
     isProfileExists,
@@ -52,6 +54,13 @@ router.post(
     sendPayment
 );
 
-router.post("/webhook", validateBody, validateOrder, validateSigntaure);
+router.post(
+    "/webhook",
+    validateBody,
+    validateSigntaure,
+    validateOrder,
+    handlePaymentCoupon,
+    handlePaymentSuccess
+);
 
 export default router;

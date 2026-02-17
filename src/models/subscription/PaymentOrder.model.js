@@ -70,12 +70,12 @@ const PaymentOrderSchema = new mongoose.Schema(
 
         expiresAt: {
             type: Date,
-            required: true,
             index: true
         },
 
         paidAt: Date,
         failedAt: Date,
+        failureReason: String,
         refundedAt: Date,
 
         metadata: {

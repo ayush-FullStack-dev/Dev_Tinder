@@ -41,11 +41,11 @@ export const updateProfile = async (
     if (option.many) {
         return Profile.updateMany(filter, data, {
             runValidators: true,
-            new: true
         });
     } else if (option.id) {
         return Profile.findByIdAndUpdate(filter, data, { new: true });
     }
+    
     return Profile.findOneAndUpdate(filter, data, {
         runValidators: true,
         new: true
