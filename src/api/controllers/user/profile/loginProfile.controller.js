@@ -43,6 +43,10 @@ export const loginProfileInfo = async (req, res) => {
                     createdAt: currentProfile.primaryPhoto.createdAt
                 }
             ],
+            phone: {
+                countryCode: currentProfile.phone?.countryCode,
+                mobile: currentProfile.phone?.mobile
+            },
             visibility: currentProfile.visibility,
             profileScore: currentProfile.profileScore,
             incognitoEnabled:
@@ -69,7 +73,8 @@ export const updateProfileInfo = async (req, res) => {
         "looking_for",
         "experience_years",
         "visibility",
-        "location"
+        "location",
+        "phone"
     ];
 
     const isValidInfo = checkValidation(

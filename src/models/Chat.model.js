@@ -20,9 +20,7 @@ const chatSchema = new mongoose.Schema(
         matchId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Match",
-            required: true,
-            unique: true,
-            index: true
+            required: true
         },
 
         status: {
@@ -117,7 +115,6 @@ const chatSchema = new mongoose.Schema(
     }
 );
 
-// ✅ Ensure unique chat per match (best & simplest)
 chatSchema.index({ matchId: 1 }, { unique: true });
 
 // ✅ List chats fast

@@ -1,3 +1,5 @@
+import Subscription from "../../models/subscription/Subscription.model.js";
+
 import sendResponse from "../../helpers/sendResponse.js";
 
 import { buildSubscriptionInfo } from "../../helpers/subscription/subscription.helper.js";
@@ -36,27 +38,89 @@ export const isPremiumUser = (config = defaultConfig) => {
 };
 
 export const checkPremiumStatus = async (req, res, next) => {
-    const profile = req.auth.currentProfile;
+    const { currentProfile } = req.auth;
+    let profileInfo = null;
 
-    if (
-        profile &&
-        profile.premium?.type !== "free" &&
-        !profile.premium?.isLifetime &&
-        profile.premium?.expiresAt &&
-        new Date(profile.premium.expiresAt).getTime() < Date.now()
-    ) {
-        const profileInfo = await updateProfile(
-            { _id: profile._id },
+    if (!currentProfile) {
+        return req.status(500).json({
+            success: false,
+            message: "Invalid middleware orders"
+        });
+    }
+    const premium = buildSubscriptionInfo(currentProfile.premium);
+
+    if (premium.tier !== "free" && !premium.isActive) {
+        await Subscription.findByIdAndUpdate(
+            currentProfile.premium.subscriptionId,
             {
-                $set: {
-                    "premium.type": "free",
-                    "premium.since": null,
-                    "premium.expiresAt": null,
-                    "premium.isLifetime": false
-                }
+                used: true,
+                carriedForwardDays: 0,
+                isLifetime: false,
+                using: false
             }
         );
 
+        const lastSubscription = await Subscription.findOne({
+            userId: currentProfile._id,
+            $and: [
+                {
+                    $or: [
+                        { carriedForwardDays: { $gt: 0 } },
+                        { isLifetime: true }
+                    ]
+                },
+                {
+                    $expr: {
+                        $neq: ["$fromPlan", "$toPlan"]
+                    }
+                }
+            ],
+            used: false,
+            using: false
+        }).sort({ createdAt: -1 });
+
+        await Subscription.findByIdAndUpdate(
+            currentProfile.premium.subscriptionId,
+            {
+                used: true,
+                carriedForwardDays: 0,
+                using: false
+            }
+        );
+
+        if (!lastSubscription) {
+            profileInfo = await updateProfile(
+                { _id: currentProfile._id },
+                {
+                    $set: {
+                        "premium.type": "free",
+                        "premium.since": null,
+                        "premium.subscriptionId": null,
+                        "premium.expiresAt": null,
+                        "premium.isLifetime": false
+                    }
+                }
+            );
+        } else {
+            const expireIn = day * lastSubscription.carriedForwardDays;
+
+            profileInfo = await updateProfile(
+                { _id: currentProfile._id },
+                {
+                    $set: {
+                        premium: {
+                            type: lastSubscription.toPlan,
+                            isLifetime: lastSubscription.isLifetime,
+                            since: new Date(),
+                            subscriptionId: lastSubscription._id,
+                            expiresAt: lastSubscription.isLifetime
+                                ? null
+                                : new Date(Date.now() + expireIn)
+                        }
+                    }
+                }
+            );
+        }
         req.auth.currentProfile = profileInfo;
     }
 

@@ -53,7 +53,7 @@ const PaymentOrderSchema = new mongoose.Schema(
 
         gateway: {
             type: String,
-            enum: ["razorpay", "stripe", "phonepe"],
+            enum: ["razorpay", "cashfree"],
             required: true
         },
 
@@ -70,13 +70,26 @@ const PaymentOrderSchema = new mongoose.Schema(
 
         expiresAt: {
             type: Date,
-            index: true
+            expires: 0,
+            default: new Date(Date.now() + 1000 * 60 * 15)
         },
 
-        paidAt: Date,
-        failedAt: Date,
-        failureReason: String,
-        refundedAt: Date,
+        paidAt: {
+            type: Date,
+            default: null
+        },
+        failedAt: {
+            type: Date,
+            default: null
+        },
+        failureReason: {
+            type: String,
+            default: null
+        },
+        refundedAt: {
+            type: Date,
+            default: null
+        },
 
         metadata: {
             ip: String,

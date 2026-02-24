@@ -17,14 +17,22 @@ import {
     createOrder,
     sendPayment
 } from "../controllers/user/subscription/checkout.controller.js";
-
+import {
+    activateTrial,
+    createAutopay
+} from "../controllers/user/subscription/activate-trial.controller.js";
+import { subscriptionHistory } from "../controllers/user/subscription/history.controller.js";
 import {
     validateBody,
     validateOrder,
     validateSigntaure,
     handlePaymentCoupon,
     handlePaymentSuccess
-} from "../controllers/user/subscription/verifyPayment.controller.js";
+} from "../controllers/user/subscription/webhook/cashfree/verifyPayment.controller.js";
+import {
+    handleAutoPayWebhook,
+    handleAutoPaySuccess
+} from "../controllers/user/subscription/webhook/cashfree/autoPay.controller.js";
 
 const router = express.Router();
 
@@ -43,6 +51,8 @@ router.use(
 );
 
 router.get("/plans", subscriptionPlans);
+router.get("/history", validateBasicInfo, subscriptionHistory);
+
 router.post(
     "/checkout",
     validateBasicInfo,
@@ -55,7 +65,24 @@ router.post(
 );
 
 router.post(
-    "/webhook",
+    "/activate-trial",
+    validateBasicInfo,
+    activateTrial,
+    validateMethod,
+    createAutopay,
+    sendPayment
+);
+
+router.post(
+    "/webhook/autopay",
+    validateBody,
+    validateSigntaure,
+    handleAutoPayWebhook,
+    handleAutoPaySuccess
+);
+
+router.post(
+    "/webhook/payment",
     validateBody,
     validateSigntaure,
     validateOrder,

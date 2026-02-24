@@ -1,4 +1,5 @@
 import Profile from "../../../../models/Profile.model.js";
+import Subscription from "../../../../models/subscription/Subscription.model.js";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 
@@ -9,6 +10,32 @@ import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscrip
 export const subscriptionPlans = async (req, res) => {
     const { currentProfile } = req.auth;
     const premium = buildSubscriptionInfo(currentProfile.premium);
+
+    const alreadyTrial = await Subscription.exists({
+        userId: currentProfile._id,
+        isTrial: true,
+        action: "PURCHASE"
+    });
+
+    const hasActiveGold = premium.isActive && premium.tier === "gold";
+
+    const isTrialEligible = !alreadyTrial && !hasActiveGold;
+
+    const trialPlan = {
+        id: "gold_trial",
+        label: "Gold (30 Days Trial)",
+        price: 0,
+        currency: "INR",
+        duration: 30,
+        isTrial: true,
+        popular: false,
+        isDefault: false,
+        isCurrent: false,
+        canUpgrade: false,
+        canDowngrade: false,
+        requiresPayment: false,
+        features: PLANS.GOLD.features
+    };
 
     const silverUsers = await Profile.countDocuments({
         "premium.type": "silver"
@@ -42,6 +69,30 @@ export const subscriptionPlans = async (req, res) => {
     if (silverScore > goldScore) popularPlan = "silver";
     else if (goldScore > silverScore) popularPlan = "gold";
 
+    const plans = ["free", "silver", "gold"].map(planId => {
+        const plan = PLANS[planId.toUpperCase()];
+        const isCurrent = planId === currentPlanId;
+
+        return {
+            id: planId,
+            label: planId.charAt(0).toUpperCase() + planId.slice(1),
+            price: plan.price,
+            currency: "INR",
+            duration: plan.duration,
+            isDefault: planId === "free",
+            popular: popularPlan === planId,
+            isCurrent,
+            canUpgrade:
+                plan.price > (PLANS[currentPlanId.toUpperCase()]?.price || 0),
+            canDowngrade:
+                plan.price < (PLANS[currentPlanId.toUpperCase()]?.price || 0),
+            requiresPayment: plan.price > 0 && !isCurrent,
+            features: plan.features
+        };
+    });
+
+    isTrialEligible ? plans.push(trialPlan) : "";
+
     return sendResponse(res, 200, {
         currentPlan: {
             id: currentPlanId,
@@ -55,38 +106,10 @@ export const subscriptionPlans = async (req, res) => {
             startedAt:
                 currentPlanId === "free" ? null : currentProfile.premium.since,
             expiresAt: currentPlanId === "free" ? null : premium.expiresAt,
-            isLifetime: currentPlanId !== "free" ?  premium.isLifetime : false
+            isLifetime: currentPlanId !== "free" ? premium.isLifetime : false
         },
 
         popularPlan,
-        plans: ["free", "silver", "gold"].map(planId => {
-            const plan = PLANS[planId.toUpperCase()];
-            const isCurrent = planId === currentPlanId;
-            const isPaidPlan = plan.price > 0;
-
-            return {
-                id: planId,
-                label: planId.charAt(0).toUpperCase() + planId.slice(1),
-                price: plan.price,
-                currency: "INR",
-                duration: plan.duration,
-
-                isDefault: planId === "free",
-                popular: popularPlan === planId,
-
-                isCurrent,
-
-                canUpgrade:
-                    plan.price >
-                    (PLANS[currentPlanId.toUpperCase()]?.price || 0),
-
-                canDowngrade:
-                    plan.price <
-                    (PLANS[currentPlanId.toUpperCase()]?.price || 0),
-
-                requiresPayment: isPaidPlan && !isCurrent,
-                features: plan.features
-            };
-        })
+        plans
     });
 };

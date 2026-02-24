@@ -194,6 +194,7 @@ export const getWhoRightSwipe = async (req, res) => {
     const { user, currentProfile } = req.auth;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
     const premiumInfo = buildSubscriptionInfo(currentProfile.premium);
+    
     const query = {
         seenProfileId: currentProfile._id,
         action: "like"

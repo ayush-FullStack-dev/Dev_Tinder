@@ -12,8 +12,20 @@ const SubscriptionSchema = new mongoose.Schema(
         paymentOrderId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "PaymentOrder",
-            required: true,
-            index: true
+            index: true,
+            default: null
+        },
+
+        autoPayOrderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "AutoPay",
+            index: true,
+            default: null
+        },
+
+        isTrial: {
+            type: Boolean,
+            default: false
         },
 
         action: {
@@ -40,6 +52,15 @@ const SubscriptionSchema = new mongoose.Schema(
         },
 
         isLifetime: {
+            type: Boolean,
+            default: false
+        },
+
+        used: {
+            type: Boolean,
+            default: false
+        },
+        using: {
             type: Boolean,
             default: false
         },

@@ -1,18 +1,17 @@
-import Coupon from "../../../../models/subscription/Coupon.model.js";
-import CouponUsage from "../../../../models/subscription/CouponUsage.model.js";
-import PaymentOrder from "../../../../models/subscription/PaymentOrder.model.js";
-import Subscription from "../../../../models/subscription/Subscription.model.js";
+import Coupon from "../../../../../../models/subscription/Coupon.model.js";
+import CouponUsage from "../../../../../../models/subscription/CouponUsage.model.js";
+import PaymentOrder from "../../../../../../models/subscription/PaymentOrder.model.js";
+import Subscription from "../../../../../../models/subscription/Subscription.model.js";
 import crypto from "crypto";
-import razorpay from "../../../../config/razorpay.js";
+import rozrpay from "../../../../../../config/rozrpay.js";
 
-import sendResponse from "../../../../helpers/sendResponse.js";
+import sendResponse from "../../../../../../helpers/sendResponse.js";
 
-import { PLANS } from "../../../../constants/subscription/plans.constant.js";
-import { METHOD_CONFIG } from "../../../../constants/subscription/checkout.constant.js";
-import { verifyPaymentValidator } from "../../../../validators/user/subscription/payment.validator.js";
+import { PLANS } from "../../../../../../constants/subscription/plans.constant.js";
+import { verifyPaymentValidator } from "../../../../../../validators/user/payment/cashfree/payment.validator.js";
 
-import { checkValidation } from "../../../../helpers/helpers.js";
-import { updateProfile } from "../../../../services/profile.service.js";
+import { checkValidation } from "../../../../../../helpers/helpers.js";
+import { updateProfile } from "../../../../../../services/profile.service.js";
 
 export const validateBody = (req, res, next) => {
     const validPayment = checkValidation(
@@ -26,7 +25,6 @@ export const validateBody = (req, res, next) => {
     }
 
     req.auth = { ...req.auth, value: validPayment.value };
-
     return next();
 };
 
@@ -53,7 +51,7 @@ export const validateOrder = async (req, res, next) => {
     const payment = value.payload.payment.entity;
 
     if (!payment || !payment?.order_id) {
-        return sendResponse(res, 400, {});
+        return sendResponse(res, 400);
     }
 
     const isSuccess = event === "payment.captured";
@@ -67,15 +65,15 @@ export const validateOrder = async (req, res, next) => {
     });
 
     const subscription = await Subscription.findOne({
-        paymentOrderId: order._id
+        paymentOrderId: order?._id
     });
 
     if (!order || !subscription) {
-        return sendResponse(res, 200, {});
+        return sendResponse(res, 200);
     }
 
     if (["paid", "failed", "refunded"].includes(order.status)) {
-        return sendResponse(res, 200, {});
+        return sendResponse(res, 200);
     }
 
     if (payment.amount !== order.amount.final * 100) {
@@ -85,7 +83,7 @@ export const validateOrder = async (req, res, next) => {
             failureReason: "AMOUNT_MISMATCH"
         });
 
-        return sendResponse(res, 400, {});
+        return sendResponse(res, 400);
     }
 
     if (isSuccess) {
@@ -97,7 +95,6 @@ export const validateOrder = async (req, res, next) => {
         await order.save();
 
         req.auth.order = order;
-        req.auth.payment = payment;
         req.auth.subscription = subscription;
         return next();
     }
@@ -112,7 +109,7 @@ export const validateOrder = async (req, res, next) => {
         await order.save();
     }
 
-    return sendResponse(res, 200, {});
+    return sendResponse(res, 200);
 };
 
 export const handlePaymentCoupon = async (req, res, next) => {
@@ -177,14 +174,34 @@ export const handlePaymentSuccess = async (req, res) => {
                     type: subscription.toPlan,
                     isLifetime: subscription.isLifetime,
                     since: new Date(),
-                    expiresAt: new Date(Date.now() + expireIn)
+                    subscriptionId: subscription._id,
+                    expiresAt: subscription.isLifetime
+                        ? null
+                        : new Date(Date.now() + expireIn)
                 }
             }
         },
         { id: true }
     );
 
-    if (!profile) return sendResponse(res, 404, {});
+    if (!profile) return sendResponse(res, 404);
+
+    if (subscription.fromPlan === subscription.toPlan) {
+        await Subscription.findByIdAndUpdate(profile.premium.subscriptionId, {
+            using: false,
+            used: true,
+            carriedForwardDays: 0
+        });
+
+        await Subscription.findByIdAndUpdate(subscription._id, {
+            using: true,
+            carriedForwardDays
+        });
+    } else {
+        await Subscription.findByIdAndUpdate(profile.premium.subscriptionId, {
+            using: false
+        });
+    }
 
     return sendResponse(res, 200, { success: true });
 };

@@ -1,6 +1,6 @@
 export const METHOD_CONFIG = {
-    upi: { gateway: "razorpay" },
-    card: { gateway: "razorpay" },
-    netbanking: { gateway: "razorpay" },
-    wallet: { gateway: "razorpay" }
+    upi: { gateway: "cashfree" },
+    card: { gateway: "cashfree" },
+    netbanking: { gateway: "cashfree" },
+    wallet: { gateway: "cashfree" }
 };

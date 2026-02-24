@@ -3,6 +3,9 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
+// crons import
+import { startSubscriptionCrons } from "./cron/subscription.cron.js";
+
 // routes
 import systemRouter from "./api/routes/router.route.js";
 import authRouter from "./api/routes/auth.route.js";
@@ -26,6 +29,7 @@ import { getPath } from "./utilities/index.js";
 
 // configure appp
 const app = express();
+startSubscriptionCrons();
 
 app.set("trust proxy", true);
 app.set("json spaces", 2);

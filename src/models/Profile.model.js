@@ -84,6 +84,19 @@ const profileSchema = new mongoose.Schema(
             required: true,
             index: true
         },
+        phone: {
+            countryCode: {
+                type: Number,
+                required: true,
+                index: true
+            },
+            mobile: {
+                type: String,
+                required: true,
+                index: true,
+                validate: value => value.length !== 10
+            }
+        },
         displayName: {
             type: String,
             required: true,
@@ -204,7 +217,11 @@ const profileSchema = new mongoose.Schema(
                 enum: ["free", "silver", "gold"],
                 default: "free"
             },
-
+            subscriptionId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Subscription",
+                index: true
+            },
             features: {
                 incognito: {
                     enabled: {

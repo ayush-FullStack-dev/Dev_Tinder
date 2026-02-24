@@ -102,6 +102,10 @@ export const profileSetupHandler = async (req, res) => {
             experience_years: req.body.experienceYears,
             profileScore: req.body.bio ? 40 : 30,
             gender: user.gender,
+            phone: {
+  countryCode: req.body.phone.countryCode,
+  mobile: req.body.phone.mobile
+},
             primaryPhoto: {
                 url:
                     photoUpload?.fileUrl ||

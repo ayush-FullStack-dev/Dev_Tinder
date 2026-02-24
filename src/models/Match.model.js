@@ -14,7 +14,7 @@ const matchSchema = new mongoose.Schema(
                 validator: v => Array.isArray(v) && v.length === 2,
                 message: "Match must have exactly 2 users"
             },
-            index: true
+            
         },
 
         createdBy: {
@@ -31,7 +31,6 @@ const matchSchema = new mongoose.Schema(
         },
 
         
-
         unmatchedAt: {
             type: Date,
             default: null
@@ -53,7 +52,9 @@ const matchSchema = new mongoose.Schema(
     }
 );
 
-// ✅ one match per pair (order independent)
+
+
+
 matchSchema.index({ users: 1 }, { unique: true });
 
 export default mongoose.model("Match", matchSchema);

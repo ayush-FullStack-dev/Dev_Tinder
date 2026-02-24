@@ -13,7 +13,7 @@ export const PLANS = {
             rewindEnabled: false,
 
             // 🚀 Boost
-            monthlyBoostCredits: 0, // ❌ none
+            monthlyBoostCredits: 0, 
 
             // 📞 Ringtones
             ringtone: {
@@ -71,7 +71,7 @@ export const PLANS = {
             rewindEnabled: false,
 
             // 🚀 Boost
-            monthlyBoostCredits: 2, // 🥈 2 / month
+            monthlyBoostCredits: 2, // 🥈 2
 
             // 📞 Ringtones
             ringtone: {

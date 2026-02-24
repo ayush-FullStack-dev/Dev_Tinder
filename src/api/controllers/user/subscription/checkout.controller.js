@@ -1,7 +1,7 @@
 import Coupon from "../../../../models/subscription/Coupon.model.js";
 import PaymentOrder from "../../../../models/subscription/PaymentOrder.model.js";
 import Subscription from "../../../../models/subscription/Subscription.model.js";
-import razorpay from "../../../../config/razorpay.js";
+import cashfree from "../../../../config/cashfree.js";
 
 import sendResponse from "../../../../helpers/sendResponse.js";
 
@@ -14,10 +14,7 @@ import { validCoupon } from "../../../../helpers/subscription/coupon.helper.js";
 
 export const validatePlan = (req, res, next) => {
     const { currentProfile } = req.auth;
-
     const premium = buildSubscriptionInfo(currentProfile.premium);
-    const isGold = premium.isActive && premium.tier === "gold";
-
     const { planId } = req.body;
 
     if (!["silver", "gold"].includes(planId)) {
@@ -27,13 +24,15 @@ export const validatePlan = (req, res, next) => {
         });
     }
 
-    if (isGold && planId === "silver") {
+    if (
+        PLANS[planId.toUpperCase()].price <
+        PLANS[(premium.isActive ? premium.tier : "free").toUpperCase()].price
+    ) {
         return sendResponse(res, 409, {
             code: "DOWNGRADE_NOT_ALLOWED",
-            message:
-                "You already have an active Gold plan. Downgrading to Silver is not allowed.",
-            currentPlan: "gold",
-            attemptedPlan: "silver"
+            message: `Downgrading from ${premium.tier} to ${planId} is not allowed`,
+            currentPlan: premium.tier,
+            attemptedPlan: planId
         });
     }
 
@@ -89,6 +88,7 @@ export const validateCoupon = async (req, res, next) => {
 
 export const finalizeAmount = async (req, res, next) => {
     const { currentProfile, premium, plan, coupon, method, gateway } = req.auth;
+
     const baseAmount = plan.price;
     let finalAmount = baseAmount;
     let discount = 0;
@@ -163,38 +163,43 @@ export const finalizeAmount = async (req, res, next) => {
 };
 
 export const createOrder = async (req, res, next) => {
-    const { order } = req.auth;
+    const { order, user, currentProfile } = req.auth;
     const amount = order.amount;
 
-    const razorpayOrder = await razorpay.orders.create({
-        amount: amount.final * 100,
-        currency: amount.currency,
-        receipt: order._id.toString(),
-        payment_capture: 1
+    const response = await cashfree.PGCreateOrder({
+        order_amount: amount.final,
+        order_currency: amount.currency,
+        order_id: order._id.toString(),
+        customer_details: {
+            customer_id: currentProfile._id.toString(),
+            customer_name: currentProfile.displayName,
+            customer_email: user.email,
+            customer_phone: currentProfile.phone.mobile
+        },
+        order_meta: {
+            return_url: `https://www.cashfree.com/devstudio/preview/pg/web/checkout?order_id=${order._id}`
+        }
     });
 
-    order.gatewayOrderId = razorpayOrder.id;
-    await order.save();
+    const cashfreeOrder = response.data;
 
-    req.auth.razorpayOrder = razorpayOrder;
-    req.auth.amount = amount;
+    order.gatewayOrderId = cashfreeOrder.cf_order_id;
+    await order.save();
+    req.auth.cashfreeOrder = cashfreeOrder;
     req.auth.order = order;
     return next();
 };
 
 export const sendPayment = (req, res) => {
-    const { method, gateway, order, razorpayOrder } = req.auth;
+    const { method, gateway, order, cashfreeOrder } = req.auth;
 
     return sendResponse(res, 200, {
-        success: true,
         orderId: order._id,
         gateway,
         method,
         payment: {
-            key: process.env.RAZORPAY_KEY_ID,
-            orderId: razorpayOrder.id,
-            amount: razorpayOrder.amount,
-            currency: razorpayOrder.currency
+            orderId: cashfreeOrder.order_id,
+            paymentSessionId: cashfreeOrder.payment_session_id
         },
         expiresIn: 600
     });
