@@ -125,7 +125,6 @@ export const finalizeAmount = async (req, res, next) => {
             : null,
         method,
         gateway,
-        expiresAt: new Date(Date.now() + 1000 * 60 * 10),
         metadata: {
             ip: req.realIp,
             userAgent: req.headers["user-agent"],

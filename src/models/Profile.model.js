@@ -220,7 +220,8 @@ const profileSchema = new mongoose.Schema(
             subscriptionId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Subscription",
-                index: true
+                index: true,
+                default: null
             },
             features: {
                 incognito: {

@@ -83,8 +83,8 @@ router.post(
 
 router.post(
     "/webhook/payment",
-    validateBody,
     validateSigntaure,
+    validateBody,
     validateOrder,
     handlePaymentCoupon,
     handlePaymentSuccess

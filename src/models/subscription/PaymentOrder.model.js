@@ -71,7 +71,7 @@ const PaymentOrderSchema = new mongoose.Schema(
         expiresAt: {
             type: Date,
             expires: 0,
-            default: new Date(Date.now() + 1000 * 60 * 15)
+            default: () => new Date(Date.now() + 1000 * 60 * 10)
         },
 
         paidAt: {

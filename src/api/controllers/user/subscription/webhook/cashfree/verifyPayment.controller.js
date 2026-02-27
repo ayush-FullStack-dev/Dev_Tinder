@@ -14,8 +14,6 @@ import { checkValidation } from "../../../../../../helpers/helpers.js";
 import { updateProfile } from "../../../../../../services/profile.service.js";
 
 export const validateBody = (req, res, next) => {
-    console.log(req.body);
-    
     const validPayment = checkValidation(
         verifyPaymentValidator,
         req,
@@ -31,14 +29,11 @@ export const validateBody = (req, res, next) => {
 };
 
 export const validateSigntaure = (req, res, next) => {
+    const signature = req.headers["x-webhook-signature"];
+    const timestamp = req.headers["x-webhook-timestamp"];
+    const rawBody = req.rawBody;
     try {
-        const rawBody = req.rawBody;
-
-        Cashfree.PGVerifyWebhookSignature(
-            req.headers["x-webhook-signature"],
-            rawBody,
-            req.headers["x-webhook-timestamp"]
-        );
+        cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
 
         return next();
     } catch (e) {
@@ -48,18 +43,14 @@ export const validateSigntaure = (req, res, next) => {
 
 export const validateOrder = async (req, res, next) => {
     const { type, data } = req.auth.value;
-    const payment = data?.payment;
+    const payment = data.payment;
+    const gatewayOrder = data.order;
 
-    if (!payment?.order_id) {
-        return sendResponse(res, 400);
-    }
-
-    const isSuccess = type === "PAYMENT_SUCCESS";
-    const isFailed = type === "PAYMENT_FAILED";
+    const isSuccess = type === "PAYMENT_SUCCESS_WEBHOOK";
+    const isFailed = type === "PAYMENT_FAILED_WEBHOOK";
 
     const order = await PaymentOrder.findOne({
-        gatewayOrderId: payment.order_id,
-        gateway: "cashfree"
+        _id: gatewayOrder.order_id
     });
 
     const subscription = await Subscription.findOne({
@@ -148,7 +139,6 @@ export const handlePaymentSuccess = async (req, res) => {
     const { order, subscription } = req.auth;
     const plan = PLANS[subscription.toPlan.toUpperCase()];
     const day = 1000 * 60 * 60 * 24;
-
     const expireIn =
         subscription.fromPlan === subscription.toPlan
             ? day * (subscription.carriedForwardDays + 30)
