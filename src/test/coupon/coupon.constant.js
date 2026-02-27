@@ -1,7 +1,157 @@
-import Coupon from "../models/subscription/Coupon.model.js";
-import connectDB from "../config/mongodb.js";
+export const superCoupons = [
+    {
+        code: "GODMODE98",
+        title: "98% Internal Discount",
+        description: "Internal use only",
+        discount: { type: "percentage", value: 98 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2027-12-31"),
+        usage: { totalLimit: 50, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "OWNER99",
+        title: "99% Founder Discount",
+        description: "Founder special",
+        discount: { type: "percentage", value: 99 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2027-12-31"),
+        usage: { totalLimit: 20, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "FREE100",
+        title: "100% Access Pass",
+        description: "Free unlock internal",
+        discount: { type: "percentage", value: 100 },
+        minOrderAmount: 0,
+        applicablePlans: ["pro_plan"],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2027-12-31"),
+        usage: { totalLimit: 10, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "VIP90",
+        title: "VIP 90% Discount",
+        description: "Special VIP internal coupon",
+        discount: { type: "percentage", value: 90 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2027-06-30"),
+        usage: { totalLimit: 100, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "STEALTH85",
+        title: "Stealth 85%",
+        description: "Not visible publicly",
+        discount: { type: "percentage", value: 85 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-12-31"),
+        usage: { totalLimit: 75, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "ULTRA80",
+        title: "Ultra 80%",
+        description: "Extreme internal discount",
+        discount: { type: "percentage", value: 80 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-09-30"),
+        usage: { totalLimit: 150, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "HIDDEN75",
+        title: "Hidden 75%",
+        description: "Backend special",
+        discount: { type: "percentage", value: 75 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-12-31"),
+        usage: { totalLimit: 200, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "INSIDER70",
+        title: "Insider 70%",
+        description: "Private access only",
+        discount: { type: "percentage", value: 70 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-08-31"),
+        usage: { totalLimit: 300, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "BETA65",
+        title: "Beta Tester 65%",
+        description: "For testing accounts",
+        discount: { type: "percentage", value: 65 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-05-31"),
+        usage: { totalLimit: 500, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    },
+    {
+        code: "DEV60",
+        title: "Developer 60%",
+        description: "Dev testing coupon",
+        discount: { type: "percentage", value: 60 },
+        minOrderAmount: 0,
+        applicablePlans: [],
+        excludedPlans: [],
+        validFrom: new Date("2026-01-01"),
+        validTill: new Date("2026-12-31"),
+        usage: { totalLimit: 1000, perUserLimit: 1, usedCount: 0 },
+        userRestriction: "all",
+        stackable: false,
+        status: "active"
+    }
+];
 
-const couponsArray = [
+export const couponsArray = [
     {
         code: "NEWUSER50",
         title: "New User Flat ₹50",
@@ -162,11 +312,3 @@ const couponsArray = [
         status: "active"
     }
 ];
-
-await connectDB();
-
-const insertCoupon = async () => {
-   const info = await Coupon.insertMany(couponsArray);
-};
-
-await insertCoupon();

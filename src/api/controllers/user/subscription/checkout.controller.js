@@ -106,7 +106,8 @@ export const finalizeAmount = async (req, res, next) => {
     }
 
     discount = Math.min(discount, baseAmount);
-    finalAmount = baseAmount - discount;
+
+    finalAmount = Number((baseAmount - discount).toFixed(2));
 
     const order = await PaymentOrder.create({
         userId: currentProfile._id,
@@ -162,31 +163,36 @@ export const finalizeAmount = async (req, res, next) => {
 };
 
 export const createOrder = async (req, res, next) => {
-    const { order, user, currentProfile } = req.auth;
-    const amount = order.amount;
+    
+        const { order, user, currentProfile } = req.auth;
+        const amount = order.amount;
 
-    const response = await cashfree.PGCreateOrder({
-        order_amount: amount.final,
-        order_currency: amount.currency,
-        order_id: order._id.toString(),
-        customer_details: {
-            customer_id: currentProfile._id.toString(),
-            customer_name: currentProfile.displayName,
-            customer_email: user.email,
-            customer_phone: currentProfile.phone.mobile
-        },
-        order_meta: {
-            return_url: `https://www.cashfree.com/devstudio/preview/pg/web/checkout?order_id=${order._id}`
-        }
-    });
+        console.log(amount.final);
 
-    const cashfreeOrder = response.data;
+        const response = await cashfree.PGCreateOrder({
+            order_amount: amount.final,
+            order_currency: amount.currency,
+            order_id: order._id.toString(),
+            customer_details: {
+                customer_id: currentProfile._id.toString(),
+                customer_name: currentProfile.displayName,
+                customer_email: user.email,
+                customer_phone: currentProfile.phone.mobile
+            },
+            order_meta: {
+                return_url: `https://www.cashfree.com/devstudio/preview/pg/web/checkout?order_id=${order._id}`
+            }
+        });
 
-    order.gatewayOrderId = cashfreeOrder.cf_order_id;
-    await order.save();
-    req.auth.cashfreeOrder = cashfreeOrder;
-    req.auth.order = order;
-    return next();
+        const cashfreeOrder = response.data;
+
+        order.gatewayOrderId = cashfreeOrder.cf_order_id;
+        await order.save();
+        req.auth.cashfreeOrder = cashfreeOrder;
+        req.auth.order = order;
+
+        return next();
+
 };
 
 export const sendPayment = (req, res) => {
