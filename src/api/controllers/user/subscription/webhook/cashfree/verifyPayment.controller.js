@@ -32,6 +32,7 @@ export const validateSigntaure = (req, res, next) => {
     const signature = req.headers["x-webhook-signature"];
     const timestamp = req.headers["x-webhook-timestamp"];
     const rawBody = req.rawBody;
+
     try {
         cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
 
@@ -105,15 +106,15 @@ export const handlePaymentCoupon = async (req, res, next) => {
     const { order } = req.auth;
     const coupon = order.coupon;
 
-    if (!coupon?.code) {
-        return next();
-    }
-
     const couponInfo = await Coupon.findOneAndUpdate(
-        { code: coupon.code },
+        { code: coupon?.code },
         { $inc: { "usage.usedCount": 1 } },
         { new: true }
     );
+
+    if (!coupon?.code || !couponInfo) {
+        return next();
+    }
 
     await CouponUsage.findOneAndUpdate(
         {

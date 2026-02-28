@@ -163,36 +163,31 @@ export const finalizeAmount = async (req, res, next) => {
 };
 
 export const createOrder = async (req, res, next) => {
-    
-        const { order, user, currentProfile } = req.auth;
-        const amount = order.amount;
+    const { order, user, currentProfile } = req.auth;
+    const amount = order.amount;
 
-        console.log(amount.final);
+    const response = await cashfree.PGCreateOrder({
+        order_amount: amount.final,
+        order_currency: amount.currency,
+        order_id: order._id.toString(),
+        customer_details: {
+            customer_id: currentProfile._id.toString(),
+            customer_name: currentProfile.displayName,
+            customer_email: user.email,
+            customer_phone: currentProfile.phone.mobile
+        },
+        order_meta: {
+            return_url: `${process.env.DOMAIN_LINK}/payment-status?order_id=${order._id}`
+        }
+    });
 
-        const response = await cashfree.PGCreateOrder({
-            order_amount: amount.final,
-            order_currency: amount.currency,
-            order_id: order._id.toString(),
-            customer_details: {
-                customer_id: currentProfile._id.toString(),
-                customer_name: currentProfile.displayName,
-                customer_email: user.email,
-                customer_phone: currentProfile.phone.mobile
-            },
-            order_meta: {
-                return_url: `https://www.cashfree.com/devstudio/preview/pg/web/checkout?order_id=${order._id}`
-            }
-        });
+    const cashfreeOrder = response.data;
 
-        const cashfreeOrder = response.data;
-
-        order.gatewayOrderId = cashfreeOrder.cf_order_id;
-        await order.save();
-        req.auth.cashfreeOrder = cashfreeOrder;
-        req.auth.order = order;
-
-        return next();
-
+    order.gatewayOrderId = cashfreeOrder.cf_order_id;
+    await order.save();
+    req.auth.cashfreeOrder = cashfreeOrder;
+    req.auth.order = order;
+    return next();
 };
 
 export const sendPayment = (req, res) => {
