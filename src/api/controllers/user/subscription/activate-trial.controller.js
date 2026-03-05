@@ -72,6 +72,18 @@ export const createAutopay = async (req, res, next) => {
     expiryYear.setFullYear(expiryYear.getFullYear() + 1);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
+    const autoPay = await AutoPay.create({
+        userId: currentProfile._id,
+        isTrial: true,
+        nextChargeAt: nextMonth,
+        mandateAmount: actualPrice,
+        metadata: {
+            ip: req.realIp,
+            userAgent: req.headers["user-agent"],
+            deviceId: req.body.deviceId
+        }
+    });
+
     const response = await axios.post(
         `${BASE_CASHFREE_URL}/subscriptions`,
         {
@@ -89,7 +101,7 @@ export const createAutopay = async (req, res, next) => {
             next_schedule_date: new Date(),
             first_charge_date: nextMonth,
             subscription_meta: {
-                return_url: `${process.env.DOMAIN_LINK}/payment/status?order_id=${order._id}`,
+                return_url: `${process.env.DOMAIN_LINK}/payment/status?order_id=${autoPay._id}`,
                 notify_url: `https://${process.extra.DOMAIN}/subscription/webhook/autopay/`
             }
         },
@@ -104,19 +116,9 @@ export const createAutopay = async (req, res, next) => {
     );
 
     const cashfreeSubscription = response.data;
+    autoPay.gatewaySubscriptionId = cashfreeSubscription.subscription_id;
 
-    const autoPay = await AutoPay.create({
-        userId: currentProfile._id,
-        gatewaySubscriptionId: cashfreeSubscription.subscription_id,
-        isTrial: true,
-        nextChargeAt: nextMonth,
-        mandateAmount: actualPrice,
-        metadata: {
-            ip: req.realIp,
-            userAgent: req.headers["user-agent"],
-            deviceId: req.body.deviceId
-        }
-    });
+    await autoPay.save();
 
     await Subscription.create({
         userId: currentProfile._id,
