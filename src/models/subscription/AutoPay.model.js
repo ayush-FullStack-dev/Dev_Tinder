@@ -11,7 +11,7 @@ const AutoPaySchema = new mongoose.Schema(
 
         gatewaySubscriptionId: {
             type: String,
-            unique: true
+            
         },
 
         gateway: {
