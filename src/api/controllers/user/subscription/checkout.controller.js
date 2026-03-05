@@ -191,7 +191,25 @@ export const createOrder = async (req, res, next) => {
 };
 
 export const sendPayment = (req, res) => {
-    const { method, gateway, order, cashfreeOrder } = req.auth;
+    const { method, gateway, order, cashfreeOrder, cashfreeSubscription } =
+        req.auth;
+
+    if (cashfreeSubscription) {
+        
+        
+        return sendResponse(res, 200, {
+            orderId: order._id,
+            gateway,
+            method,
+            payment: {
+                orderId: cashfreeSubscription.subscription_id,
+                subscriptionSessionId:
+                    cashfreeSubscription.subscription_session_id,
+                
+            },
+            expiresIn: 600
+        });
+    }
 
     return sendResponse(res, 200, {
         orderId: order._id,

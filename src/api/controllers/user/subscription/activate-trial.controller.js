@@ -1,3 +1,4 @@
+import axios from "axios";
 import AutoPay from "../../../../models/subscription/AutoPay.model.js";
 import Subscription from "../../../../models/subscription/Subscription.model.js";
 import cashfree from "../../../../config/cashfree.js";
@@ -5,19 +6,38 @@ import cashfree from "../../../../config/cashfree.js";
 import sendResponse from "../../../../helpers/sendResponse.js";
 
 import { PLANS } from "../../../../constants/subscription/plans.constant.js";
+
+import { BASE_CASHFREE_URL } from "../../../../constants/cashfree.constant.js";
+
 import { buildSubscriptionInfo } from "../../../../helpers/subscription/subscription.helper.js";
 
 export const activateTrial = async (req, res, next) => {
     const { currentProfile } = req.auth;
     const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    const alreadyTrail = await Subscription.exists({
+    const trailInfo = await Subscription.findOne({
         userId: currentProfile._id,
         isTrial: true,
         action: "PURCHASE"
-    });
+    }).populate([
+        {
+            path: "paymentOrderId",
+            match: { status: "paid" }
+        },
+        {
+            path: "autoPayOrderId",
+            match: {
+                status: { $in: ["authenticated", "active"] }
+            }
+        }
+    ]);
 
-    if (alreadyTrail) {
+    const alreadyUsed = !!(
+        (trailInfo && trailInfo.paymentOrderId) ||
+        trailInfo.autoPayOrderId
+    );
+
+    if (alreadyUsed) {
         return sendResponse(res, 403, {
             code: "TRIAL_ALREADY_USED",
             message: "You have already used your free trial"
@@ -45,47 +65,51 @@ export const createAutopay = async (req, res, next) => {
     const { user, currentProfile, premium, plan } = req.auth;
     const d = new Date();
     let nextMonth = new Date(d);
-    let nextYear = new Date(d);
+    let expiryYear = new Date(d);
     const baseAmonut = 0;
     const actualPrice = plan.price;
 
-    const response = await cashfree.PGCreateOrder({
-        order_amount: 1,
-        order_currency: "INR",
-        customer_details: {
-            customer_id: currentProfile._id.toString(),
-            customer_name: currentProfile.displayName,
-            customer_email: user.email,
-            customer_phone: currentProfile.phone.mobile
+    expiryYear.setFullYear(expiryYear.getFullYear() + 1);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const response = await axios.post(
+        `${BASE_CASHFREE_URL}/subscriptions`,
+        {
+            subscription_id: `sub_${Date.now()}`,
+            plan_details: {
+                plan_id: "gold_monthly_trial_399"
+            },
+            customer_details: {
+                customer_id: currentProfile._id.toString(),
+                customer_name: currentProfile.displayName,
+                customer_email: user.email,
+                customer_phone: currentProfile.phone.mobile
+            },
+            subscription_expiry_time: expiryYear,
+            next_schedule_date: new Date(),
+            first_charge_date: nextMonth,
+            subscription_meta: {
+                return_url: `${process.env.DOMAIN_LINK}/payment/status?order_id=${order._id}`,
+                notify_url: `https://${process.extra.DOMAIN}/subscription/webhook/autopay/`
+            }
         },
-        order_meta: {
-            return_url: `https://${process.env.DOMAIN}/subscription/processing/`,
-            notify_url: `https://${process.env.DOMAIN}/subscription/webhook/autopay/`
-        },
-        mandate: {
-            mandate_amount: actualPrice,
-            mandate_currency: "INR",
-            mandate_frequency: "MONTHLY",
-            mandate_max_amount: actualPrice,
-            mandate_start_date: new Date(
-                nextMonth.setMonth(nextMonth.getMonth() + 1)
-            ),
-            mandate_end_date: new Date(
-                nextYear.setFullYear(nextYear.getFullYear() + 1)
-            )
-        },
-        order_tags: {
-            subscription: "true"
+        {
+            headers: {
+                "x-api-version": "2025-01-01",
+                "x-client-id": process.env.CASHFREE_APP_ID,
+                "x-client-secret": process.env.CASHFREE_SECRET_KEY,
+                "Content-Type": "application/json"
+            }
         }
-    });
+    );
 
     const cashfreeSubscription = response.data;
 
     const autoPay = await AutoPay.create({
         userId: currentProfile._id,
-        gatewaySubscriptionId: cashfreeSubscription.order_id,
+        gatewaySubscriptionId: cashfreeSubscription.subscription_id,
         isTrial: true,
-        nextChargeAt: new Date(nextMonth.setMonth(nextMonth.getMonth() + 1)),
+        nextChargeAt: nextMonth,
         mandateAmount: actualPrice,
         metadata: {
             ip: req.realIp,
@@ -105,6 +129,6 @@ export const createAutopay = async (req, res, next) => {
     });
 
     req.auth.order = autoPay;
-    req.auth.cashfreeOrder = cashfreeSubscription;
+    req.auth.cashfreeSubscription = cashfreeSubscription;
     return next();
 };

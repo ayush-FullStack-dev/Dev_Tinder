@@ -7,7 +7,6 @@ import { updateProfile } from "../../../../../../services/profile.service.js";
 
 export const handleAutoPayWebhook = async (req, res, next) => {
     const { type, data } = req.auth.value;
-
     const subscription = data?.subscription;
     const payment = data?.payment;
 

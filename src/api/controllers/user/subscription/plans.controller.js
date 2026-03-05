@@ -11,15 +11,31 @@ export const subscriptionPlans = async (req, res) => {
     const { currentProfile } = req.auth;
     const premium = buildSubscriptionInfo(currentProfile.premium);
 
-    const alreadyTrial = await Subscription.exists({
+    const trailInfo = await Subscription.findOne({
         userId: currentProfile._id,
         isTrial: true,
         action: "PURCHASE"
-    });
+    }).populate([
+        {
+            path: "paymentOrderId",
+            match: { status: "paid" }
+        },
+        {
+            path: "autoPayOrderId",
+            match: {
+                status: { $in: ["authenticated", "active"] }
+            }
+        }
+    ]);
+
+    const alreadyUsed = !!(
+        (trailInfo && trailInfo.paymentOrderId) ||
+        trailInfo.autoPayOrderId
+    );
 
     const hasActiveGold = premium.isActive && premium.tier === "gold";
 
-    const isTrialEligible = !alreadyTrial && !hasActiveGold;
+    const isTrialEligible = !alreadyUsed && !hasActiveGold;
 
     const trialPlan = {
         id: "gold_trial",

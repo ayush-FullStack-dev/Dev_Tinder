@@ -20,6 +20,9 @@ export const validateBody = (req, res, next) => {
         "Invalid payment payload"
     );
 
+    console.log(validPayment.jsonResponse);
+    console.log(req.body)
+
     if (!validPayment?.success) {
         return sendResponse(res, 400, validPayment.jsonResponse);
     }
