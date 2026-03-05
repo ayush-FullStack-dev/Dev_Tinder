@@ -102,7 +102,7 @@ export const createAutopay = async (req, res, next) => {
             first_charge_date: nextMonth,
             subscription_meta: {
                 return_url: `${process.env.DOMAIN_LINK}/payment/status?order_id=${autoPay._id}`,
-                notify_url: `https://${process.extra.DOMAIN}/subscription/webhook/autopay/`
+                
             }
         },
         {
@@ -116,6 +116,7 @@ export const createAutopay = async (req, res, next) => {
     );
 
     const cashfreeSubscription = response.data;
+
     autoPay.gatewaySubscriptionId = cashfreeSubscription.subscription_id;
 
     await autoPay.save();
