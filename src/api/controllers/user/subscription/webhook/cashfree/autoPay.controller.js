@@ -5,6 +5,27 @@ import sendResponse from "../../../../../../helpers/sendResponse.js";
 import { PLANS } from "../../../../../../constants/subscription/plans.constant.js";
 import { updateProfile } from "../../../../../../services/profile.service.js";
 
+import { subscriptionValidator } from "../../../../../../validators/user/payment/cashfree/subscription.validator.js"
+
+import { checkValidation } from "../../../../../../helpers/helpers.js";
+
+export const validateSubscriptionBody = (req, res, next) => {
+    const validPayment = checkValidation(
+        subscriptionValidator,
+        req,
+        "Invalid subscription payload"
+    );
+
+    console.log(validPayment.jsonResponse);
+
+    if (!validPayment?.success) {
+        return sendResponse(res, 400, validPayment.jsonResponse);
+    }
+
+    req.auth = { ...req.auth, value: validPayment.value };
+    return next();
+};
+
 export const handleAutoPayWebhook = async (req, res, next) => {
     const { type, data } = req.auth.value;
     const subscription = data?.subscription;

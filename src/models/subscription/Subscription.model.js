@@ -34,7 +34,6 @@ const SubscriptionSchema = new mongoose.Schema(
             required: true
         },
 
-
         
         fromPlan: {
             type: String,

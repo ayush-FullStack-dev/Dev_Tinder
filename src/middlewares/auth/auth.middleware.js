@@ -10,13 +10,15 @@ export const isLogin = (req, res, next) => {
 
     if (!accessToken) {
         return sendResponse(res, 401, {
-            message: "Login required to access this resource."
+            message: "Login required to access this resource.",
+            code: "login_required"
         });
     }
 
     if (!data?.success) {
         return sendResponse(res, 401, {
-            message: data.message
+            message: data.message,
+            code: "refresh_auth_token"
         });
     }
 
@@ -25,7 +27,6 @@ export const isLogin = (req, res, next) => {
         info: data?.data,
         refreshToken
     };
-
     return next();
 };
 
@@ -38,7 +39,8 @@ export const findLoginData = async (req, res, next) => {
 
     if (!user) {
         return sendResponse(res, 401, {
-            message: "AccessToken is invalid please login again."
+            message: "AccessToken is invalid please login again.",
+            code: "relogin_required"
         });
     }
 

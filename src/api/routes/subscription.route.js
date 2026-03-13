@@ -22,6 +22,7 @@ import {
     createAutopay
 } from "../controllers/user/subscription/activate-trial.controller.js";
 import { subscriptionHistory } from "../controllers/user/subscription/history.controller.js";
+
 import {
     validateBody,
     validateOrder,
@@ -29,7 +30,8 @@ import {
     handlePaymentCoupon,
     handlePaymentSuccess
 } from "../controllers/user/subscription/webhook/cashfree/verifyPayment.controller.js";
-import {
+import {validateSubscriptionBody
+,
     handleAutoPayWebhook,
     handleAutoPaySuccess
 } from "../controllers/user/subscription/webhook/cashfree/autoPay.controller.js";
@@ -37,7 +39,7 @@ import {
 const router = express.Router();
 
 router.use(
-    /^((?!webhook).)*$/,
+    /^\/(?!webhook|verify).*$/,
     isLogin,
     findLoginData,
     isProfileExists,
@@ -75,7 +77,7 @@ router.post(
 
 router.post(
     "/webhook/autopay",
-    validateBody,
+    validateSubscriptionBody,
     validateSigntaure,
     handleAutoPayWebhook,
     handleAutoPaySuccess

@@ -57,7 +57,6 @@ export const activateTrial = async (req, res, next) => {
         premium,
         plan: PLANS["GOLD"]
     };
-
     return next();
 };
 
@@ -97,12 +96,12 @@ export const createAutopay = async (req, res, next) => {
                 customer_email: user.email,
                 customer_phone: currentProfile.phone.mobile
             },
+            authorization_details: {
+                authorization_amount_refund: true
+            },
             subscription_expiry_time: expiryYear,
-            next_schedule_date: new Date(),
-            first_charge_date: nextMonth,
             subscription_meta: {
-                return_url: `${process.env.DOMAIN_LINK}/payment/status?order_id=${autoPay._id}`,
-                
+                return_url: `${process.extra.DOMAIN_LINK}/payment/status?order_id=${autoPay._id}`
             }
         },
         {
@@ -118,7 +117,6 @@ export const createAutopay = async (req, res, next) => {
     const cashfreeSubscription = response.data;
 
     autoPay.gatewaySubscriptionId = cashfreeSubscription.subscription_id;
-
     await autoPay.save();
 
     await Subscription.create({
