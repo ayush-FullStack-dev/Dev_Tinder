@@ -29,8 +29,8 @@ export const subscriptionPlans = async (req, res) => {
     ]);
 
     const alreadyUsed = !!(
-        (trailInfo && trailInfo.paymentOrderId) ||
-        trailInfo.autoPayOrderId
+        trailInfo &&
+        (trailInfo.paymentOrderId || trailInfo.autoPayOrderId)
     );
 
     const hasActiveGold = premium.isActive && premium.tier === "gold";

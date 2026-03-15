@@ -33,8 +33,8 @@ export const activateTrial = async (req, res, next) => {
     ]);
 
     const alreadyUsed = !!(
-        (trailInfo && trailInfo.paymentOrderId) ||
-        trailInfo.autoPayOrderId
+        trailInfo &&
+        (trailInfo.paymentOrderId || trailInfo.autoPayOrderId)
     );
 
     if (alreadyUsed) {

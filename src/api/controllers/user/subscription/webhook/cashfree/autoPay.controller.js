@@ -18,6 +18,8 @@ export const validateSubscriptionBody = (req, res, next) => {
 
     console.log(validPayment.jsonResponse);
 
+console.log(req.body);
+
     if (!validPayment?.success) {
         return sendResponse(res, 400, validPayment.jsonResponse);
     }
