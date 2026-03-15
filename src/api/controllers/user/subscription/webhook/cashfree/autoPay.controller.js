@@ -5,7 +5,7 @@ import sendResponse from "../../../../../../helpers/sendResponse.js";
 import { PLANS } from "../../../../../../constants/subscription/plans.constant.js";
 import { updateProfile } from "../../../../../../services/profile.service.js";
 
-import { subscriptionValidator } from "../../../../../../validators/user/payment/cashfree/subscription.validator.js"
+import { subscriptionValidator } from "../../../../../../validators/user/payment/cashfree/subscription.validator.js";
 
 import { checkValidation } from "../../../../../../helpers/helpers.js";
 
@@ -15,10 +15,6 @@ export const validateSubscriptionBody = (req, res, next) => {
         req,
         "Invalid subscription payload"
     );
-
-    console.log(validPayment.jsonResponse);
-
-console.log(req.body);
 
     if (!validPayment?.success) {
         return sendResponse(res, 400, validPayment.jsonResponse);
@@ -30,6 +26,8 @@ console.log(req.body);
 
 export const handleAutoPayWebhook = async (req, res, next) => {
     const { type, data } = req.auth.value;
+    console.log(type);
+    
     const subscription = data?.subscription;
     const payment = data?.payment;
 
@@ -49,7 +47,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_AUTHORIZED") {
+    if (type === "SUBSCRIPTION_STATUS_CHANGED") {
         await AutoPay.updateOne(
             { _id: autopay._id },
             { status: "authenticated", expiresAt: null }
