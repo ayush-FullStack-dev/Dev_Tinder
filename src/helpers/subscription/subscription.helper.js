@@ -51,5 +51,38 @@ export const getBadges = premium =>
     isGoldActive(premium)
         ? ["gold"]
         : isSilverActive(premium)
-        ? ["silver"]
-        : [];
+          ? ["silver"]
+          : [];
+
+export const mapStatus = status => {
+    switch (status) {
+        case "ACTIVE":
+        case "SUCCESS":
+            return "active";
+
+        case "ON_HOLD":
+        case "CUSTOMER_PAUSED":
+            return "paused";
+
+        case "CUSTOMER_CANCELLED":
+        case "CANCELLED":
+            return "cancelled";
+
+        case "EXPIRED":
+        case "LINK_EXPIRED":
+        case "CARD_EXPIRED":
+            return "expired";
+
+        case "BANK_APPROVAL_PENDING":
+            return "authenticated";
+
+        case "COMPLETED":
+            return "active"; // ⚠️ depends: agar final hai to "expired" bhi ho sakta
+
+        case "FAILED":
+            return "failed";
+
+        default:
+            return "created";
+    }
+};

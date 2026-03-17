@@ -30,8 +30,8 @@ import {
     handlePaymentCoupon,
     handlePaymentSuccess
 } from "../controllers/user/subscription/webhook/cashfree/verifyPayment.controller.js";
-import {validateSubscriptionBody
-,
+import {
+    validateSubscriptionBody,
     handleAutoPayWebhook,
     handleAutoPaySuccess
 } from "../controllers/user/subscription/webhook/cashfree/autoPay.controller.js";
@@ -78,7 +78,6 @@ router.post(
 router.post(
     "/webhook/autopay",
     validateSubscriptionBody,
-    validateSigntaure,
     handleAutoPayWebhook,
     handleAutoPaySuccess
 );

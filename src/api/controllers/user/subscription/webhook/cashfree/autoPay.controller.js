@@ -9,6 +9,8 @@ import { subscriptionValidator } from "../../../../../../validators/user/payment
 
 import { checkValidation } from "../../../../../../helpers/helpers.js";
 
+import { mapStatus } from "../../../../../../helpers/subscription/subscription.helper.js";
+
 export const validateSubscriptionBody = (req, res, next) => {
     const validPayment = checkValidation(
         subscriptionValidator,
@@ -25,18 +27,19 @@ export const validateSubscriptionBody = (req, res, next) => {
 };
 
 export const handleAutoPayWebhook = async (req, res, next) => {
+    let date = new Date();
+    date.setMonth(date.getMonth() + 1);
     const { type, data } = req.auth.value;
-    console.log(type);
-    
     const subscription = data?.subscription;
     const payment = data?.payment;
+    const subscriptionId = data.subscription_id;
+    const autoPayStatus = mapStatus(
+        data.authorization_details.authorization_status
+    );
 
-    const subscriptionId =
-        subscription?.subscription_id || payment?.subscription_id;
+    req.auth.next_charge_time = date;
 
-    if (!subscriptionId) {
-        return sendResponse(res, 200);
-    }
+    console.log(subscriptionId);
 
     const autopay = await AutoPay.findOneAndUpdate(
         { gatewaySubscriptionId: subscriptionId },
@@ -47,38 +50,33 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_STATUS_CHANGED") {
-        await AutoPay.updateOne(
-            { _id: autopay._id },
-            { status: "authenticated", expiresAt: null }
-        );
-
-        return sendResponse(res, 200);
-    }
-
-    if (type === "SUBSCRIPTION_ACTIVATED") {
+    if (type === "SUBSCRIPTION_AUTH_STATUS") {
         await AutoPay.updateOne(
             { _id: autopay._id },
             {
-                status: "active",
-                nextChargeAt: new Date(subscription.next_charge_time)
+                status: autoPayStatus,
+                nextChargeAt: req.auth.next_charge_time
             }
         );
 
-        req.auth.autopay = autopay;
-        req.auth.subscription = subscription;
+        if (data.authorization_details.authorization_status === "SUCCESS") {
+            req.auth.autopay = autopay;
+            req.auth.subscription = subscription;
+            return next();
+        }
+        
+    } else if (type === "SUBSCRIPTION_STATUS_CHANGED") {
+        await AutoPay.updateOne(
+            { _id: autopay._id },
+            { status: autoPayStatus }
+        );
 
-        return next();
-    }
-
-    if (type === "SUBSCRIPTION_CHARGED") {
+        return sendResponse(res, 200);
+    } else if (type === "SUBSCRIPTION_PAYMENT") {
         req.auth.autopay = autopay;
         req.auth.payment = payment;
-
         return next();
-    }
-
-    if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
+    } else if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
         await AutoPay.updateOne({ _id: autopay._id }, { status: "paused" });
 
         return sendResponse(res, 200);
@@ -88,7 +86,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 };
 
 export const handleAutoPaySuccess = async (req, res) => {
-    const { autopay, payment } = req.auth;
+    const { next_charge_time, autopay, payment } = req.auth;
     const { type } = req.auth.value;
 
     const subscription = await Subscription.findOne({
@@ -136,7 +134,7 @@ export const handleAutoPaySuccess = async (req, res) => {
         { _id: autopay._id },
         {
             status: "active",
-            nextChargeAt: new Date(payment.next_charge_time)
+            nextChargeAt: new Date(next_charge_time)
         }
     );
 

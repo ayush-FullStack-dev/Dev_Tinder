@@ -10,8 +10,7 @@ const AutoPaySchema = new mongoose.Schema(
         },
 
         gatewaySubscriptionId: {
-            type: String,
-            
+            type: String
         },
 
         gateway: {
@@ -24,6 +23,7 @@ const AutoPaySchema = new mongoose.Schema(
             type: String,
             enum: [
                 "created",
+                "failed",
                 "authenticated",
                 "active",
                 "paused",
