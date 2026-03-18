@@ -77,6 +77,7 @@ router.post(
 
 router.post(
     "/webhook/autopay",
+    validateSigntaure,
     validateSubscriptionBody,
     handleAutoPayWebhook,
     handleAutoPaySuccess

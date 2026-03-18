@@ -39,13 +39,13 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 
     req.auth.next_charge_time = date;
 
-    console.log(subscriptionId);
-
     const autopay = await AutoPay.findOneAndUpdate(
         { gatewaySubscriptionId: subscriptionId },
-        { expiresAt: null }
+        { expiresAt: null },
+        { new: true }
     );
 
+    console.log(autopay);
     if (!autopay) {
         return sendResponse(res, 200);
     }
@@ -64,7 +64,6 @@ export const handleAutoPayWebhook = async (req, res, next) => {
             req.auth.subscription = subscription;
             return next();
         }
-        
     } else if (type === "SUBSCRIPTION_STATUS_CHANGED") {
         await AutoPay.updateOne(
             { _id: autopay._id },
