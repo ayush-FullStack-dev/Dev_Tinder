@@ -36,7 +36,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
     );
 
     req.auth.next_charge_time = date;
-    
+
     const autopay = await AutoPay.findOneAndUpdate(
         { gatewaySubscriptionId: subscriptionId },
         { expiresAt: null },
@@ -48,8 +48,6 @@ export const handleAutoPayWebhook = async (req, res, next) => {
     }
 
     if (type === "SUBSCRIPTION_AUTH_STATUS") {
-        console.log(autoPayStatus);
-
         await AutoPay.updateOne(
             { _id: autopay._id },
             {
@@ -58,9 +56,8 @@ export const handleAutoPayWebhook = async (req, res, next) => {
             }
         );
 
-        if (data.authorization_details.authorization_status === "SUCCESS") {
-        	console.log(true)
-        	
+        if (autoPayStatus === "active") {
+            console.log(true);
             req.auth.autopay = autopay;
             return next();
         }
