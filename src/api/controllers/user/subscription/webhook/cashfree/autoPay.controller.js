@@ -30,27 +30,26 @@ export const handleAutoPayWebhook = async (req, res, next) => {
     let date = new Date();
     date.setMonth(date.getMonth() + 1);
     const { type, data } = req.auth.value;
-    const subscription = data?.subscription;
-    const payment = data?.payment;
     const subscriptionId = data.subscription_id;
     const autoPayStatus = mapStatus(
         data.authorization_details.authorization_status
     );
 
     req.auth.next_charge_time = date;
-
+    
     const autopay = await AutoPay.findOneAndUpdate(
         { gatewaySubscriptionId: subscriptionId },
         { expiresAt: null },
         { new: true }
     );
 
-    console.log(autopay);
     if (!autopay) {
         return sendResponse(res, 200);
     }
 
     if (type === "SUBSCRIPTION_AUTH_STATUS") {
+        console.log(autoPayStatus);
+
         await AutoPay.updateOne(
             { _id: autopay._id },
             {
@@ -60,8 +59,9 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         );
 
         if (data.authorization_details.authorization_status === "SUCCESS") {
+        	console.log(true)
+        	
             req.auth.autopay = autopay;
-            req.auth.subscription = subscription;
             return next();
         }
     } else if (type === "SUBSCRIPTION_STATUS_CHANGED") {
@@ -73,7 +73,6 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     } else if (type === "SUBSCRIPTION_PAYMENT") {
         req.auth.autopay = autopay;
-        req.auth.payment = payment;
         return next();
     } else if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
         await AutoPay.updateOne({ _id: autopay._id }, { status: "paused" });
@@ -85,12 +84,14 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 };
 
 export const handleAutoPaySuccess = async (req, res) => {
-    const { next_charge_time, autopay, payment } = req.auth;
+    const { next_charge_time, autopay } = req.auth;
     const { type } = req.auth.value;
 
     const subscription = await Subscription.findOne({
         autoPayOrderId: autopay._id
     });
+
+    console.log(subscription);
 
     if (!subscription) {
         return sendResponse(res, 200);
