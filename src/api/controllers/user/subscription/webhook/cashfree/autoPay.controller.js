@@ -68,7 +68,8 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 
         return sendResponse(res, 200);
     } else if (type === "SUBSCRIPTION_PAYMENT_SUCCESS") {
-        console.log(SUBSCRIPTION_PAYMENT_SUCCESS);
+        console.log(data);
+
         req.auth.autopay = autopay;
     } else if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
         await AutoPay.updateOne({ _id: autopay._id }, { status: "paused" });
