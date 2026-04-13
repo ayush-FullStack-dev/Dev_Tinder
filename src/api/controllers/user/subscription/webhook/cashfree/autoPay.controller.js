@@ -57,7 +57,6 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         );
 
         if (autoPayStatus === "active") {
-            console.log(true);
             req.auth.autopay = autopay;
             return next();
         }
@@ -68,9 +67,9 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         );
 
         return sendResponse(res, 200);
-    } else if (type === "SUBSCRIPTION_PAYMENT") {
+    } else if (type === "SUBSCRIPTION_PAYMENT_SUCCESS") {
+        console.log(SUBSCRIPTION_PAYMENT_SUCCESS);
         req.auth.autopay = autopay;
-        return next();
     } else if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
         await AutoPay.updateOne({ _id: autopay._id }, { status: "paused" });
 
@@ -88,13 +87,11 @@ export const handleAutoPaySuccess = async (req, res) => {
         autoPayOrderId: autopay._id
     });
 
-    console.log(subscription);
-
     if (!subscription) {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_CHARGED") {
+    if (type === "SUBSCRIPTION_PAYMENT_SUCCESS") {
         await Subscription.create({
             userId: subscription.userId,
             autoPayOrderId: autopay._id,
