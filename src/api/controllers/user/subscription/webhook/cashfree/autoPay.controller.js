@@ -47,7 +47,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_AUTH_STATUS") {
+    if (type === "SUBSCRIPTION_AUTH_STATU") {
         await AutoPay.updateOne(
             { _id: autopay._id },
             {
