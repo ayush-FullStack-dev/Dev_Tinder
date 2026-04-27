@@ -47,6 +47,8 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     }
 
+    
+
     if (type === "SUBSCRIPTION_AUTH_STATU") {
         await AutoPay.updateOne(
             { _id: autopay._id },
@@ -69,7 +71,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
         return sendResponse(res, 200);
     } else if (
         type === "SUBSCRIPTION_PAYMENT_SUCCESS" &&
-        data.payment_type !== "charge"
+        data.payment_type === "charge"
     ) {
         req.auth.autopay = autopay;
         return next();
@@ -78,6 +80,8 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 
         return sendResponse(res, 200);
     }
+
+console.log(data.payment_type);
 
     return sendResponse(res, 200);
 };
