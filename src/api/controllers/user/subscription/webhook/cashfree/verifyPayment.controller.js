@@ -66,19 +66,10 @@ export const validateOrder = async (req, res, next) => {
         return sendResponse(res, 200);
     }
 
-    if (payment.payment_amount !== order.amount.final) {
-        await PaymentOrder.findByIdAndUpdate(order._id, {
-            status: "failed",
-            failedAt: new Date(),
-            failureReason: "AMOUNT_MISMATCH"
-        });
-
-        return sendResponse(res, 400);
-    }
-
     if (isSuccess) {
         order.status = "paid";
         order.gatewayPaymentId = payment.cf_payment_id;
+        order.method = payment.payment_group;
         order.paidAt = new Date();
         order.expiresAt = null;
 
@@ -95,6 +86,7 @@ export const validateOrder = async (req, res, next) => {
         });
 
         order.status = "failed";
+        order.method = payment.payment_group;
         order.failedAt = new Date();
         await order.save();
     }

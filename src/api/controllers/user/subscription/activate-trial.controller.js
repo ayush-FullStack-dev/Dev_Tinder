@@ -61,7 +61,7 @@ export const activateTrial = async (req, res, next) => {
 };
 
 export const createAutopay = async (req, res, next) => {
-    const { user, currentProfile, premium, plan } = req.auth;
+    const { user, currentProfile, premium, plan, gateway } = req.auth;
     const d = new Date();
     let nextMonth = new Date(d);
     let expiryYear = new Date(d);
@@ -75,7 +75,8 @@ export const createAutopay = async (req, res, next) => {
         userId: currentProfile._id,
         isTrial: true,
         nextChargeAt: nextMonth,
-        mandateAmount: actualPrice,
+        mandateAmount: actualPrice,gateway
+,
         metadata: {
             ip: req.realIp,
             userAgent: req.headers["user-agent"],

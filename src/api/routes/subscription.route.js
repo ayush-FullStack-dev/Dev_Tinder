@@ -12,7 +12,7 @@ import { subscriptionPlans } from "../controllers/user/subscription/plans.contro
 import {
     validatePlan,
     validateCoupon,
-    validateMethod,
+    initlizeGateway,
     finalizeAmount,
     createOrder,
     sendPayment
@@ -22,6 +22,7 @@ import {
     createAutopay
 } from "../controllers/user/subscription/activate-trial.controller.js";
 import { subscriptionHistory } from "../controllers/user/subscription/history.controller.js";
+import { getSubscriptionStatus } from "../controllers/user/subscription/substatus.controller.js";
 
 import {
     validateBody,
@@ -53,13 +54,14 @@ router.use(
 );
 
 router.get("/plans", subscriptionPlans);
+router.get("/subscription-status", getSubscriptionStatus);
 router.get("/history", validateBasicInfo, subscriptionHistory);
 
 router.post(
     "/checkout",
     validateBasicInfo,
     validatePlan,
-    validateMethod,
+    initlizeGateway,
     validateCoupon,
     finalizeAmount,
     createOrder,
@@ -70,7 +72,7 @@ router.post(
     "/activate-trial",
     validateBasicInfo,
     activateTrial,
-    validateMethod,
+    initlizeGateway,
     createAutopay,
     sendPayment
 );
