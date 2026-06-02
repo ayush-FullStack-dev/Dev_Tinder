@@ -47,8 +47,7 @@ const PaymentOrderSchema = new mongoose.Schema(
 
         method: {
             type: String,
-            enum: ["upi", "card", "netbanking", "wallet"],
-            required: true
+            enum: ["upi", "card", "netbanking", "wallet"]
         },
 
         gateway: {

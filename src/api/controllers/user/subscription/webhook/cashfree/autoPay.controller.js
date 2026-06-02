@@ -5,59 +5,75 @@ import sendResponse from "../../../../../../helpers/sendResponse.js";
 import { PLANS } from "../../../../../../constants/subscription/plans.constant.js";
 import { updateProfile } from "../../../../../../services/profile.service.js";
 
-export const handleAutoPayWebhook = async (req, res, next) => {
-    const { type, data } = req.auth.value;
-    const subscription = data?.subscription;
-    const payment = data?.payment;
+import { subscriptionValidator } from "../../../../../../validators/user/payment/cashfree/subscription.validator.js";
 
-    const subscriptionId =
-        subscription?.subscription_id || payment?.subscription_id;
+import { checkValidation } from "../../../../../../helpers/helpers.js";
 
-    if (!subscriptionId) {
-        return sendResponse(res, 200);
+import { mapStatus } from "../../../../../../helpers/subscription/subscription.helper.js";
+
+export const validateSubscriptionBody = (req, res, next) => {
+    const validPayment = checkValidation(
+        subscriptionValidator,
+        req,
+        "Invalid subscription payload"
+    );
+
+    if (!validPayment?.success) {
+        return sendResponse(res, 400, validPayment.jsonResponse);
     }
+
+    req.auth = { ...req.auth, value: validPayment.value };
+    return next();
+};
+
+export const handleAutoPayWebhook = async (req, res, next) => {
+    let date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    const { type, data } = req.auth.value;
+    const subscriptionId = data.subscription_id;
+    const autoPayStatus = mapStatus(
+        data.authorization_details.authorization_status
+    );
+
+    req.auth.next_charge_time = date;
 
     const autopay = await AutoPay.findOneAndUpdate(
         { gatewaySubscriptionId: subscriptionId },
-        { expiresAt: null }
+        { expiresAt: null },
+        { new: true }
     );
 
     if (!autopay) {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_AUTHORIZED") {
-        await AutoPay.updateOne(
-            { _id: autopay._id },
-            { status: "authenticated", expiresAt: null }
-        );
-
-        return sendResponse(res, 200);
-    }
-
-    if (type === "SUBSCRIPTION_ACTIVATED") {
+    if (type === "SUBSCRIPTION_AUTH_STATUS") {
         await AutoPay.updateOne(
             { _id: autopay._id },
             {
-                status: "active",
-                nextChargeAt: new Date(subscription.next_charge_time)
+                status: autoPayStatus,
+                nextChargeAt: req.auth.next_charge_time
             }
         );
 
+        if (autoPayStatus === "active") {
+            req.auth.autopay = autopay;
+            return next();
+        }
+    } else if (type === "SUBSCRIPTION_STATUS_CHANGED") {
+        await AutoPay.updateOne(
+            { _id: autopay._id },
+            { status: autoPayStatus }
+        );
+
+        return sendResponse(res, 200);
+    } else if (
+        type === "SUBSCRIPTION_PAYMENT_SUCCESS" &&
+        data.payment_type === "charge"
+    ) {
         req.auth.autopay = autopay;
-        req.auth.subscription = subscription;
-
         return next();
-    }
-
-    if (type === "SUBSCRIPTION_CHARGED") {
-        req.auth.autopay = autopay;
-        req.auth.payment = payment;
-
-        return next();
-    }
-
-    if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
+    } else if (type === "SUBSCRIPTION_PAYMENT_FAILED") {
         await AutoPay.updateOne({ _id: autopay._id }, { status: "paused" });
 
         return sendResponse(res, 200);
@@ -67,7 +83,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 };
 
 export const handleAutoPaySuccess = async (req, res) => {
-    const { autopay, payment } = req.auth;
+    const { next_charge_time, autopay } = req.auth;
     const { type } = req.auth.value;
 
     const subscription = await Subscription.findOne({
@@ -78,7 +94,7 @@ export const handleAutoPaySuccess = async (req, res) => {
         return sendResponse(res, 200);
     }
 
-    if (type === "SUBSCRIPTION_CHARGED") {
+    if (type === "SUBSCRIPTION_PAYMENT_SUCCESS") {
         await Subscription.create({
             userId: subscription.userId,
             autoPayOrderId: autopay._id,
@@ -115,7 +131,7 @@ export const handleAutoPaySuccess = async (req, res) => {
         { _id: autopay._id },
         {
             status: "active",
-            nextChargeAt: new Date(payment.next_charge_time)
+            nextChargeAt: new Date(next_charge_time)
         }
     );
 

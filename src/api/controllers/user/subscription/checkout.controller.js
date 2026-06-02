@@ -51,18 +51,10 @@ export const validatePlan = (req, res, next) => {
     return next();
 };
 
-export const validateMethod = async (req, res, next) => {
-    const { currentProfile, method } = req.auth;
+export const initlizeGateway = async (req, res, next) => {
+    const { currentProfile } = req.auth;
 
-    if (!METHOD_CONFIG[method]) {
-        return sendResponse(res, 400, {
-            code: "PAYMENT_METHOD_NOT_SUPPORTED",
-            message: "Selected payment method is not available",
-            availableMethods: Object.keys(METHOD_CONFIG)
-        });
-    }
-
-    req.auth.gateway = METHOD_CONFIG[method].gateway;
+    req.auth.gateway = METHOD_CONFIG.default.gateway;
     return next();
 };
 
@@ -87,7 +79,7 @@ export const validateCoupon = async (req, res, next) => {
 };
 
 export const finalizeAmount = async (req, res, next) => {
-    const { currentProfile, premium, plan, coupon, method, gateway } = req.auth;
+    const { currentProfile, premium, plan, coupon, gateway } = req.auth;
 
     const baseAmount = plan.price;
     let finalAmount = baseAmount;
@@ -124,7 +116,6 @@ export const finalizeAmount = async (req, res, next) => {
                   discountValue: discount
               }
             : null,
-        method,
         gateway,
         metadata: {
             ip: req.realIp,
@@ -195,8 +186,6 @@ export const sendPayment = (req, res) => {
         req.auth;
 
     if (cashfreeSubscription) {
-        
-        
         return sendResponse(res, 200, {
             orderId: order._id,
             gateway,
@@ -204,8 +193,7 @@ export const sendPayment = (req, res) => {
             payment: {
                 orderId: cashfreeSubscription.subscription_id,
                 subscriptionSessionId:
-                    cashfreeSubscription.subscription_session_id,
-                
+                    cashfreeSubscription.subscription_session_id
             },
             expiresIn: 600
         });

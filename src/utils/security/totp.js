@@ -1,7 +1,7 @@
-import { authenticator } from "otplib";
+import { OTP  } from "otplib";
 
 export const verifyTotpCode = (code, secret) => {
-    const isValid = authenticator.verify({
+    const isValid = OTP.verify({
         token: code,
         secret,
         window: 1

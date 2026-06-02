@@ -1,4 +1,4 @@
-import { authenticator } from "otplib";
+import { OTP  } from "otplib";
 import QRCode from "qrcode";
 
 
@@ -35,7 +35,7 @@ export const addTotpHandler = async (req, res) => {
         return sendResponse(res, 401, "Authenticator Already setup");
     }
 
-    const secret = authenticator.generateSecret();
+    const secret = OTP.generateSecret();
     const otpauthUrl = `otpauth://totp/DevTinder:${user.email}
 ?secret=${secret}
 &issuer=DevTinder

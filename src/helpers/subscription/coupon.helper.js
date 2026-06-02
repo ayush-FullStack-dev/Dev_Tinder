@@ -141,5 +141,29 @@ export const validCoupon = async (couponInfo, plan, currentUser) => {
         };
     }
 
-    return true;
+    const baseAmount = plan.price;
+    let finalAmount = baseAmount;
+    let discount = 0;
+
+    if (couponInfo.discount.type === "flat") {
+        discount = couponInfo.discount.value;
+    }
+    if (couponInfo.discount.type === "percentage") {
+        discount = (baseAmount * couponInfo.discount.value) / 100;
+        if (couponInfo.discount.maxDiscount) {
+            discount = Math.min(discount, couponInfo.discount.maxDiscount);
+        }
+    }
+
+    discount = Math.min(discount, baseAmount);
+
+    finalAmount = Number((baseAmount - discount).toFixed(2));
+
+    return {
+        success: true,
+        discountType: couponInfo.discount.type,
+        discountValue: couponInfo.discount.value,
+        discountAmount: discount,
+        finalPrice: finalAmount
+    };
 };
