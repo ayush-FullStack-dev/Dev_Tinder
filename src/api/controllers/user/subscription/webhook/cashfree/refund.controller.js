@@ -20,8 +20,17 @@ export const validateRefundBody = (req, res, next) => {
 
 export const handleRefundWebhook = async (req, res) => {
   const { type, data } = req.auth.value;
+  console.log("starting refund procccessing", data);
   const isRefundStatusWebhook = type === "REFUND_STATUS_WEBHOOK";
   const isAutoRefundStatusWebhook = type === "AUTO_REFUND_STATUS_WEBHOOK";
+
+  if (!isRefundStatusWebhook && !isAutoRefundStatusWebhook) {
+    return sendResponse(res, 400);
+  }
+
+  console.log("isRefundStatusWebhook", isRefundStatusWebhook);
+  console.log("isAutoRefundStatusWebhook", isAutoRefundStatusWebhook);
+
   const refundData = isRefundStatusWebhook ? data.refund : data.auto_refund;
 
   const refundStatus =
@@ -32,13 +41,22 @@ export const handleRefundWebhook = async (req, res) => {
     { $set: { status: refundStatus, refundedAt: new Date() } },
   );
 
+  console.log("refund process completed", refundStatus);
+
   return sendResponse(res, 200);
 };
 
 export const handleRefundAutoPayWebhook = async (req, res) => {
   const { type, data: refundData } = req.auth.value;
+  console.log("starting refund procccessing", refundData);
+
   const isSubscriptionRefundStatusWebhook =
     type === "SUBSCRIPTION_REFUND_STATUS";
+
+  console.log(
+    "isSubscriptionRefundStatusWebhook",
+    isSubscriptionRefundStatusWebhook,
+  );
 
   if (!isSubscriptionRefundStatusWebhook) {
     return sendResponse(res, 400);
@@ -51,6 +69,8 @@ export const handleRefundAutoPayWebhook = async (req, res) => {
     { refundId: refundData.refund_id },
     { $set: { status: refundStatus, refundedAt: new Date() } },
   );
+
+  console.log("refund process completed", refundStatus);
 
   return sendResponse(res, 200);
 };
