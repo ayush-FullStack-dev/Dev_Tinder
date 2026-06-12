@@ -13,7 +13,7 @@ export const refundAutopaySubscription = async (req, res) => {
 
   const subscriptionInfo = await Subscription.findOne({
     userId: currentProfile._id,
-    isTrial: false,
+    // isTrial: false,
     using: true,
     used: false,
   }).populate([
@@ -39,7 +39,8 @@ export const refundAutopaySubscription = async (req, res) => {
 
   const productInfo = subscriptionInfo.autoPayOrderId;
 
-  const productPrice = productInfo.amount.final;
+  const productPrice = productInfo.mandateAmount;
+
   const perDayPrice =
     productPrice /
     daysInMonth(startDate.getFullYear(), startDate.getMonth() + 1);
@@ -57,13 +58,14 @@ export const refundAutopaySubscription = async (req, res) => {
 
   try {
     const res = await axios.post(
-      `${BASE_CASHFREE_URL}/subscriptions/${productInfo.gatewaySubscriptionId}/refund/`,
+      `${BASE_CASHFREE_URL}/subscriptions/${productInfo.gatewaySubscriptionId}/refunds`,
       {
         subscription_id: productInfo.gatewaySubscriptionId,
+        payment_id: productInfo.gatewayPaymentId,
         refund_id: `refund_${Date.now() + Math.floor(Math.random() * 1000)}`,
         refund_amount: refundAmount,
         refund_note: "partial refund",
-        refund_speed: "INSTANT",
+        refund_speed: "STANDARD",
       },
       {
         headers: cashfreeHeaders,
@@ -83,6 +85,7 @@ export const refundAutopaySubscription = async (req, res) => {
 
     await subscriptionInfo.save();
   } catch (error) {
+    console.log(error);
     return sendResponse(res, 500, {
       message: "Failed to process autopay refund",
       error: error.message,
@@ -148,7 +151,7 @@ export const refundSubscription = async (req, res) => {
         refund_amount: refundAmount,
         refund_id: `refund_${Date.now() + Math.floor(Math.random() * 1000)}`,
         refund_note: "partial refund",
-        refund_speed: "INSTANT",
+        refund_speed: "STANDARD",
       },
       {
         headers: cashfreeHeaders,

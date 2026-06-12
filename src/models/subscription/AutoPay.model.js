@@ -13,8 +13,9 @@ const AutoPaySchema = new mongoose.Schema(
       type: String,
     },
 
-    gatewayReferenceId: {
-      type: Number,
+    gatewayPaymentId: {
+      type: String,
+      default: null,
     },
 
     gateway: {
@@ -40,11 +41,11 @@ const AutoPaySchema = new mongoose.Schema(
       default: "created",
     },
 
-    refundId:{
+    refundId: {
       type: String,
       default: null,
     },
-     refundedAt: {
+    refundedAt: {
       type: Date,
       default: null,
     },

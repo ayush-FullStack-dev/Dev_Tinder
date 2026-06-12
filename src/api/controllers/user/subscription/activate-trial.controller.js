@@ -101,6 +101,7 @@ export const createAutopay = async (req, res, next) => {
         },
         authorization_details: {
           authorization_amount_refund: true,
+          authorization_amount: 1,
         },
         subscription_expiry_time: expiryYear,
         subscription_meta: {
@@ -121,7 +122,6 @@ export const createAutopay = async (req, res, next) => {
   const cashfreeSubscription = response.data;
 
   autoPay.gatewaySubscriptionId = cashfreeSubscription.subscription_id;
-  autoPay.gatewayReferenceId = cashfreeSubscription.cf_subscription_id;
 
   await autoPay.save();
 

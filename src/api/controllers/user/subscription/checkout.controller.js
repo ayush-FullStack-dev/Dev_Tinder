@@ -24,17 +24,17 @@ export const validatePlan = (req, res, next) => {
     });
   }
 
-  if (
-    PLANS[planId.toUpperCase()].price <
-    PLANS[(premium.isActive ? premium.tier : "free").toUpperCase()].price
-  ) {
-    return sendResponse(res, 409, {
-      code: "DOWNGRADE_NOT_ALLOWED",
-      message: `Downgrading from ${premium.tier} to ${planId} is not allowed`,
-      currentPlan: premium.tier,
-      attemptedPlan: planId,
-    });
-  }
+  // if (
+  //   PLANS[planId.toUpperCase()].price <
+  //   PLANS[(premium.isActive ? premium.tier : "free").toUpperCase()].price
+  // ) {
+  //   return sendResponse(res, 409, {
+  //     code: "DOWNGRADE_NOT_ALLOWED",
+  //     message: `Downgrading from ${premium.tier} to ${planId} is not allowed`,
+  //     currentPlan: premium.tier,
+  //     attemptedPlan: planId,
+  //   });
+  // }
 
   req.auth = {
     ...req.auth,

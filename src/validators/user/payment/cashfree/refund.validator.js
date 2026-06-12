@@ -28,12 +28,12 @@ export const refundWebhookSchema = Joi.object({
             .unknown(true)
             .required(),
 
-          terminalDetails: Joi.object({
+          terminal_details: Joi.object({
             cf_terminal_id: Joi.number().required(),
             terminal_phone: Joi.string().required(),
           })
-            .unknown(true)
-            .required(),
+            .allow(null)
+            .unknown(true),
         }).required(),
       },
 
@@ -51,12 +51,12 @@ export const refundWebhookSchema = Joi.object({
             .unknown(true) // allow additional Cashfree fields
             .required(),
 
-          terminalDetails: Joi.object({
+          terminal_details: Joi.object({
             cf_terminal_id: Joi.number().required(),
             terminal_phone: Joi.string().required(),
           })
-            .unknown(true)
-            .required(),
+            .allow(null)
+            .unknown(true),
         }).required(),
       },
 
@@ -71,7 +71,7 @@ export const refundWebhookSchema = Joi.object({
           refund_speed: Joi.string().required(),
           refund_status: Joi.string().required(),
           refund_note: Joi.string().optional(),
-          failure_details: Joi.string().optional(),
+          failure_details: Joi.string().optional().allow(""),
           refund_gateway_details: Joi.object({
             gateway_name: Joi.string().required(),
             gateway_payment_id: Joi.string().required(),

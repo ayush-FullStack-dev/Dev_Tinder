@@ -3,7 +3,10 @@ import Subscription from "../../../../../../models/subscription/Subscription.mod
 
 import sendResponse from "../../../../../../helpers/sendResponse.js";
 import { PLANS } from "../../../../../../constants/subscription/plans.constant.js";
-import { updateProfile } from "../../../../../../services/profile.service.js";
+import {
+  findProfile,
+  updateProfile,
+} from "../../../../../../services/profile.service.js";
 
 import { subscriptionValidator } from "../../../../../../validators/user/payment/cashfree/subscription.validator.js";
 
@@ -82,8 +85,7 @@ export const handleAutoPayWebhook = async (req, res, next) => {
 
 export const handleAutoPaySuccess = async (req, res) => {
   const { next_charge_time, autopay } = req.auth;
-  const { type } = req.auth.value;
-
+  const { type, data } = req.auth.value;
   const carriedForwardDays = daysInMonth(
     new Date().getFullYear(),
     new Date().getMonth() + 1,
@@ -91,21 +93,31 @@ export const handleAutoPaySuccess = async (req, res) => {
 
   const subscription = await Subscription.findOneAndUpdate(
     { autoPayOrderId: autopay._id },
-    { $set: { carriedForwardDays } },
-    { returnDocument: "after" },
+    { $set: { carriedForwardDays, using: true } },
+    { returnDocument: "before" },
   );
 
-  if (!subscription) {
+  const profile = await findProfile(autopay?.userId, { id: true });
+
+  if (!subscription || !profile) {
     return sendResponse(res, 200);
   }
 
-  if (type === "SUBSCRIPTION_PAYMENT_SUCCESS") {
+  autopay.gatewayPaymentId = data.payment_id;
+
+  await autopay.save();
+  if (
+    subscription.fromPlan === subscription.toPlan ||
+    type === "SUBSCRIPTION_PAYMENT_SUCCESS"
+  ) {
     await Subscription.findByIdAndUpdate(subscription._id, {
       using: false,
       used: true,
       carriedForwardDays: 0,
     });
+  }
 
+  if (subscription.fromPlan === subscription.toPlan) {
     await Subscription.create({
       userId: subscription.userId,
       autoPayOrderId: autopay._id,
@@ -116,13 +128,21 @@ export const handleAutoPaySuccess = async (req, res) => {
       using: true,
       carriedForwardDays,
     });
+  } else {
+    await Subscription.findByIdAndUpdate(profile.premium.subscriptionId, {
+      using: false,
+    });
   }
 
   const plan = PLANS[subscription.toPlan.toUpperCase()];
   const day = 1000 * 60 * 60 * 24;
-  const expireIn = day * carriedForwardDays;
 
-  await updateProfile(subscription.userId, {
+  const expireIn =
+    subscription.fromPlan === subscription.toPlan
+      ? day * (subscription.carriedForwardDays + carriedForwardDays)
+      : day * carriedForwardDays;
+
+  await updateProfile(profile._id, {
     $inc: {
       "packs.benefits.boosts": plan.features.monthlyBoostCredits,
     },
