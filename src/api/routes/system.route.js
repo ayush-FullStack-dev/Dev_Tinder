@@ -1,7 +1,7 @@
 import express from "express";
 
 import { rateLimiter } from "../../middlewares/auth/security.middleware.js";
-import { systemHealth } from "../controllers/auth/system.controller.js";
+import { systemHealth } from "../controllers/system/system.controller.js";
 
 const router = express.Router();
 

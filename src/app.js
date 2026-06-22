@@ -7,7 +7,7 @@ import cors from "cors";
 import { startSubscriptionCrons } from "./cron/subscription.cron.js";
 
 // routes
-import systemRouter from "./api/routes/router.route.js";
+import systemRouter from "./api/routes/system.route.js";
 import authRouter from "./api/routes/auth.route.js";
 import pushRouter from "./api/routes/push.route.js";
 import profileRouter from "./api/routes/profile.route.js";
@@ -63,7 +63,7 @@ app.use(getInfo);
 
 // routes
 
-app.use("/", systemRouter);
+app.use("/system", systemRouter);
 app.use("/auth", authRouter);
 app.use("/profile", profileRouter);
 app.use("/discover", discoverRouter);
